@@ -19,6 +19,8 @@ public class Constants {
 
     public static final int PORT;
 
+    public static final String PROXY_PART;
+
     public static final StreamingService YOUTUBE_SERVICE;
 
     public static final HttpClient h2client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
@@ -34,6 +36,7 @@ public class Constants {
 	    prop.load(new FileReader("config.properties"));
 
 	    PORT = Integer.parseInt(prop.getProperty("PORT"));
+	    PROXY_PART = prop.getProperty("PROXY_PART");
 	} catch (Exception e) {
 	    throw new RuntimeException(e);
 	}

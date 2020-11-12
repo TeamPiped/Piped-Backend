@@ -173,7 +173,8 @@ public class ResponseHelper {
 	if (!hasQuery && path.startsWith("/vi/"))
 	    path = path.replace("/vi/", "/vi_webp/").replace(".jpg", ".webp");
 
-	return path + (hasQuery ? "?" + query + "&host=" : "?host=") + URLUtils.silentEncode(host);
+	return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=")
+		+ URLUtils.silentEncode(host);
 
     }
 }
