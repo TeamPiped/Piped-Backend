@@ -1,0 +1,45 @@
+plugins {
+	id "com.github.johnrengelman.shadow" version "6.1.0"
+	id "java"
+	id "eclipse"
+}
+
+repositories {
+    maven { url 'https://repo.spring.io/milestone' }
+	jcenter()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'org.apache.commons:commons-lang3:3.11'
+    implementation 'org.apache.commons:commons-text:1.9'
+    implementation 'commons-io:commons-io:2.8.0'
+    implementation 'it.unimi.dsi:fastutil:8.4.2'
+    implementation 'commons-codec:commons-codec:1.15'
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.66'
+    implementation 'org.mongodb:mongo-java-driver:3.12.7'
+    implementation 'io.projectreactor.netty:reactor-netty:1.0.1'
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.20.2'
+    implementation 'com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.6.3'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.6.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.6.3'
+    implementation 'org.json:json:20200518'
+    implementation 'com.github.ben-manes.caffeine:caffeine:2.8.6'
+    implementation 'com.rometools:rome:1.15.0'
+}
+
+shadowJar {
+    // minimize()
+}
+
+jar {
+  manifest {
+    attributes(
+      'Main-Class': 'me.kavin.piped.Main'
+    )
+  }
+}
+
+group = 'me.kavin.piped'
+version = '1.0'
