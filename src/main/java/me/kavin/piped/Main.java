@@ -4,6 +4,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.DownloaderImpl;
@@ -11,7 +12,9 @@ import me.kavin.piped.utils.ResponseHelper;
 import me.kavin.piped.utils.SponsorBlockUtils;
 import reactor.core.publisher.Flux;
 import reactor.netty.ByteBufFlux;
+import reactor.netty.NettyOutbound;
 import reactor.netty.http.server.HttpServer;
+import reactor.netty.http.server.HttpServerResponse;
 
 public class Main {
 
@@ -39,8 +42,7 @@ public class Main {
 			    .send(ByteBufFlux.fromString(Flux.just(query.parameters().get("hub.challenge").get(0))));
 		} catch (Exception e) {
 		    e.printStackTrace();
-		    return res.compression(true).status(500).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just(ExceptionUtils.getStackTrace(e))));
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
 		}
 
 	    });
@@ -53,8 +55,7 @@ public class Main {
 			    .send(ByteBufFlux.fromString(Flux.just("ok")));
 		} catch (Exception e) {
 		    e.printStackTrace();
-		    return res.compression(true).status(500).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just(ExceptionUtils.getStackTrace(e))));
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
 		}
 
 	    });
@@ -64,14 +65,11 @@ public class Main {
 		QueryStringDecoder query = new QueryStringDecoder(req.uri());
 
 		try {
-		    return res.compression(true).addHeader("Access-Control-Allow-Origin", "*")
-			    .addHeader("Cache-Control", "public, s-maxage=3600")
-			    .send(ByteBufFlux.fromString(Flux.just(SponsorBlockUtils.getSponsors(req.param("videoId"),
-				    query.parameters().get("category").get(0)))));
+		    return writeResponse(res, SponsorBlockUtils.getSponsors(req.param("videoId"),
+			    query.parameters().get("category").get(0)), 200, "public, max-age=3600");
 		} catch (Exception e) {
 		    e.printStackTrace();
-		    return res.compression(true).status(500).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just(ExceptionUtils.getStackTrace(e))));
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
 		}
 
 	    });
@@ -85,8 +83,7 @@ public class Main {
 				    .fromString(Flux.just(ResponseHelper.streamsResponse(req.param("videoId")))));
 		} catch (Exception e) {
 		    e.printStackTrace();
-		    return res.compression(true).status(500).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just(ExceptionUtils.getStackTrace(e))));
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
 		}
 
 	    });
@@ -94,14 +91,11 @@ public class Main {
 	    routes.get("/channels/{channelId}", (req, res) -> {
 
 		try {
-		    // The stream links are valid for 6 hours.
-		    return res.compression(true).addHeader("Access-Control-Allow-Origin", "*")
-			    .addHeader("Cache-Control", "public, s-maxage=21540").send(ByteBufFlux
-				    .fromString(Flux.just(ResponseHelper.channelResponse(req.param("channelId")))));
+		    return writeResponse(res, ResponseHelper.channelResponse(req.param("channelId")), 200,
+			    "public, max-age=600");
 		} catch (Exception e) {
 		    e.printStackTrace();
-		    return res.compression(true).status(500).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just(ExceptionUtils.getStackTrace(e))));
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
 		}
 
 	    });
@@ -109,14 +103,10 @@ public class Main {
 	    routes.get("/trending", (req, res) -> {
 
 		try {
-		    // The stream links are valid for 6 hours.
-		    return res.compression(true).addHeader("Access-Control-Allow-Origin", "*")
-			    .addHeader("Cache-Control", "public, s-maxage=3600")
-			    .send(ByteBufFlux.fromString(Flux.just(ResponseHelper.trendingResponse())));
+		    return writeResponse(res, ResponseHelper.trendingResponse(), 200, "public, max-age=3600");
 		} catch (Exception e) {
 		    e.printStackTrace();
-		    return res.compression(true).status(500).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just(ExceptionUtils.getStackTrace(e))));
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
 		}
 
 	    });
@@ -124,5 +114,11 @@ public class Main {
 	}).bindNow();
 
 	Thread.sleep(Long.MAX_VALUE);
+    }
+
+    public static NettyOutbound writeResponse(HttpServerResponse res, String resp, int code, String cache) {
+	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
+		.send(ByteBufFlux.fromString(Flux.just(resp), java.nio.charset.StandardCharsets.UTF_8,
+			ByteBufAllocator.DEFAULT));
     }
 }
