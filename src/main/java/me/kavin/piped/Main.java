@@ -38,8 +38,7 @@ public class Main {
 		QueryStringDecoder query = new QueryStringDecoder(req.uri());
 
 		try {
-		    return res.compression(true).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just(query.parameters().get("hub.challenge").get(0))));
+		    return writeResponse(res, query.parameters().get("hub.challenge").get(0), 200, "private");
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
@@ -51,8 +50,7 @@ public class Main {
 
 		try {
 		    req.receive().asString().subscribe(str -> System.out.println(str));
-		    return res.compression(true).addHeader("Cache-Control", "private")
-			    .send(ByteBufFlux.fromString(Flux.just("ok")));
+		    return writeResponse(res, "ok", 200, "private");
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
@@ -78,9 +76,8 @@ public class Main {
 
 		try {
 		    // The stream links are valid for 6 hours.
-		    return res.compression(true).addHeader("Access-Control-Allow-Origin", "*")
-			    .addHeader("Cache-Control", "public, s-maxage=21540").send(ByteBufFlux
-				    .fromString(Flux.just(ResponseHelper.streamsResponse(req.param("videoId")))));
+		    return writeResponse(res, ResponseHelper.streamsResponse(req.param("videoId")), 200,
+			    "public, s-maxage=21540");
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
