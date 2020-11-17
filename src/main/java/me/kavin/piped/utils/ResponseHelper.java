@@ -8,8 +8,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONObject;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
@@ -36,12 +38,29 @@ public class ResponseHelper {
 	    .expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1000)
 	    .build(key -> CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + key));
 
-    public static final String streamsResponse(String videoId)
-	    throws IOException, ExtractionException, InterruptedException {
+    public static final String streamsResponse(String videoId) throws Exception {
 
-	final StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+	CompletableFuture<StreamInfo> futureStream = CompletableFuture.supplyAsync(() -> {
+	    try {
+		return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+	    } catch (Exception e) {
+		ExceptionUtils.rethrow(e);
+	    }
+	    return null;
+	});
+
+	CompletableFuture<String> futureLBRY = CompletableFuture.supplyAsync(() -> {
+	    try {
+		return getLBRYStreamURL(videoId);
+	    } catch (Exception e) {
+		ExceptionUtils.rethrow(e);
+	    }
+	    return null;
+	});
 
 	final List<Subtitle> subtitles = new ObjectArrayList<>();
+
+	final StreamInfo info = futureStream.get();
 
 	info.getSubtitles().forEach(subtitle -> subtitles
 		.add(new Subtitle(rewriteURL(subtitle.getUrl()), subtitle.getFormat().getMimeType())));
@@ -49,10 +68,16 @@ public class ResponseHelper {
 	final List<Stream> videoStreams = new ObjectArrayList<>();
 	final List<Stream> audioStreams = new ObjectArrayList<>();
 
-	String lbryURL = getLBRYStreamURL(videoId);
+	final String lbryURL = futureLBRY.get();
 
 	if (lbryURL != null)
 	    videoStreams.add(new Stream(lbryURL, "MP4", "LBRY", "video/mp4"));
+
+	String hls = null;
+	boolean livestream = false;
+
+	if ((hls = info.getHlsUrl()) != null && !hls.isEmpty())
+	    livestream = true;
 
 	info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new Stream(rewriteURL(stream.getUrl()),
 		String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType())));
@@ -76,7 +101,7 @@ public class ResponseHelper {
 		info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
 		rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
 		info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), audioStreams, videoStreams,
-		relatedStreams, subtitles);
+		relatedStreams, subtitles, livestream, hls);
 
 	return Constants.mapper.writeValueAsString(streams);
 

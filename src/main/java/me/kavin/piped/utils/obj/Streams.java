@@ -4,7 +4,7 @@ import java.util.List;
 
 public class Streams {
 
-    private String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl;
+    private String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls;
 
     private long duration, views, likes, dislikes;
 
@@ -14,10 +14,12 @@ public class Streams {
 
     private List<Subtitle> subtitles;
 
+    private boolean livestream;
+
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
 	    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes,
 	    List<Stream> audioStreams, List<Stream> videoStreams, List<StreamItem> relatedStreams,
-	    List<Subtitle> subtitles) {
+	    List<Subtitle> subtitles, boolean livestream, String hls) {
 	this.title = title;
 	this.description = description;
 	this.uploadDate = uploadDate;
@@ -33,6 +35,8 @@ public class Streams {
 	this.videoStreams = videoStreams;
 	this.relatedStreams = relatedStreams;
 	this.subtitles = subtitles;
+	this.livestream = livestream;
+	this.hls = hls;
     }
 
     public String getTitle() {
@@ -93,5 +97,13 @@ public class Streams {
 
     public List<Subtitle> getSubtitles() {
 	return subtitles;
+    }
+
+    public boolean isLivestream() {
+	return livestream;
+    }
+
+    public String getHls() {
+	return hls;
     }
 }
