@@ -11,23 +11,29 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONObject;
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
+import org.schabi.newpipe.extractor.stream.Stream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.Channel;
-import me.kavin.piped.utils.obj.Stream;
+import me.kavin.piped.utils.obj.ChannelPage;
+import me.kavin.piped.utils.obj.PipedStream;
 import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.Subtitle;
@@ -65,13 +71,13 @@ public class ResponseHelper {
 	info.getSubtitles().forEach(subtitle -> subtitles
 		.add(new Subtitle(rewriteURL(subtitle.getUrl()), subtitle.getFormat().getMimeType())));
 
-	final List<Stream> videoStreams = new ObjectArrayList<>();
-	final List<Stream> audioStreams = new ObjectArrayList<>();
+	final List<PipedStream> videoStreams = new ObjectArrayList<>();
+	final List<PipedStream> audioStreams = new ObjectArrayList<>();
 
 	final String lbryURL = futureLBRY.get();
 
 	if (lbryURL != null)
-	    videoStreams.add(new Stream(lbryURL, "MP4", "LBRY", "video/mp4"));
+	    videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4"));
 
 	String hls = null;
 	boolean livestream = false;
@@ -79,14 +85,32 @@ public class ResponseHelper {
 	if ((hls = info.getHlsUrl()) != null && !hls.isEmpty())
 	    livestream = true;
 
-	info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new Stream(rewriteURL(stream.getUrl()),
+	long minexpire = Long.MAX_VALUE;
+
+	ObjectArrayList<Stream> allStreams = new ObjectArrayList<>();
+
+	allStreams.addAll(info.getVideoStreams());
+	allStreams.addAll(info.getAudioStreams());
+	allStreams.addAll(info.getVideoOnlyStreams());
+
+	for (Stream stream : allStreams) {
+
+	    long expire = Long.parseLong(StringUtils.substringBetween(stream.getUrl(), "expire=", "&"));
+
+	    if (expire < minexpire)
+		minexpire = expire;
+
+	}
+
+	info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
 		String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType())));
-	info.getVideoStreams().forEach(stream -> videoStreams.add(new Stream(rewriteURL(stream.getUrl()),
+	info.getVideoStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
 		String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType())));
 
-	info.getAudioStreams().forEach(
-		stream -> audioStreams.add(new Stream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
-			stream.getAverageBitrate() + " kbps", stream.getFormat().getMimeType())));
+	info.getAudioStreams()
+		.forEach(stream -> audioStreams
+			.add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
+				stream.getAverageBitrate() + " kbps", stream.getFormat().getMimeType())));
 
 	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -121,10 +145,35 @@ public class ResponseHelper {
 		    item.getDuration(), item.getViewCount()));
 	});
 
+	String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
+
 	final Channel channel = new Channel(info.getName(), info.getAvatarUrl(), info.getBannerUrl(),
-		info.getDescription(), relatedStreams);
+		info.getDescription(), nextpage, relatedStreams);
 
 	return Constants.mapper.writeValueAsString(channel);
+
+    }
+
+    public static final String channelPageResponse(String channelId, String url)
+	    throws IOException, ExtractionException, InterruptedException {
+
+	InfoItemsPage<StreamInfoItem> page = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+		"https://youtube.com/channel/" + channelId, new Page(url));
+
+	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+
+	page.getItems().forEach(o -> {
+	    StreamInfoItem item = o;
+	    relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
+		    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+		    item.getDuration(), item.getViewCount()));
+	});
+
+	String nextpage = page.hasNextPage() ? page.getNextPage().getUrl() : null;
+
+	final ChannelPage channelpage = new ChannelPage(nextpage, relatedStreams);
+
+	return Constants.mapper.writeValueAsString(channelpage);
 
     }
 
@@ -146,6 +195,14 @@ public class ResponseHelper {
 	});
 
 	return Constants.mapper.writeValueAsString(relatedStreams);
+    }
+
+    public static final String suggestionsResponse(String query)
+	    throws JsonProcessingException, IOException, ExtractionException {
+
+	return Constants.mapper
+		.writeValueAsString(Constants.YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
+
     }
 
     private static final String getLBRYStreamURL(String videoId) throws IOException, InterruptedException {

@@ -8,7 +8,7 @@ public class Streams {
 
     private long duration, views, likes, dislikes;
 
-    private List<Stream> audioStreams, videoStreams;
+    private List<PipedStream> audioStreams, videoStreams;
 
     private List<StreamItem> relatedStreams;
 
@@ -18,7 +18,7 @@ public class Streams {
 
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
 	    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes,
-	    List<Stream> audioStreams, List<Stream> videoStreams, List<StreamItem> relatedStreams,
+	    List<PipedStream> audioStreams, List<PipedStream> videoStreams, List<StreamItem> relatedStreams,
 	    List<Subtitle> subtitles, boolean livestream, String hls) {
 	this.title = title;
 	this.description = description;
@@ -83,11 +83,11 @@ public class Streams {
 	return dislikes;
     }
 
-    public List<Stream> getAudioStreams() {
+    public List<PipedStream> getAudioStreams() {
 	return audioStreams;
     }
 
-    public List<Stream> getVideoStreams() {
+    public List<PipedStream> getVideoStreams() {
 	return videoStreams;
     }
 

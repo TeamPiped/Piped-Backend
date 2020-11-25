@@ -1,10 +1,10 @@
 package me.kavin.piped.utils.obj;
 
-public class Stream {
+public class PipedStream {
 
     private String url, format, quality, mimeType;
 
-    public Stream(String url, String format, String quality, String mimeType) {
+    public PipedStream(String url, String format, String quality, String mimeType) {
 	this.url = url;
 	this.format = format;
 	this.quality = quality;

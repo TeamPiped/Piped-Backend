@@ -20,8 +20,6 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-	System.setProperty("file.encoding", "UTF-8");
-
 //	SyndFeed feed = new SyndFeedInput().build(new XmlReader(new FileInputStream("pubsub.xml")));
 //
 //	feed.getEntries().forEach(entry -> {
@@ -89,6 +87,35 @@ public class Main {
 
 		try {
 		    return writeResponse(res, ResponseHelper.channelResponse(req.param("channelId")), 200,
+			    "public, max-age=600");
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
+		}
+
+	    });
+
+	    routes.get("/nextpage/channels/{channelId}", (req, res) -> {
+
+		QueryStringDecoder query = new QueryStringDecoder(req.uri());
+
+		try {
+		    return writeResponse(res, ResponseHelper.channelPageResponse(req.param("channelId"),
+			    query.parameters().get("url").get(0)), 200, "public, max-age=3600");
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
+		}
+
+	    });
+
+	    routes.get("/suggestions", (req, res) -> {
+
+		QueryStringDecoder query = new QueryStringDecoder(req.uri());
+
+		try {
+		    return writeResponse(res,
+			    ResponseHelper.suggestionsResponse(query.parameters().get("query").get(0)), 200,
 			    "public, max-age=600");
 		} catch (Exception e) {
 		    e.printStackTrace();
