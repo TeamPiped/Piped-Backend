@@ -147,8 +147,8 @@ public class ResponseHelper {
 
 	String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
 
-	final Channel channel = new Channel(info.getName(), info.getAvatarUrl(), info.getBannerUrl(),
-		info.getDescription(), nextpage, relatedStreams);
+	final Channel channel = new Channel(info.getName(), rewriteURL(info.getAvatarUrl()),
+		rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, relatedStreams);
 
 	return Constants.mapper.writeValueAsString(channel);
 
