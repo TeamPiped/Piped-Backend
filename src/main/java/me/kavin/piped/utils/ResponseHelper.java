@@ -21,6 +21,7 @@ import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
+import org.schabi.newpipe.extractor.search.SearchInfo;
 import org.schabi.newpipe.extractor.stream.Stream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
@@ -37,6 +38,8 @@ import me.kavin.piped.utils.obj.PipedStream;
 import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.Subtitle;
+import me.kavin.piped.utils.obj.search.SearchItem;
+import me.kavin.piped.utils.obj.search.SearchStream;
 
 public class ResponseHelper {
 
@@ -202,6 +205,33 @@ public class ResponseHelper {
 
 	return Constants.mapper
 		.writeValueAsString(Constants.YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
+
+    }
+
+    public static final String searchResponse(String q) throws IOException, ExtractionException, InterruptedException {
+
+	final SearchInfo info = SearchInfo.getInfo(Constants.YOUTUBE_SERVICE,
+		Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q));
+
+	ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
+
+	info.getRelatedItems().forEach(item -> {
+	    switch (item.getInfoType()) {
+	    case STREAM:
+		StreamInfoItem stream = (StreamInfoItem) item;
+		items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
+			item.getUrl().substring(23), stream.getViewCount(), stream.getDuration()));
+		break;
+	    case CHANNEL:
+		items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
+			item.getUrl().substring(23)));
+		break;
+	    default:
+		break;
+	    }
+	});
+
+	return Constants.mapper.writeValueAsString(items);
 
     }
 

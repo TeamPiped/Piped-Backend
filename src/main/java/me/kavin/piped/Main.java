@@ -124,6 +124,20 @@ public class Main {
 
 	    });
 
+	    routes.get("/search", (req, res) -> {
+
+		QueryStringDecoder query = new QueryStringDecoder(req.uri());
+
+		try {
+		    return writeResponse(res, ResponseHelper.searchResponse(query.parameters().get("q").get(0)), 200,
+			    "public, max-age=600");
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
+		}
+
+	    });
+
 	    routes.get("/trending", (req, res) -> {
 
 		try {
