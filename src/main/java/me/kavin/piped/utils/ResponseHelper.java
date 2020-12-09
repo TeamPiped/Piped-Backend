@@ -234,6 +234,9 @@ public class ResponseHelper {
 	if (Constants.debug)
 	    return old;
 
+	if (old == null || old.isEmpty())
+	    return null;
+
 	URL url = null;
 
 	try {
@@ -246,14 +249,17 @@ public class ResponseHelper {
 
 	String query = url.getQuery();
 
-	final boolean hasQuery = query != null;
+	boolean hasQuery = query != null;
 
 	String path = url.getPath();
 
 	path = path.replace("-rj", "-rw");
 
-	if (!hasQuery && path.startsWith("/vi/"))
-	    path = path.replace("/vi/", "/vi_webp/").replace(".jpg", ".webp");
+	if (path.startsWith("/vi/") && !path.contains("_live")) {
+	    path = path.replace("/vi/", "/vi_webp/").replace(".jpg", ".webp").replace("hq720", "mqdefault")
+		    .replace("hqdefault", "mqdefault");
+	    hasQuery = false;
+	}
 
 	return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=")
 		+ URLUtils.silentEncode(host);
