@@ -138,6 +138,22 @@ public class Main {
 
 	    });
 
+	    routes.get("/nextpage/search", (req, res) -> {
+
+		QueryStringDecoder query = new QueryStringDecoder(req.uri());
+
+		try {
+		    return writeResponse(res,
+			    ResponseHelper.searchPageResponse(query.parameters().get("q").get(0),
+				    query.parameters().get("url").get(0), query.parameters().get("id").get(0)),
+			    200, "public, max-age=3600");
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
+		}
+
+	    });
+
 	    routes.get("/trending", (req, res) -> {
 
 		try {

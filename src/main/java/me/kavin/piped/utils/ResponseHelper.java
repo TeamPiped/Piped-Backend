@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONObject;
+import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
@@ -35,6 +36,7 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.Channel;
 import me.kavin.piped.utils.obj.ChannelPage;
 import me.kavin.piped.utils.obj.PipedStream;
+import me.kavin.piped.utils.obj.SearchResults;
 import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.Subtitle;
@@ -231,7 +233,43 @@ public class ResponseHelper {
 	    }
 	});
 
-	return Constants.mapper.writeValueAsString(items);
+	Page nextpage = info.getNextPage();
+
+	return nextpage != null
+		? Constants.mapper.writeValueAsString(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
+		: Constants.mapper.writeValueAsString(new SearchResults(null, null, items));
+
+    }
+
+    public static final String searchPageResponse(String q, String url, String id)
+	    throws IOException, ExtractionException, InterruptedException {
+
+	InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+		Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q), new Page(url, id));
+
+	ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
+
+	pages.getItems().forEach(item -> {
+	    switch (item.getInfoType()) {
+	    case STREAM:
+		StreamInfoItem stream = (StreamInfoItem) item;
+		items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
+			item.getUrl().substring(23), stream.getViewCount(), stream.getDuration()));
+		break;
+	    case CHANNEL:
+		items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
+			item.getUrl().substring(23)));
+		break;
+	    default:
+		break;
+	    }
+	});
+
+	Page nextpage = pages.getNextPage();
+
+	return nextpage != null
+		? Constants.mapper.writeValueAsString(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
+		: Constants.mapper.writeValueAsString(new SearchResults(null, null, items));
 
     }
 
@@ -288,6 +326,7 @@ public class ResponseHelper {
 	if (path.startsWith("/vi/") && !path.contains("_live")) {
 	    path = path.replace("/vi/", "/vi_webp/").replace(".jpg", ".webp").replace("hq720", "mqdefault")
 		    .replace("hqdefault", "mqdefault");
+
 	    hasQuery = false;
 	}
 
