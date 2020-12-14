@@ -4,17 +4,17 @@ import java.util.List;
 
 public class Streams {
 
-    private String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls;
+    public String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls;
 
-    private long duration, views, likes, dislikes;
+    public long duration, views, likes, dislikes;
 
-    private List<PipedStream> audioStreams, videoStreams;
+    public List<PipedStream> audioStreams, videoStreams;
 
-    private List<StreamItem> relatedStreams;
+    public List<StreamItem> relatedStreams;
 
-    private List<Subtitle> subtitles;
+    public List<Subtitle> subtitles;
 
-    private boolean livestream;
+    public boolean livestream;
 
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
 	    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes,
@@ -37,73 +37,5 @@ public class Streams {
 	this.subtitles = subtitles;
 	this.livestream = livestream;
 	this.hls = hls;
-    }
-
-    public String getTitle() {
-	return title;
-    }
-
-    public String getDescription() {
-	return description;
-    }
-
-    public String getUploadDate() {
-	return uploadDate;
-    }
-
-    public String getUploader() {
-	return uploader;
-    }
-
-    public String getUploaderUrl() {
-	return uploaderUrl;
-    }
-
-    public String getUploaderAvatar() {
-	return uploaderAvatar;
-    }
-
-    public String getThumbnailUrl() {
-	return thumbnailUrl;
-    }
-
-    public long getDuration() {
-	return duration;
-    }
-
-    public long getViews() {
-	return views;
-    }
-
-    public long getLikes() {
-	return likes;
-    }
-
-    public long getDislikes() {
-	return dislikes;
-    }
-
-    public List<PipedStream> getAudioStreams() {
-	return audioStreams;
-    }
-
-    public List<PipedStream> getVideoStreams() {
-	return videoStreams;
-    }
-
-    public List<StreamItem> getRelatedStreams() {
-	return relatedStreams;
-    }
-
-    public List<Subtitle> getSubtitles() {
-	return subtitles;
-    }
-
-    public boolean isLivestream() {
-	return livestream;
-    }
-
-    public String getHls() {
-	return hls;
     }
 }
