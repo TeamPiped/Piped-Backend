@@ -109,6 +109,32 @@ public class Main {
 
 	    });
 
+	    routes.get("/playlists/{playlistId}", (req, res) -> {
+
+		try {
+		    return writeResponse(res, ResponseHelper.playlistResponse(req.param("playlistId")), 200,
+			    "public, max-age=600");
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
+		}
+
+	    });
+
+	    routes.get("/nextpage/playlists/{playlistId}", (req, res) -> {
+
+		QueryStringDecoder query = new QueryStringDecoder(req.uri());
+
+		try {
+		    return writeResponse(res, ResponseHelper.playlistPageResponse(req.param("playlistId"),
+			    query.parameters().get("url").get(0)), 200, "public, max-age=3600");
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
+		}
+
+	    });
+
 	    routes.get("/suggestions", (req, res) -> {
 
 		QueryStringDecoder query = new QueryStringDecoder(req.uri());
