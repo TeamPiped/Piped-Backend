@@ -16,7 +16,7 @@ dependencies {
     implementation 'commons-io:commons-io:2.8.0'
     implementation 'it.unimi.dsi:fastutil:8.4.2'
     implementation 'commons-codec:commons-codec:1.15'
-    implementation 'org.bouncycastle:bcprov-jdk15on:1.66'
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.67'
     implementation 'org.mongodb:mongodb-driver-sync:4.1.1'
     implementation 'io.projectreactor.netty:reactor-netty:1.0.1'
     implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.20.8'
