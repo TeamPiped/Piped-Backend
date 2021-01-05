@@ -1,0 +1,8 @@
+.*
+build
+bin
+Dockerfile
+*.bat
+LICENSE
+*.md
+config.properties

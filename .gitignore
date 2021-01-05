@@ -5,12 +5,14 @@ bin/
 .*
 
 !.gitignore
+!.dockerignore
+
+!.github/
 
 # Log file
 *.log
 
 ### Gradle ###
-/.gradle
 /build/
 
 # TxT File
