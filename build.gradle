@@ -24,7 +24,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.0'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.6.3'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.0'
-    implementation 'org.json:json:20200518'
+    implementation 'org.json:json:20201115'
     implementation 'com.github.ben-manes.caffeine:caffeine:2.8.6'
     implementation 'com.rometools:rome:1.15.0'
 }
