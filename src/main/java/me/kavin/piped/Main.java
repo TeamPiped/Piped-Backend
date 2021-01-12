@@ -4,6 +4,10 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 
+import com.rometools.rome.feed.synd.SyndFeed;
+import com.rometools.rome.io.SyndFeedInput;
+import com.rometools.rome.io.XmlReader;
+
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import me.kavin.piped.consts.Constants;
