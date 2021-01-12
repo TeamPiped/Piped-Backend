@@ -51,7 +51,7 @@ public class ResponseHelper {
 	    .expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1000)
 	    .build(key -> CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + key));
 
-    public static final String streamsResponse(String videoId) throws Exception {
+    public static final byte[] streamsResponse(String videoId) throws Exception {
 
 	CompletableFuture<StreamInfo> futureStream = CompletableFuture.supplyAsync(() -> {
 	    try {
@@ -134,11 +134,11 @@ public class ResponseHelper {
 		info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), audioStreams, videoStreams,
 		relatedStreams, subtitles, livestream, hls);
 
-	return Constants.mapper.writeValueAsString(streams);
+	return Constants.mapper.writeValueAsBytes(streams);
 
     }
 
-    public static final String channelResponse(String channelId)
+    public static final byte[] channelResponse(String channelId)
 	    throws IOException, ExtractionException, InterruptedException {
 
 	final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
@@ -157,11 +157,11 @@ public class ResponseHelper {
 	final Channel channel = new Channel(info.getName(), rewriteURL(info.getAvatarUrl()),
 		rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, relatedStreams);
 
-	return Constants.mapper.writeValueAsString(channel);
+	return Constants.mapper.writeValueAsBytes(channel);
 
     }
 
-    public static final String channelPageResponse(String channelId, String url)
+    public static final byte[] channelPageResponse(String channelId, String url)
 	    throws IOException, ExtractionException, InterruptedException {
 
 	InfoItemsPage<StreamInfoItem> page = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
@@ -180,13 +180,13 @@ public class ResponseHelper {
 
 	final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
-	return Constants.mapper.writeValueAsString(streamspage);
+	return Constants.mapper.writeValueAsBytes(streamspage);
 
     }
 
     final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-    public static final String trendingResponse() throws ParsingException, ExtractionException, IOException {
+    public static final byte[] trendingResponse() throws ParsingException, ExtractionException, IOException {
 
 	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -201,10 +201,10 @@ public class ResponseHelper {
 		    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
 	});
 
-	return Constants.mapper.writeValueAsString(relatedStreams);
+	return Constants.mapper.writeValueAsBytes(relatedStreams);
     }
 
-    public static final String playlistResponse(String playlistId)
+    public static final byte[] playlistResponse(String playlistId)
 	    throws IOException, ExtractionException, InterruptedException {
 
 	final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
@@ -224,11 +224,11 @@ public class ResponseHelper {
 		rewriteURL(info.getBannerUrl()), nextpage, info.getUploaderName(), info.getUploaderUrl().substring(23),
 		rewriteURL(info.getUploaderAvatarUrl()), (int) info.getStreamCount(), relatedStreams);
 
-	return Constants.mapper.writeValueAsString(playlist);
+	return Constants.mapper.writeValueAsBytes(playlist);
 
     }
 
-    public static final String playlistPageResponse(String playlistId, String url)
+    public static final byte[] playlistPageResponse(String playlistId, String url)
 	    throws IOException, ExtractionException, InterruptedException {
 
 	InfoItemsPage<StreamInfoItem> page = PlaylistInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
@@ -247,19 +247,19 @@ public class ResponseHelper {
 
 	final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
-	return Constants.mapper.writeValueAsString(streamspage);
+	return Constants.mapper.writeValueAsBytes(streamspage);
 
     }
 
-    public static final String suggestionsResponse(String query)
+    public static final byte[] suggestionsResponse(String query)
 	    throws JsonProcessingException, IOException, ExtractionException {
 
 	return Constants.mapper
-		.writeValueAsString(Constants.YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
+		.writeValueAsBytes(Constants.YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
     }
 
-    public static final String searchResponse(String q) throws IOException, ExtractionException, InterruptedException {
+    public static final byte[] searchResponse(String q) throws IOException, ExtractionException, InterruptedException {
 
 	final SearchInfo info = SearchInfo.getInfo(Constants.YOUTUBE_SERVICE,
 		Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q));
@@ -285,12 +285,12 @@ public class ResponseHelper {
 	Page nextpage = info.getNextPage();
 
 	return nextpage != null
-		? Constants.mapper.writeValueAsString(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
-		: Constants.mapper.writeValueAsString(new SearchResults(null, null, items));
+		? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
+		: Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
 
     }
 
-    public static final String searchPageResponse(String q, String url, String id)
+    public static final byte[] searchPageResponse(String q, String url, String id)
 	    throws IOException, ExtractionException, InterruptedException {
 
 	InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
@@ -317,14 +317,14 @@ public class ResponseHelper {
 	Page nextpage = pages.getNextPage();
 
 	return nextpage != null
-		? Constants.mapper.writeValueAsString(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
-		: Constants.mapper.writeValueAsString(new SearchResults(null, null, items));
+		? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
+		: Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
 
     }
 
-    public static final String registerResponse(String user, String pass) throws IOException {
+    public static final byte[] registerResponse(String user, String pass) throws IOException {
 
-	return Constants.mapper.writeValueAsString(null);
+	return Constants.mapper.writeValueAsBytes(null);
 
     }
 

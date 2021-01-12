@@ -20,13 +20,6 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-//	SyndFeed feed = new SyndFeedInput().build(new XmlReader(new FileInputStream("pubsub.xml")));
-//
-//	feed.getEntries().forEach(entry -> {
-//	    System.out.println(entry.getLinks().get(0).getHref());
-//	    System.out.println(entry.getAuthors().get(0).getUri());
-//	});
-
 	NewPipe.init(new DownloaderImpl(), new Localization("en", "US"));
 
 	HttpServer.create().port(Constants.PORT).route(routes -> {
@@ -47,10 +40,22 @@ public class Main {
 	    routes.post("/webhooks/pubsub", (req, res) -> {
 
 		try {
-		    req.receive().asString().subscribe(str -> System.out.println(str));
+		    req.receive().asInputStream().subscribe(in -> {
+			try {
+			    SyndFeed feed = new SyndFeedInput().build(new XmlReader(in));
+
+				    feed.getEntries().forEach(entry -> {
+					System.out.println(entry.getLinks().get(0).getHref());
+					System.out.println(entry.getAuthors().get(0).getUri());
+				    });
+
+			} catch (Exception e) {
+			    e.printStackTrace();
+			}
+		    });
 		    return writeResponse(res, "ok", 200, "private");
 		} catch (Exception e) {
-		    e.printStackTrace();
+			    e.printStackTrace();
 		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private");
 		}
 
@@ -200,5 +205,15 @@ public class Main {
 	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
 		.send(ByteBufFlux.fromString(Flux.just(resp), java.nio.charset.StandardCharsets.UTF_8,
 			ByteBufAllocator.DEFAULT));
+    }
+
+    public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, int code, String cache) {
+	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
+		.sendByteArray(Flux.just(resp));
+    }
+
+    public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, int code, String cache) {
+	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
+		.send(ByteBufFlux.fromString(resp, java.nio.charset.StandardCharsets.UTF_8, ByteBufAllocator.DEFAULT));
     }
 }
