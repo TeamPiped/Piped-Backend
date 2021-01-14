@@ -11,6 +11,7 @@ public class Channel {
 	    List<StreamItem> relatedStreams) {
 	this.name = name;
 	this.avatarUrl = avatarUrl;
+	this.bannerUrl = bannerUrl;
 	this.description = description;
 	this.nextpage = nextpage;
 	this.relatedStreams = relatedStreams;
