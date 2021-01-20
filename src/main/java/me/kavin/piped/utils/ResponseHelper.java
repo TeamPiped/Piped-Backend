@@ -25,7 +25,6 @@ import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.search.SearchInfo;
-import org.schabi.newpipe.extractor.stream.Stream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
@@ -95,7 +94,7 @@ public class ResponseHelper {
 
 	if (hls != null) {
 
-	    Stream<String> resp = Constants.h2client
+	    java.util.stream.Stream<String> resp = Constants.h2client
 		    .send(HttpRequest.newBuilder(URI.create(hls)).GET().build(), BodyHandlers.ofLines()).body();
 	    ObjectArrayList<String> lines = new ObjectArrayList<>();
 	    resp.forEach(line -> lines.add(line));
