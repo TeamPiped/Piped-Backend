@@ -86,38 +86,48 @@ public class ResponseHelper {
 	if (lbryURL != null)
 	    videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
 
-	String hls = null;
+	final String hls;
 	boolean livestream = false;
 
 	if ((hls = info.getHlsUrl()) != null && !hls.isEmpty())
 	    livestream = true;
 
-	long minexpire = Long.MAX_VALUE;
+	if (hls != null) {
 
-	ObjectArrayList<Stream> allStreams = new ObjectArrayList<>();
+	    Stream<String> resp = Constants.h2client
+		    .send(HttpRequest.newBuilder(URI.create(hls)).GET().build(), BodyHandlers.ofLines()).body();
+	    ObjectArrayList<String> lines = new ObjectArrayList<>();
+	    resp.forEach(line -> lines.add(line));
 
-	allStreams.addAll(info.getVideoStreams());
-	allStreams.addAll(info.getAudioStreams());
-	allStreams.addAll(info.getVideoOnlyStreams());
-
-	for (Stream stream : allStreams) {
-
-	    long expire = Long.parseLong(StringUtils.substringBetween(stream.getUrl(), "expire=", "&"));
-
-	    if (expire < minexpire)
-		minexpire = expire;
-
+	    for (int i = lines.size() - 1; i > 2; i--) {
+		String line = lines.get(i);
+		if (line.startsWith("https://manifest.googlevideo.com")) {
+		    String prevLine = lines.get(i - 1);
+		    String height = StringUtils.substringBetween(prevLine, "RESOLUTION=", ",").split("x")[1];
+		    int fps = Integer.parseInt(StringUtils.substringBetween(prevLine, "FRAME-RATE=", ","));
+		    String quality = height + "p";
+		    if (fps > 30)
+			quality += fps;
+		    videoStreams.add(new PipedStream(line, "HLS", quality, "application/x-mpegURL", false));
+		}
+	    }
 	}
 
-	info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
-		String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType(), true)));
-	info.getVideoStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
-		String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType(), false)));
+	if (!livestream) {
+	    info.getVideoOnlyStreams()
+		    .forEach(stream -> videoStreams
+			    .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
+				    stream.getResolution(), stream.getFormat().getMimeType(), true)));
+	    info.getVideoStreams()
+		    .forEach(stream -> videoStreams
+			    .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
+				    stream.getResolution(), stream.getFormat().getMimeType(), false)));
 
-	info.getAudioStreams()
-		.forEach(stream -> audioStreams
-			.add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
-				stream.getAverageBitrate() + " kbps", stream.getFormat().getMimeType(), false)));
+	    info.getAudioStreams()
+		    .forEach(stream -> audioStreams
+			    .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
+				    stream.getAverageBitrate() + " kbps", stream.getFormat().getMimeType(), false)));
+	}
 
 	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -183,8 +193,6 @@ public class ResponseHelper {
 	return Constants.mapper.writeValueAsBytes(streamspage);
 
     }
-
-    final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
     public static final byte[] trendingResponse() throws ParsingException, ExtractionException, IOException {
 
