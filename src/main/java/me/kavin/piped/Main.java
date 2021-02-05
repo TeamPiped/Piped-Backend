@@ -1,5 +1,6 @@
 package me.kavin.piped;
 
+import io.netty.util.AsciiString;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
@@ -20,6 +21,11 @@ import reactor.netty.NettyOutbound;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerResponse;
 
+import java.nio.charset.StandardCharsets;
+
+import static io.netty.handler.codec.http.HttpHeaderNames.*;
+import static io.netty.handler.codec.http.HttpHeaderValues.*;
+
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -34,7 +40,8 @@ public class Main {
 		QueryStringDecoder query = new QueryStringDecoder(req.uri());
 
 		try {
-		    return writeResponse(res, query.parameters().get("hub.challenge").get(0), 200, "private", start);
+		    return writeResponse(res, query.parameters().get("hub.challenge").get(0), TEXT_PLAIN, 200, "private", start);
+
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private", start);
@@ -60,7 +67,7 @@ public class Main {
 			    e.printStackTrace();
 			}
 		    });
-		    return writeResponse(res, "ok", 200, "private", start);
+		    return writeResponse(res, "ok", TEXT_PLAIN, 200, "private", start);
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private", start);
@@ -218,21 +225,54 @@ public class Main {
 	Thread.sleep(Long.MAX_VALUE);
     }
 
-    public static NettyOutbound writeResponse(HttpServerResponse res, String resp, int code, String cache, long time) {
-	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
-		.addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
-		.send(ByteBufFlux.fromString(Flux.just(resp), java.nio.charset.StandardCharsets.UTF_8,
-			ByteBufAllocator.DEFAULT));
-    }
+	public static NettyOutbound writeResponse(HttpServerResponse res, String resp, int code, String cache, long time) {
+		return writeResponse(res, resp, APPLICATION_JSON, code, cache, time);
+	}
+
+	public static NettyOutbound writeResponse(HttpServerResponse res, String resp, AsciiString mimeType, int code, String cache, long time) {
+		return writeResponse(res, resp, mimeType.toString(), code, cache, time);
+	}
+
+	public static NettyOutbound writeResponse(HttpServerResponse res, String resp, String mimeType, int code, String cache, long time) {
+		return writeResponse(res, resp.getBytes(StandardCharsets.UTF_8), mimeType, code, cache, time);
+	}
+
+
 
     public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, int code, String cache, long time) {
-	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
-		.addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
-		.sendByteArray(Flux.just(resp));
+		return writeResponse(res, resp, APPLICATION_JSON, code, cache, time);
     }
 
+	public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, AsciiString mimeType, int code, String cache, long time) {
+    	return writeResponse(res, resp, mimeType.toString(), code, cache, time);
+	}
+
+	public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, String mimeType, int code, String cache, long time) {
+		return res.compression(true)
+				.status(code)
+				.addHeader(CONTENT_TYPE, mimeType)
+				.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+				.addHeader(CACHE_CONTROL, cache)
+				.addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
+				.sendByteArray(Flux.just(resp));
+	}
+
+
+
     public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, int code, String cache) {
-	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
-		.send(ByteBufFlux.fromString(resp, java.nio.charset.StandardCharsets.UTF_8, ByteBufAllocator.DEFAULT));
+    	return  writeResponse(res, resp, APPLICATION_JSON, code, cache);
     }
+
+	public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, AsciiString mimeType, int code, String cache) {
+		return writeResponse(res, resp, mimeType.toString(), code, cache);
+	}
+
+	public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, String mimeType, int code, String cache) {
+		return res.compression(true)
+				.status(code)
+				.addHeader(CONTENT_TYPE, mimeType)
+				.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+				.addHeader(CACHE_CONTROL, cache)
+				.send(ByteBufFlux.fromString(resp, java.nio.charset.StandardCharsets.UTF_8, ByteBufAllocator.DEFAULT));
+	}
 }
