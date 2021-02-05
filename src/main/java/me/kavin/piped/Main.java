@@ -40,7 +40,8 @@ public class Main {
 		QueryStringDecoder query = new QueryStringDecoder(req.uri());
 
 		try {
-		    return writeResponse(res, query.parameters().get("hub.challenge").get(0), APPLICATION_XML, 200, "private", start);
+		    return writeResponse(res, query.parameters().get("hub.challenge").get(0), TEXT_PLAIN, 200, "private", start);
+
 		} catch (Exception e) {
 		    e.printStackTrace();
 		    return writeResponse(res, ExceptionUtils.getStackTrace(e), 500, "private", start);
