@@ -20,6 +20,10 @@ import reactor.netty.NettyOutbound;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerResponse;
 
+import java.nio.charset.StandardCharsets;
+
+import static io.netty.handler.codec.http.HttpHeaderNames.*;
+
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -219,20 +223,17 @@ public class Main {
     }
 
     public static NettyOutbound writeResponse(HttpServerResponse res, String resp, int code, String cache, long time) {
-	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
-		.addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
-		.send(ByteBufFlux.fromString(Flux.just(resp), java.nio.charset.StandardCharsets.UTF_8,
-			ByteBufAllocator.DEFAULT));
+	return writeResponse(res, resp.getBytes(StandardCharsets.UTF_8), code, cache, time);
     }
 
     public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, int code, String cache, long time) {
-	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
+	return res.compression(true).addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*").addHeader(CACHE_CONTROL, cache)
 		.addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
 		.sendByteArray(Flux.just(resp));
     }
 
     public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, int code, String cache) {
-	return res.compression(true).addHeader("Access-Control-Allow-Origin", "*").addHeader("Cache-Control", cache)
+	return res.compression(true).addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*").addHeader(CACHE_CONTROL, cache)
 		.send(ByteBufFlux.fromString(resp, java.nio.charset.StandardCharsets.UTF_8, ByteBufAllocator.DEFAULT));
     }
 }
