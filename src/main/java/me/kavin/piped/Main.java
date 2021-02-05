@@ -227,13 +227,19 @@ public class Main {
     }
 
     public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, int code, String cache, long time) {
-	return res.compression(true).addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*").addHeader(CACHE_CONTROL, cache)
+	return res.compression(true)
+		.status(code)
+		.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+		.addHeader(CACHE_CONTROL, cache)
 		.addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
 		.sendByteArray(Flux.just(resp));
     }
 
     public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, int code, String cache) {
-	return res.compression(true).addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*").addHeader(CACHE_CONTROL, cache)
+	return res.compression(true)
+		.status(code)
+		.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+		.addHeader(CACHE_CONTROL, cache)
 		.send(ByteBufFlux.fromString(resp, java.nio.charset.StandardCharsets.UTF_8, ByteBufAllocator.DEFAULT));
     }
 }
