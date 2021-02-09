@@ -17,6 +17,7 @@ import me.kavin.piped.utils.ResponseHelper;
 import me.kavin.piped.utils.SponsorBlockUtils;
 import reactor.core.publisher.Flux;
 import reactor.netty.ByteBufFlux;
+import reactor.netty.DisposableServer;
 import reactor.netty.NettyOutbound;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerResponse;
@@ -32,7 +33,7 @@ public class Main {
 
 	NewPipe.init(new DownloaderImpl(), new Localization("en", "US"));
 
-	HttpServer.create().port(Constants.PORT).route(routes -> {
+	DisposableServer server = HttpServer.create().port(Constants.PORT).route(routes -> {
 
 	    routes.get("/webhooks/pubsub", (req, res) -> {
 
@@ -220,9 +221,9 @@ public class Main {
 
 	    });
 
-	}).bindNow();
+	}).compress(true).bindNow();
 
-	Thread.sleep(Long.MAX_VALUE);
+		server.onDispose().block();
     }
 
 	public static NettyOutbound writeResponse(HttpServerResponse res, String resp, int code, String cache, long time) {
@@ -248,7 +249,7 @@ public class Main {
 	}
 
 	public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, String mimeType, int code, String cache, long time) {
-		return res.compression(true)
+		return res
 				.status(code)
 				.addHeader(CONTENT_TYPE, mimeType)
 				.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
@@ -268,7 +269,7 @@ public class Main {
 	}
 
 	public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, String mimeType, int code, String cache) {
-		return res.compression(true)
+		return res
 				.status(code)
 				.addHeader(CONTENT_TYPE, mimeType)
 				.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
