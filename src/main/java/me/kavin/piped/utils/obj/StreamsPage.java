@@ -8,7 +8,7 @@ public class StreamsPage {
     public List<StreamItem> relatedStreams;
 
     public StreamsPage(String nextpage, List<StreamItem> relatedStreams) {
-	this.nextpage = nextpage;
-	this.relatedStreams = relatedStreams;
+        this.nextpage = nextpage;
+        this.relatedStreams = relatedStreams;
     }
 }

@@ -9,8 +9,8 @@ public class SearchResults {
     public ObjectArrayList<SearchItem> items;
 
     public SearchResults(String nextpage, String id, ObjectArrayList<SearchItem> items) {
-	this.nextpage = nextpage;
-	this.id = id;
-	this.items = items;
+        this.nextpage = nextpage;
+        this.id = id;
+        this.items = items;
     }
 }

@@ -10,6 +10,8 @@ import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.StreamingService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 
 public class Constants {
 
@@ -24,21 +26,24 @@ public class Constants {
     public static final StreamingService YOUTUBE_SERVICE;
 
     public static final HttpClient h2client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
-	    .version(Version.HTTP_2).build();
+            .version(Version.HTTP_2).build();
 //    public static final HttpClient h3client = Http3ClientBuilder.newBuilder().followRedirects(Redirect.NORMAL).build();
+
+    public static final MongoClient mongoClient;
 
     public static final ObjectMapper mapper = new ObjectMapper();
 
     static {
-	Properties prop = new Properties();
-	try {
-	    YOUTUBE_SERVICE = NewPipe.getService(0);
-	    prop.load(new FileReader("config.properties"));
+        Properties prop = new Properties();
+        try {
+            YOUTUBE_SERVICE = NewPipe.getService(0);
+            prop.load(new FileReader("config.properties"));
 
-	    PORT = Integer.parseInt(prop.getProperty("PORT"));
-	    PROXY_PART = prop.getProperty("PROXY_PART");
-	} catch (Exception e) {
-	    throw new RuntimeException(e);
-	}
+            PORT = Integer.parseInt(prop.getProperty("PORT"));
+            PROXY_PART = prop.getProperty("PROXY_PART");
+            mongoClient = MongoClients.create(prop.getProperty("MONGO_URI"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

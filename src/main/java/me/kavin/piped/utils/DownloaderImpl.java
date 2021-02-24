@@ -23,32 +23,32 @@ public class DownloaderImpl extends Downloader {
     @Override
     public Response execute(Request request) throws IOException, ReCaptchaException {
 
-	// TODO: HTTP/3 aka QUIC
-	Builder builder = HttpRequest.newBuilder(URI.create(request.url()));
+        // TODO: HTTP/3 aka QUIC
+        Builder builder = HttpRequest.newBuilder(URI.create(request.url()));
 
-	byte[] data = request.dataToSend();
-	BodyPublisher publisher = data == null ? HttpRequest.BodyPublishers.noBody()
-		: HttpRequest.BodyPublishers.ofByteArray(data);
+        byte[] data = request.dataToSend();
+        BodyPublisher publisher = data == null ? HttpRequest.BodyPublishers.noBody()
+                : HttpRequest.BodyPublishers.ofByteArray(data);
 
-	builder.method(request.httpMethod(), publisher);
-	request.headers().forEach((name, values) -> values.forEach(value -> builder.header(name, value)));
+        builder.method(request.httpMethod(), publisher);
+        request.headers().forEach((name, values) -> values.forEach(value -> builder.header(name, value)));
 
-	builder.setHeader("User-Agent", Constants.USER_AGENT);
+        builder.setHeader("User-Agent", Constants.USER_AGENT);
 
-	HttpResponse<String> response = null;
+        HttpResponse<String> response = null;
 
-	try {
-	    response = Constants.h2client.send(builder.build(), BodyHandlers.ofString());
-	} catch (InterruptedException e) {
-	    // ignored
-	}
+        try {
+            response = Constants.h2client.send(builder.build(), BodyHandlers.ofString());
+        } catch (InterruptedException e) {
+            // ignored
+        }
 
-	// TODO: Implement solver
-	if (response.statusCode() == 429) {
-	    throw new ReCaptchaException("reCaptcha Challenge requested", String.valueOf(response.uri()));
-	}
+        // TODO: Implement solver
+        if (response.statusCode() == 429) {
+            throw new ReCaptchaException("reCaptcha Challenge requested", String.valueOf(response.uri()));
+        }
 
-	return new Response(response.statusCode(), "UNDEFINED", response.headers().map(), response.body(),
-		String.valueOf(response.uri()));
+        return new Response(response.statusCode(), "UNDEFINED", response.headers().map(), response.body(),
+                String.valueOf(response.uri()));
     }
 }

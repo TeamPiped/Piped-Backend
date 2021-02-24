@@ -10,7 +10,6 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -34,7 +33,9 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
+import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.obj.Channel;
+import me.kavin.piped.utils.obj.ChapterSegment;
 import me.kavin.piped.utils.obj.PipedStream;
 import me.kavin.piped.utils.obj.Playlist;
 import me.kavin.piped.utils.obj.SearchResults;
@@ -48,353 +49,361 @@ import me.kavin.piped.utils.obj.search.SearchStream;
 public class ResponseHelper {
 
     public static final LoadingCache<String, CommentsInfo> commentsCache = Caffeine.newBuilder()
-	    .expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1000)
-	    .build(key -> CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + key));
+            .expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1000)
+            .build(key -> CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + key));
 
     public static final byte[] streamsResponse(String videoId) throws Exception {
 
-	CompletableFuture<StreamInfo> futureStream = CompletableFuture.supplyAsync(() -> {
-	    try {
-		return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
-	    } catch (Exception e) {
-		ExceptionUtils.rethrow(e);
-	    }
-	    return null;
-	});
+        CompletableFuture<StreamInfo> futureStream = CompletableFuture.supplyAsync(() -> {
+            try {
+                return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+            } catch (Exception e) {
+                ExceptionUtils.rethrow(e);
+            }
+            return null;
+        });
 
-	CompletableFuture<String> futureLBRY = CompletableFuture.supplyAsync(() -> {
-	    try {
-		return getLBRYStreamURL(videoId);
-	    } catch (Exception e) {
-		ExceptionUtils.rethrow(e);
-	    }
-	    return null;
-	});
+        CompletableFuture<String> futureLBRY = CompletableFuture.supplyAsync(() -> {
+            try {
+                return getLBRYStreamURL(videoId);
+            } catch (Exception e) {
+                ExceptionUtils.rethrow(e);
+            }
+            return null;
+        });
 
-	final List<Subtitle> subtitles = new ObjectArrayList<>();
+        final List<Subtitle> subtitles = new ObjectArrayList<>();
 
-	final StreamInfo info = futureStream.get();
+        final StreamInfo info = futureStream.get();
 
-	info.getSubtitles().forEach(subtitle -> subtitles
-		.add(new Subtitle(rewriteURL(subtitle.getUrl()), subtitle.getFormat().getMimeType())));
+//	System.out.println(Constants.mapper.writeValueAsString(info.getStreamSegments()));
+        info.getSubtitles().forEach(subtitle -> subtitles
+                .add(new Subtitle(rewriteURL(subtitle.getUrl()), subtitle.getFormat().getMimeType())));
 
-	final List<PipedStream> videoStreams = new ObjectArrayList<>();
-	final List<PipedStream> audioStreams = new ObjectArrayList<>();
+        final List<PipedStream> videoStreams = new ObjectArrayList<>();
+        final List<PipedStream> audioStreams = new ObjectArrayList<>();
 
-	final String lbryURL = futureLBRY.get();
+        final String lbryURL = futureLBRY.get();
 
-	if (lbryURL != null)
-	    videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
+        if (lbryURL != null)
+            videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
 
-	final String hls;
-	boolean livestream = false;
+        final String hls;
+        boolean livestream = false;
 
-	if ((hls = info.getHlsUrl()) != null && !hls.isEmpty())
-	    livestream = true;
+        if ((hls = info.getHlsUrl()) != null && !hls.isEmpty())
+            livestream = true;
 
-	if (hls != null) {
+        if (hls != null) {
 
-	    java.util.stream.Stream<String> resp = Constants.h2client
-		    .send(HttpRequest.newBuilder(URI.create(hls)).GET().build(), BodyHandlers.ofLines()).body();
-	    ObjectArrayList<String> lines = new ObjectArrayList<>();
-	    resp.forEach(line -> lines.add(line));
+            java.util.stream.Stream<String> resp = Constants.h2client
+                    .send(HttpRequest.newBuilder(URI.create(hls)).GET().build(), BodyHandlers.ofLines()).body();
+            ObjectArrayList<String> lines = new ObjectArrayList<>();
+            resp.forEach(line -> lines.add(line));
 
-	    for (int i = lines.size() - 1; i > 2; i--) {
-		String line = lines.get(i);
-		if (line.startsWith("https://manifest.googlevideo.com")) {
-		    String prevLine = lines.get(i - 1);
-		    String height = StringUtils.substringBetween(prevLine, "RESOLUTION=", ",").split("x")[1];
-		    int fps = Integer.parseInt(StringUtils.substringBetween(prevLine, "FRAME-RATE=", ","));
-		    String quality = height + "p";
-		    if (fps > 30)
-			quality += fps;
-		    videoStreams.add(new PipedStream(line, "HLS", quality, "application/x-mpegURL", false));
-		}
-	    }
-	}
+            for (int i = lines.size() - 1; i > 2; i--) {
+                String line = lines.get(i);
+                if (line.startsWith("https://manifest.googlevideo.com")) {
+                    String prevLine = lines.get(i - 1);
+                    String height = StringUtils.substringBetween(prevLine, "RESOLUTION=", ",").split("x")[1];
+                    int fps = Integer.parseInt(StringUtils.substringBetween(prevLine, "FRAME-RATE=", ","));
+                    String quality = height + "p";
+                    if (fps > 30)
+                        quality += fps;
+                    videoStreams.add(new PipedStream(line, "HLS", quality, "application/x-mpegURL", false));
+                }
+            }
+        }
 
-	if (!livestream) {
-	    info.getVideoOnlyStreams()
-		    .forEach(stream -> videoStreams
-			    .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
-				    stream.getResolution(), stream.getFormat().getMimeType(), true)));
-	    info.getVideoStreams()
-		    .forEach(stream -> videoStreams
-			    .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
-				    stream.getResolution(), stream.getFormat().getMimeType(), false)));
+        if (!livestream) {
+            info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
+                    String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType(), true,
+                    stream.getBitrate(), stream.getInitStart(), stream.getInitEnd(), stream.getIndexStart(),
+                    stream.getIndexEnd(), stream.getCodec(), stream.getWidth(), stream.getHeight(), 30)));
+            info.getVideoStreams()
+                    .forEach(stream -> videoStreams
+                            .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
+                                    stream.getResolution(), stream.getFormat().getMimeType(), false)));
 
-	    info.getAudioStreams()
-		    .forEach(stream -> audioStreams
-			    .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
-				    stream.getAverageBitrate() + " kbps", stream.getFormat().getMimeType(), false)));
-	}
+            info.getAudioStreams()
+                    .forEach(stream -> audioStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
+                            String.valueOf(stream.getFormat()), stream.getAverageBitrate() + " kbps",
+                            stream.getFormat().getMimeType(), false, stream.getBitrate(), stream.getInitStart(),
+                            stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec())));
+        }
 
-	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-	info.getRelatedStreams().forEach(o -> {
-	    StreamInfoItem item = (StreamInfoItem) o;
-	    relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-		    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-		    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
-	});
+        info.getRelatedStreams().forEach(o -> {
+            StreamInfoItem item = (StreamInfoItem) o;
+            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+        });
 
-	final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
-		info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
-		rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
-		info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), audioStreams, videoStreams,
-		relatedStreams, subtitles, livestream, hls);
+        List<ChapterSegment> segments = new ObjectArrayList<>();
 
-	return Constants.mapper.writeValueAsBytes(streams);
+        info.getStreamSegments().forEach(
+                segment -> segments.add(new ChapterSegment(segment.getTitle(), segment.getStartTimeSeconds())));
+
+        final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
+                info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
+                rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
+                info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), audioStreams, videoStreams,
+                relatedStreams, subtitles, livestream, hls);
+
+        return Constants.mapper.writeValueAsBytes(streams);
 
     }
 
-    public static final byte[] channelResponse(String channelId)
-	    throws IOException, ExtractionException, InterruptedException {
+    public static final byte[] channelResponse(String channelId) throws Exception {
 
-	final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+        final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
 
-	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-	info.getRelatedItems().forEach(o -> {
-	    StreamInfoItem item = o;
-	    relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-		    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-		    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
-	});
+        info.getRelatedItems().forEach(o -> {
+            StreamInfoItem item = o;
+            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+        });
 
-	String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
+        String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
 
-	final Channel channel = new Channel(info.getName(), rewriteURL(info.getAvatarUrl()),
-		rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, relatedStreams);
+        final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
+                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, relatedStreams);
 
-	return Constants.mapper.writeValueAsBytes(channel);
+        IPFS.publishData(channel);
+
+        return Constants.mapper.writeValueAsBytes(channel);
 
     }
 
     public static final byte[] channelPageResponse(String channelId, String url)
-	    throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException, InterruptedException {
 
-	InfoItemsPage<StreamInfoItem> page = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-		"https://youtube.com/channel/" + channelId, new Page(url));
+        InfoItemsPage<StreamInfoItem> page = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+                "https://youtube.com/channel/" + channelId, new Page(url));
 
-	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-	page.getItems().forEach(o -> {
-	    StreamInfoItem item = o;
-	    relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-		    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-		    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
-	});
+        page.getItems().forEach(o -> {
+            StreamInfoItem item = o;
+            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+        });
 
-	String nextpage = page.hasNextPage() ? page.getNextPage().getUrl() : null;
+        String nextpage = page.hasNextPage() ? page.getNextPage().getUrl() : null;
 
-	final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
+        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
-	return Constants.mapper.writeValueAsBytes(streamspage);
+        return Constants.mapper.writeValueAsBytes(streamspage);
 
     }
 
     public static final byte[] trendingResponse() throws ParsingException, ExtractionException, IOException {
 
-	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-	String url = Constants.YOUTUBE_SERVICE.getKioskList().getListLinkHandlerFactoryByType("Trending")
-		.getUrl("Trending");
-	KioskInfo info = KioskInfo.getInfo(Constants.YOUTUBE_SERVICE, url);
+        String url = Constants.YOUTUBE_SERVICE.getKioskList().getListLinkHandlerFactoryByType("Trending")
+                .getUrl("Trending");
+        KioskInfo info = KioskInfo.getInfo(Constants.YOUTUBE_SERVICE, url);
 
-	info.getRelatedItems().forEach(o -> {
-	    StreamInfoItem item = o;
-	    relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-		    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-		    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
-	});
+        info.getRelatedItems().forEach(o -> {
+            StreamInfoItem item = o;
+            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+        });
 
-	return Constants.mapper.writeValueAsBytes(relatedStreams);
+        return Constants.mapper.writeValueAsBytes(relatedStreams);
     }
 
     public static final byte[] playlistResponse(String playlistId)
-	    throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException, InterruptedException {
 
-	final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
+        final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
 
-	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-	info.getRelatedItems().forEach(o -> {
-	    StreamInfoItem item = o;
-	    relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-		    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-		    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
-	});
+        info.getRelatedItems().forEach(o -> {
+            StreamInfoItem item = o;
+            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+        });
 
-	String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
+        String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
 
-	final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
-		rewriteURL(info.getBannerUrl()), nextpage, info.getUploaderName(), info.getUploaderUrl().substring(23),
-		rewriteURL(info.getUploaderAvatarUrl()), (int) info.getStreamCount(), relatedStreams);
+        final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
+                rewriteURL(info.getBannerUrl()), nextpage, info.getUploaderName(), info.getUploaderUrl().substring(23),
+                rewriteURL(info.getUploaderAvatarUrl()), (int) info.getStreamCount(), relatedStreams);
 
-	return Constants.mapper.writeValueAsBytes(playlist);
+        return Constants.mapper.writeValueAsBytes(playlist);
 
     }
 
     public static final byte[] playlistPageResponse(String playlistId, String url)
-	    throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException, InterruptedException {
 
-	InfoItemsPage<StreamInfoItem> page = PlaylistInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-		"https://www.youtube.com/playlist?list=" + playlistId, new Page(url));
+        InfoItemsPage<StreamInfoItem> page = PlaylistInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+                "https://www.youtube.com/playlist?list=" + playlistId, new Page(url));
 
-	final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-	page.getItems().forEach(o -> {
-	    StreamInfoItem item = o;
-	    relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-		    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-		    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
-	});
+        page.getItems().forEach(o -> {
+            StreamInfoItem item = o;
+            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+        });
 
-	String nextpage = page.hasNextPage() ? page.getNextPage().getUrl() : null;
+        String nextpage = page.hasNextPage() ? page.getNextPage().getUrl() : null;
 
-	final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
+        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
-	return Constants.mapper.writeValueAsBytes(streamspage);
+        return Constants.mapper.writeValueAsBytes(streamspage);
 
     }
 
     public static final byte[] suggestionsResponse(String query)
-	    throws JsonProcessingException, IOException, ExtractionException {
+            throws JsonProcessingException, IOException, ExtractionException {
 
-	return Constants.mapper
-		.writeValueAsBytes(Constants.YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
+        return Constants.mapper
+                .writeValueAsBytes(Constants.YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
     }
 
     public static final byte[] searchResponse(String q) throws IOException, ExtractionException, InterruptedException {
 
-	final SearchInfo info = SearchInfo.getInfo(Constants.YOUTUBE_SERVICE,
-		Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q));
+        final SearchInfo info = SearchInfo.getInfo(Constants.YOUTUBE_SERVICE,
+                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q));
 
-	ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
+        ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
 
-	info.getRelatedItems().forEach(item -> {
-	    switch (item.getInfoType()) {
-	    case STREAM:
-		StreamInfoItem stream = (StreamInfoItem) item;
-		items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-			item.getUrl().substring(23), stream.getViewCount(), stream.getDuration()));
-		break;
-	    case CHANNEL:
-		items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
-			item.getUrl().substring(23)));
-		break;
-	    default:
-		break;
-	    }
-	});
+        info.getRelatedItems().forEach(item -> {
+            switch (item.getInfoType()) {
+            case STREAM:
+                StreamInfoItem stream = (StreamInfoItem) item;
+                items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23), stream.getViewCount(), stream.getDuration()));
+                break;
+            case CHANNEL:
+                items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23)));
+                break;
+            default:
+                break;
+            }
+        });
 
-	Page nextpage = info.getNextPage();
+        Page nextpage = info.getNextPage();
 
-	return nextpage != null
-		? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
-		: Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
+        return nextpage != null
+                ? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
+                : Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
 
     }
 
     public static final byte[] searchPageResponse(String q, String url, String id)
-	    throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException, InterruptedException {
 
-	InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-		Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q), new Page(url, id));
+        InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q), new Page(url, id));
 
-	ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
+        ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
 
-	pages.getItems().forEach(item -> {
-	    switch (item.getInfoType()) {
-	    case STREAM:
-		StreamInfoItem stream = (StreamInfoItem) item;
-		items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-			item.getUrl().substring(23), stream.getViewCount(), stream.getDuration()));
-		break;
-	    case CHANNEL:
-		items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
-			item.getUrl().substring(23)));
-		break;
-	    default:
-		break;
-	    }
-	});
+        pages.getItems().forEach(item -> {
+            switch (item.getInfoType()) {
+            case STREAM:
+                StreamInfoItem stream = (StreamInfoItem) item;
+                items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23), stream.getViewCount(), stream.getDuration()));
+                break;
+            case CHANNEL:
+                items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23)));
+                break;
+            default:
+                break;
+            }
+        });
 
-	Page nextpage = pages.getNextPage();
+        Page nextpage = pages.getNextPage();
 
-	return nextpage != null
-		? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
-		: Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
+        return nextpage != null
+                ? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
+                : Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
 
     }
 
     public static final byte[] registerResponse(String user, String pass) throws IOException {
 
-	return Constants.mapper.writeValueAsBytes(null);
+        return Constants.mapper.writeValueAsBytes(null);
 
     }
 
     private static final String getLBRYStreamURL(String videoId) throws IOException, InterruptedException {
 
-	String lbryId = new JSONObject(Constants.h2client.send(HttpRequest
-		.newBuilder(URI.create("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId)))
-		.setHeader("User-Agent", Constants.USER_AGENT).build(), BodyHandlers.ofString()).body())
-			.getJSONObject("data").getJSONObject("videos").optString(videoId);
+        String lbryId = new JSONObject(Constants.h2client.send(HttpRequest
+                .newBuilder(URI.create("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId)))
+                .setHeader("User-Agent", Constants.USER_AGENT).build(), BodyHandlers.ofString()).body())
+                        .getJSONObject("data").getJSONObject("videos").optString(videoId);
 
-	if (!lbryId.isEmpty())
-	    return rewriteURL(
-		    new JSONObject(
-			    Constants.h2client.send(
-				    HttpRequest.newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
-					    .POST(BodyPublishers.ofString(String.valueOf(new JSONObject()
-						    .put("jsonrpc", "2.0").put("method", "get").put("params",
-							    new JSONObject().put("uri", "lbry://" + lbryId)
-								    .put("save_file", true)))))
-					    .build(),
-				    BodyHandlers.ofString()).body()).getJSONObject("result")
-					    .getString("streaming_url"));
+        if (!lbryId.isEmpty())
+            return rewriteURL(
+                    new JSONObject(
+                            Constants.h2client.send(
+                                    HttpRequest.newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
+                                            .POST(BodyPublishers.ofString(String.valueOf(new JSONObject()
+                                                    .put("jsonrpc", "2.0").put("method", "get").put("params",
+                                                            new JSONObject().put("uri", "lbry://" + lbryId)
+                                                                    .put("save_file", true)))))
+                                            .build(),
+                                    BodyHandlers.ofString()).body()).getJSONObject("result")
+                                            .getString("streaming_url"));
 
-	return null;
+        return null;
 
     }
 
     private static String rewriteURL(final String old) {
 
-	if (Constants.debug)
-	    return old;
+        if (Constants.debug)
+            return old;
 
-	if (old == null || old.isEmpty())
-	    return null;
+        if (old == null || old.isEmpty())
+            return null;
 
-	URL url = null;
+        URL url = null;
 
-	try {
-	    url = new URL(old);
-	} catch (MalformedURLException e) {
-	    e.printStackTrace();
-	}
+        try {
+            url = new URL(old);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
 
-	final String host = url.getHost();
+        final String host = url.getHost();
 
-	String query = url.getQuery();
+        String query = url.getQuery();
 
-	boolean hasQuery = query != null;
+        boolean hasQuery = query != null;
 
-	String path = url.getPath();
+        String path = url.getPath();
 
-	path = path.replace("-rj", "-rw");
+        path = path.replace("-rj", "-rw");
 
-	if (path.startsWith("/vi/") && !path.contains("_live")) {
-	    path = path.replace("/vi/", "/vi_webp/").replace(".jpg", ".webp").replace("hq720", "mqdefault")
-		    .replace("hqdefault", "mqdefault");
+        if (path.startsWith("/vi/") && !path.contains("_live")) {
+            path = path.replace("/vi/", "/vi_webp/").replace(".jpg", ".webp").replace("hq720", "mqdefault")
+                    .replace("hqdefault", "mqdefault");
 
-	    hasQuery = false;
-	}
+            hasQuery = false;
+        }
 
-	return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=")
-		+ URLUtils.silentEncode(host);
+        return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=")
+                + URLUtils.silentEncode(host);
 
     }
 }

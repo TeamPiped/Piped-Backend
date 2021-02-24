@@ -9,13 +9,13 @@ public class CookieHandler extends java.net.CookieHandler {
 
     @Override
     public Map<String, List<String>> get(URI uri, Map<String, List<String>> requestHeaders) throws IOException {
-	// TODO Auto-generated method stub
-	return null;
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
     public void put(URI uri, Map<String, List<String>> responseHeaders) throws IOException {
-	// TODO Auto-generated method stub
+        // TODO Auto-generated method stub
 
     }
 }

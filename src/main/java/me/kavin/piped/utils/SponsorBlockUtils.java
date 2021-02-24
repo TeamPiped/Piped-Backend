@@ -19,36 +19,36 @@ import me.kavin.piped.consts.Constants;
 public class SponsorBlockUtils {
 
     public static final String getSponsors(String id, String categories)
-	    throws IOException, InterruptedException, NoSuchAlgorithmException, JsonParserException {
+            throws IOException, InterruptedException, NoSuchAlgorithmException, JsonParserException {
 
-	String hash = toSha256(id);
+        String hash = toSha256(id);
 
-	URI uri = URI.create("https://sponsor.ajay.app/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
-		+ "?categories=" + URLUtils.silentEncode(categories));
+        URI uri = URI.create("https://sponsor.ajay.app/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
+                + "?categories=" + URLUtils.silentEncode(categories));
 
-	JsonArray jArray = JsonParser.array()
-		.from(Constants.h2client.send(HttpRequest.newBuilder(uri).build(), BodyHandlers.ofString()).body());
+        JsonArray jArray = JsonParser.array()
+                .from(Constants.h2client.send(HttpRequest.newBuilder(uri).build(), BodyHandlers.ofString()).body());
 
-	jArray.removeIf(jObject -> !((JsonObject) jObject).getString("videoID").equalsIgnoreCase(id));
+        jArray.removeIf(jObject -> !((JsonObject) jObject).getString("videoID").equalsIgnoreCase(id));
 
-	return JsonWriter.string(jArray.getObject(0));
+        return JsonWriter.string(jArray.getObject(0));
     }
 
     private static final String toSha256(final String videoId) throws NoSuchAlgorithmException {
-	final MessageDigest digest = MessageDigest.getInstance("SHA-256");
-	final byte[] bytes = digest.digest(videoId.getBytes(StandardCharsets.UTF_8));
-	final StringBuilder sb = new StringBuilder();
+        final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        final byte[] bytes = digest.digest(videoId.getBytes(StandardCharsets.UTF_8));
+        final StringBuilder sb = new StringBuilder();
 
-	for (final byte b : bytes) {
-	    final String hex = Integer.toHexString(0xff & b);
+        for (final byte b : bytes) {
+            final String hex = Integer.toHexString(0xff & b);
 
-	    if (hex.length() == 1) {
-		sb.append('0');
-	    }
+            if (hex.length() == 1) {
+                sb.append('0');
+            }
 
-	    sb.append(hex);
-	}
+            sb.append(hex);
+        }
 
-	return sb.toString();
+        return sb.toString();
     }
 }
