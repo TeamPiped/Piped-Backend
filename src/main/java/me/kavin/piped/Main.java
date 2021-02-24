@@ -36,7 +36,7 @@ public class Main {
 
         NewPipe.init(new DownloaderImpl(), new Localization("en", "US"));
 
-	DisposableServer server = HttpServer.create().port(Constants.PORT).route(routes -> {
+        DisposableServer server = HttpServer.create().port(Constants.PORT).route(routes -> {
 
             routes.get("/webhooks/pubsub", (req, res) -> {
 
@@ -225,14 +225,10 @@ public class Main {
 
             });
 
-	}).compress(true).bindNow();
+        }).compress(true).bindNow();
 
-		server.onDispose().block();
-    }
+        server.onDispose().block();
 
-        }).bindNow();
-
-        Thread.sleep(Long.MAX_VALUE);
     }
 
     public static NettyOutbound writeResponse(HttpServerResponse res, String resp, int code, String cache, long time) {
@@ -258,15 +254,13 @@ public class Main {
         return writeResponse(res, resp, mimeType.toString(), code, cache, time);
     }
 
-	public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, String mimeType, int code, String cache, long time) {
-		return res
-				.status(code)
-				.addHeader(CONTENT_TYPE, mimeType)
-				.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-				.addHeader(CACHE_CONTROL, cache)
-				.addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
-				.sendByteArray(Flux.just(resp));
-	}
+    public static NettyOutbound writeResponse(HttpServerResponse res, byte[] resp, String mimeType, int code,
+            String cache, long time) {
+        return res.status(code).addHeader(CONTENT_TYPE, mimeType).addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                .addHeader(CACHE_CONTROL, cache)
+                .addHeader("Server-Timing", "app;dur=" + (System.nanoTime() - time) / 1000000.0)
+                .sendByteArray(Flux.just(resp));
+    }
 
     public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, int code, String cache) {
         return writeResponse(res, resp, APPLICATION_JSON, code, cache);
@@ -277,12 +271,10 @@ public class Main {
         return writeResponse(res, resp, mimeType.toString(), code, cache);
     }
 
-	public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, String mimeType, int code, String cache) {
-		return res
-				.status(code)
-				.addHeader(CONTENT_TYPE, mimeType)
-				.addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-				.addHeader(CACHE_CONTROL, cache)
-				.send(ByteBufFlux.fromString(resp, java.nio.charset.StandardCharsets.UTF_8, ByteBufAllocator.DEFAULT));
-	}
+    public static NettyOutbound writeResponse(HttpServerResponse res, Flux<String> resp, String mimeType, int code,
+            String cache) {
+        return res.status(code).addHeader(CONTENT_TYPE, mimeType).addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                .addHeader(CACHE_CONTROL, cache)
+                .send(ByteBufFlux.fromString(resp, java.nio.charset.StandardCharsets.UTF_8, ByteBufAllocator.DEFAULT));
+    }
 }
