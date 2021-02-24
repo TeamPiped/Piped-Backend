@@ -11,7 +11,6 @@ import org.schabi.newpipe.extractor.StreamingService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 
 public class Constants {
 
@@ -41,7 +40,7 @@ public class Constants {
 
             PORT = Integer.parseInt(prop.getProperty("PORT"));
             PROXY_PART = prop.getProperty("PROXY_PART");
-            mongoClient = MongoClients.create(prop.getProperty("MONGO_URI"));
+            mongoClient = null/* MongoClients.create(prop.getProperty("MONGO_URI")) */;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
