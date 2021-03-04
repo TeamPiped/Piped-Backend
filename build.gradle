@@ -28,6 +28,7 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:2.8.6'
     implementation 'com.rometools:rome:1.15.0'
     implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
+    implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'net.java.dev.jna:jna-platform:5.7.0'
 }
 

@@ -22,9 +22,13 @@ public class Constants {
 
     public static final String PROXY_PART;
 
+    public static final String CAPTCHA_BASE_URL, CAPTCHA_API_KEY;
+
     public static final StreamingService YOUTUBE_SERVICE;
 
     public static final HttpClient h2client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
+            .version(Version.HTTP_2).build();
+    public static final HttpClient h2_no_redir_client = HttpClient.newBuilder().followRedirects(Redirect.NEVER)
             .version(Version.HTTP_2).build();
 //    public static final HttpClient h3client = Http3ClientBuilder.newBuilder().followRedirects(Redirect.NORMAL).build();
 
@@ -40,6 +44,8 @@ public class Constants {
 
             PORT = Integer.parseInt(prop.getProperty("PORT"));
             PROXY_PART = prop.getProperty("PROXY_PART");
+            CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
+            CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
             mongoClient = null/* MongoClients.create(prop.getProperty("MONGO_URI")) */;
         } catch (Exception e) {
             throw new RuntimeException(e);
