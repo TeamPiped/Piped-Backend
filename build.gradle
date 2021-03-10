@@ -24,7 +24,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.2'
-    implementation 'org.json:json:20201115'
+    implementation 'org.json:json:20210307'
     implementation 'com.github.ben-manes.caffeine:caffeine:2.8.6'
     implementation 'com.rometools:rome:1.15.0'
     implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
