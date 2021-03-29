@@ -19,6 +19,7 @@ public class Constants {
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0";
 
     public static final int PORT;
+    public static final String HTTP_WORKERS;
 
     public static final String PROXY_PART;
 
@@ -42,7 +43,8 @@ public class Constants {
             YOUTUBE_SERVICE = NewPipe.getService(0);
             prop.load(new FileReader("config.properties"));
 
-            PORT = Integer.parseInt(prop.getProperty("PORT"));
+            PORT = Integer.parseInt(prop.getProperty("PORT", "8080"));
+            HTTP_WORKERS = prop.getProperty("HTTP_WORKERS", "128");
             PROXY_PART = prop.getProperty("PROXY_PART");
             CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");

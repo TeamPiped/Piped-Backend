@@ -74,7 +74,7 @@ public class ResponseHelper {
 
         final List<Subtitle> subtitles = new ObjectArrayList<>();
 
-        final StreamInfo info = futureStream.get();
+        final StreamInfo info = futureStream.get(10, TimeUnit.SECONDS);
 
 //	System.out.println(Constants.mapper.writeValueAsString(info.getStreamSegments()));
         info.getSubtitles().forEach(subtitle -> subtitles
@@ -83,7 +83,7 @@ public class ResponseHelper {
         final List<PipedStream> videoStreams = new ObjectArrayList<>();
         final List<PipedStream> audioStreams = new ObjectArrayList<>();
 
-        final String lbryURL = futureLBRY.get();
+        final String lbryURL = futureLBRY.get(10, TimeUnit.SECONDS);
 
         if (lbryURL != null)
             videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
@@ -169,10 +169,15 @@ public class ResponseHelper {
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
+        String nextpage = null, id = null;
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = page.getUrl();
+            id = info.getNextPage().getId();
+        }
 
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
-                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, relatedStreams);
+                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, id, relatedStreams);
 
         IPFS.publishData(channel);
 
@@ -180,11 +185,11 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] channelPageResponse(String channelId, String url)
+    public static final byte[] channelPageResponse(String channelId, String url, String id)
             throws IOException, ExtractionException, InterruptedException {
 
         InfoItemsPage<StreamInfoItem> page = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-                "https://youtube.com/channel/" + channelId, new Page(url));
+                "https://youtube.com/channel/" + channelId, new Page(url, id));
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
