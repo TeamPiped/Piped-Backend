@@ -26,8 +26,8 @@ public class SponsorBlockUtils {
         URI uri = URI.create("https://sponsor.ajay.app/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
                 + "?categories=" + URLUtils.silentEncode(categories));
 
-        JsonArray jArray = JsonParser.array()
-                .from(Constants.h2client.send(HttpRequest.newBuilder(uri).build(), BodyHandlers.ofString()).body());
+        JsonArray jArray = JsonParser.array().from(
+                Constants.h2client.send(HttpRequest.newBuilder(uri).build(), BodyHandlers.ofInputStream()).body());
 
         jArray.removeIf(jObject -> !((JsonObject) jObject).getString("videoID").equalsIgnoreCase(id));
 

@@ -5,7 +5,6 @@ plugins {
 }
 
 repositories {
-    maven { url 'https://repo.spring.io/milestone' }
     jcenter()
     maven { url 'https://jitpack.io' }
 }
@@ -18,7 +17,6 @@ dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.67'
     implementation 'org.mongodb:mongodb-driver-sync:4.2.2'
-    implementation 'io.projectreactor.netty:reactor-netty:1.0.5'
     implementation 'com.github.TeamNewPipe.NewPipeExtractor:NewPipeExtractor:dev-SNAPSHOT'
     implementation 'com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.2'
@@ -29,6 +27,10 @@ dependencies {
     implementation 'com.rometools:rome:1.15.0'
     implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
     implementation 'org.jsoup:jsoup:1.13.1'
+    implementation 'io.activej:activej-common:4.1'
+    implementation 'io.activej:activej-http:4.1'
+    implementation 'io.activej:activej-boot:4.1'
+    implementation 'io.activej:activej-specializer:4.1'
     implementation 'net.java.dev.jna:jna-platform:5.8.0'
 }
 
