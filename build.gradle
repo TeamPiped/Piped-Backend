@@ -31,6 +31,7 @@ dependencies {
     implementation 'io.activej:activej-http:4.1'
     implementation 'io.activej:activej-boot:4.1'
     implementation 'io.activej:activej-specializer:4.1'
+    implementation 'io.activej:activej-launchers-http:4.1'
     implementation 'net.java.dev.jna:jna-platform:5.8.0'
 }
 

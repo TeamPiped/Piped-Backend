@@ -1,10 +1,11 @@
 package me.kavin.piped;
 
+import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.CACHE_CONTROL;
 import static io.activej.http.HttpHeaders.CONTENT_TYPE;
-import static io.activej.inject.module.Modules.combine;
 
 import java.io.ByteArrayInputStream;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -15,40 +16,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 
-import io.activej.eventloop.Eventloop;
-import io.activej.http.AsyncHttpServer;
+import io.activej.config.Config;
 import io.activej.http.AsyncServlet;
 import io.activej.http.HttpMethod;
 import io.activej.http.HttpResponse;
 import io.activej.http.RoutingServlet;
-import io.activej.inject.annotation.Eager;
 import io.activej.inject.annotation.Provides;
+import io.activej.inject.module.AbstractModule;
 import io.activej.inject.module.Module;
-import io.activej.launcher.Launcher;
-import io.activej.service.ServiceGraphModule;
-import io.activej.worker.WorkerPool;
-import io.activej.worker.WorkerPoolModule;
-import io.activej.worker.WorkerPools;
+import io.activej.launchers.http.MultithreadedHttpServerLauncher;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.CustomServletDecorator;
 import me.kavin.piped.utils.ResponseHelper;
 import me.kavin.piped.utils.SponsorBlockUtils;
 import me.kavin.piped.utils.resp.ErrorResponse;
 
-public class ServerLauncher extends Launcher {
+public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     @Provides
-    Eventloop eventloop() {
-        return Eventloop.create();
-    }
-
-    @Provides
-    WorkerPool workerPool(WorkerPools workerPools) {
-        return workerPools.createPool(128);
-    }
-
-    @Provides
-    AsyncServlet servlet() {
+    AsyncServlet mainServlet() {
 
         RoutingServlet router = RoutingServlet.create().map(HttpMethod.GET, "/webhooks/pubsub", request -> {
             return HttpResponse.ok200().withPlainText(request.getQueryParameter("hub.challenge"));
@@ -147,20 +133,17 @@ public class ServerLauncher extends Launcher {
         return new CustomServletDecorator(router);
     }
 
-    @Provides
-    @Eager
-    AsyncHttpServer server(Eventloop eventloop, AsyncServlet servlet) {
-        return AsyncHttpServer.create(eventloop, servlet).withListenPort(Constants.PORT);
-    }
-
     @Override
-    protected Module getModule() {
-        return combine(ServiceGraphModule.create(), WorkerPoolModule.create());
-    }
-
-    @Override
-    protected void run() throws Exception {
-        awaitShutdown();
+    protected Module getOverrideModule() {
+        return new AbstractModule() {
+            @Provides
+            Config config() {
+                return Config.create()
+                        .with("http.listenAddresses",
+                                Config.ofValue(ofInetSocketAddress(), new InetSocketAddress(PORT)))
+                        .with("workers", Constants.HTTP_WORKERS);
+            }
+        };
     }
 
     private @NotNull HttpResponse getJsonResponse(byte[] body, String cache) {
