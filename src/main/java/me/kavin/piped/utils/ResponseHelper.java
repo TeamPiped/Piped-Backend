@@ -416,13 +416,6 @@ public class ResponseHelper {
 
         path = path.replace("-rj", "-rw");
 
-        if (path.startsWith("/vi/") && !path.contains("_live")) {
-            path = path.replace("/vi/", "/vi_webp/").replace(".jpg", ".webp").replace("hq720", "mqdefault")
-                    .replace("hqdefault", "mqdefault");
-
-            hasQuery = false;
-        }
-
         return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=")
                 + URLUtils.silentEncode(host);
 
