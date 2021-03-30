@@ -204,7 +204,7 @@ public class ResponseHelper {
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = page.getUrl();
-            id = info.getNextPage().getId();
+            next_id = info.getNextPage().getId();
         }
 
         final StreamsPage streamspage = new StreamsPage(nextpage, next_id, relatedStreams);
@@ -245,34 +245,45 @@ public class ResponseHelper {
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = info.hasNextPage() ? info.getNextPage().getUrl() : null;
+        String nextpage = null, next_id = null;
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = page.getUrl();
+            next_id = info.getNextPage().getId();
+        }
 
         final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
-                rewriteURL(info.getBannerUrl()), nextpage, info.getUploaderName(), info.getUploaderUrl().substring(23),
-                rewriteURL(info.getUploaderAvatarUrl()), (int) info.getStreamCount(), relatedStreams);
+                rewriteURL(info.getBannerUrl()), nextpage, next_id, info.getUploaderName(),
+                info.getUploaderUrl().substring(23), rewriteURL(info.getUploaderAvatarUrl()),
+                (int) info.getStreamCount(), relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(playlist);
 
     }
 
-    public static final byte[] playlistPageResponse(String playlistId, String url)
+    public static final byte[] playlistPageResponse(String playlistId, String url, String id)
             throws IOException, ExtractionException, InterruptedException {
 
-        InfoItemsPage<StreamInfoItem> page = PlaylistInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-                "https://www.youtube.com/playlist?list=" + playlistId, new Page(url));
+        InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+                "https://www.youtube.com/playlist?list=" + playlistId, new Page(url, id));
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        page.getItems().forEach(o -> {
+        info.getItems().forEach(o -> {
             StreamInfoItem item = o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = page.hasNextPage() ? page.getNextPage().getUrl() : null;
+        String nextpage = null, next_id = null;
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = page.getUrl();
+            next_id = info.getNextPage().getId();
+        }
 
-        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
+        final StreamsPage streamspage = new StreamsPage(nextpage, next_id, relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(streamspage);
 

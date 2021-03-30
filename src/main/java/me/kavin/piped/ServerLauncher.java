@@ -94,8 +94,10 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             }
         }).map("/nextpage/playlists/:playlistId", request -> {
             try {
-                return getJsonResponse(ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
-                        request.getQueryParameter("url")), "public, s-maxage=3600");
+                return getJsonResponse(
+                        ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
+                                request.getQueryParameter("url"), request.getQueryParameter("id")),
+                        "public, s-maxage=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
