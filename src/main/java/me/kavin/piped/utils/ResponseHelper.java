@@ -188,21 +188,26 @@ public class ResponseHelper {
     public static final byte[] channelPageResponse(String channelId, String url, String id)
             throws IOException, ExtractionException, InterruptedException {
 
-        InfoItemsPage<StreamInfoItem> page = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+        InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
                 "https://youtube.com/channel/" + channelId, new Page(url, id));
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        page.getItems().forEach(o -> {
+        info.getItems().forEach(o -> {
             StreamInfoItem item = o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = page.hasNextPage() ? page.getNextPage().getUrl() : null;
+        String nextpage = null, next_id = null;
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = page.getUrl();
+            id = info.getNextPage().getId();
+        }
 
-        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
+        final StreamsPage streamspage = new StreamsPage(nextpage, next_id, relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(streamspage);
 
