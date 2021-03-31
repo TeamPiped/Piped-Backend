@@ -44,7 +44,7 @@ public class Constants {
             prop.load(new FileReader("config.properties"));
 
             PORT = Integer.parseInt(prop.getProperty("PORT", "8080"));
-            HTTP_WORKERS = prop.getProperty("HTTP_WORKERS", "128");
+            HTTP_WORKERS = prop.getProperty("HTTP_WORKERS", String.valueOf(Runtime.getRuntime().availableProcessors()));
             PROXY_PART = prop.getProperty("PROXY_PART");
             CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");

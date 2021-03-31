@@ -7,6 +7,8 @@ import static io.activej.http.HttpHeaders.CONTENT_TYPE;
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
@@ -34,11 +36,16 @@ import me.kavin.piped.utils.resp.ErrorResponse;
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     @Provides
-    AsyncServlet mainServlet() {
+    Executor executor() {
+        return Executors.newCachedThreadPool();
+    }
+
+    @Provides
+    AsyncServlet mainServlet(Executor executor) {
 
         RoutingServlet router = RoutingServlet.create().map(HttpMethod.GET, "/webhooks/pubsub", request -> {
             return HttpResponse.ok200().withPlainText(request.getQueryParameter("hub.challenge"));
-        }).map(HttpMethod.POST, "/webhooks/pubsub", request -> {
+        }).map(HttpMethod.POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
             try {
 
                 SyndFeed feed = new SyndFeedInput()
@@ -54,7 +61,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/sponsors/:videoId", request -> {
+        })).map("/sponsors/:videoId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(SponsorBlockUtils
                         .getSponsors(request.getPathParameter("videoId"), request.getQueryParameter("category"))
@@ -62,21 +69,21 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/streams/:videoId", request -> {
+        })).map("/streams/:videoId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.streamsResponse(request.getPathParameter("videoId")),
                         "public, s-maxage=21540");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/channels/:channelId", request -> {
+        })).map("/channels/:channelId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.channelResponse(request.getPathParameter("channelId")),
                         "public, s-maxage=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/nextpage/channels/:channelId", request -> {
+        })).map("/nextpage/channels/:channelId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(
                         ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
@@ -85,14 +92,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/playlists/:playlistId", request -> {
+        })).map("/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.playlistResponse(request.getPathParameter("playlistId")),
                         "public, s-maxage=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/nextpage/playlists/:playlistId", request -> {
+        })).map("/nextpage/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(
                         ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
@@ -101,21 +108,21 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/suggestions", request -> {
+        })).map("/suggestions", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.suggestionsResponse(request.getQueryParameter("query")),
                         "public, s-maxage=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/search", request -> {
+        })).map("/search", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.searchResponse(request.getQueryParameter("q")),
                         "public, s-maxage=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/nextpage/search", request -> {
+        })).map("/nextpage/search", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(
                         ResponseHelper.searchPageResponse(request.getQueryParameter("q"),
@@ -124,13 +131,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }).map("/trending", request -> {
+        })).map("/trending", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.trendingResponse(), "public, s-maxage=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        });
+        }));
 
         return new CustomServletDecorator(router);
     }
