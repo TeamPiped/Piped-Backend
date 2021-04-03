@@ -137,6 +137,20 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
+        })).map("/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
+            try {
+                return getJsonResponse(ResponseHelper.commentsResponse(request.getPathParameter("videoId")),
+                        "public, s-maxage=1200");
+            } catch (Exception e) {
+                return getErrorResponse(e);
+            }
+        })).map("/nextpage/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
+            try {
+                return getJsonResponse(ResponseHelper.commentsPageResponse(request.getPathParameter("videoId"),
+                        request.getQueryParameter("url")), "public, s-maxage=3600");
+            } catch (Exception e) {
+                return getErrorResponse(e);
+            }
         }));
 
         return new CustomServletDecorator(router);

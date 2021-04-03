@@ -19,6 +19,7 @@ import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
+import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
@@ -36,6 +37,8 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.obj.Channel;
 import me.kavin.piped.utils.obj.ChapterSegment;
+import me.kavin.piped.utils.obj.Comment;
+import me.kavin.piped.utils.obj.CommentsPage;
 import me.kavin.piped.utils.obj.PipedStream;
 import me.kavin.piped.utils.obj.Playlist;
 import me.kavin.piped.utils.obj.SearchResults;
@@ -362,6 +365,56 @@ public class ResponseHelper {
 
     }
 
+    public static final byte[] commentsResponse(String videoId) throws Exception {
+
+        CommentsInfo info = commentsCache.get(videoId);
+
+        List<Comment> comments = new ObjectArrayList<>();
+
+        info.getRelatedItems().forEach(comment -> {
+            comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
+                    comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
+                    comment.getUploaderUrl().substring(23), comment.getLikeCount(), comment.isHeartedByUploader(),
+                    comment.isPinned(), comment.isUploaderVerified()));
+        });
+
+        String nextpage = null;
+
+        if (info.getNextPage() != null)
+            nextpage = info.getNextPage().getUrl();
+
+        CommentsPage commentsItem = new CommentsPage(comments, nextpage);
+
+        return Constants.mapper.writeValueAsBytes(commentsItem);
+
+    }
+
+    public static final byte[] commentsPageResponse(String videoId, String url) throws Exception {
+
+        CommentsInfo init = commentsCache.get(videoId);
+
+        InfoItemsPage<CommentsInfoItem> info = CommentsInfo.getMoreItems(init, new Page(url));
+
+        List<Comment> comments = new ObjectArrayList<>();
+
+        info.getItems().forEach(comment -> {
+            comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
+                    comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
+                    comment.getUploaderUrl().substring(23), comment.getLikeCount(), comment.isHeartedByUploader(),
+                    comment.isPinned(), comment.isUploaderVerified()));
+        });
+
+        String nextpage = null;
+
+        if (info.getNextPage() != null)
+            nextpage = info.getNextPage().getUrl();
+
+        CommentsPage commentsItem = new CommentsPage(comments, nextpage);
+
+        return Constants.mapper.writeValueAsBytes(commentsItem);
+
+    }
+
     public static final byte[] registerResponse(String user, String pass) throws IOException {
 
         return Constants.mapper.writeValueAsBytes(null);
@@ -376,17 +429,12 @@ public class ResponseHelper {
                         .getJSONObject("data").getJSONObject("videos").optString(videoId);
 
         if (!lbryId.isEmpty())
-            return rewriteURL(
-                    new JSONObject(
-                            Constants.h2client.send(
-                                    HttpRequest.newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
-                                            .POST(BodyPublishers.ofString(String.valueOf(new JSONObject()
-                                                    .put("jsonrpc", "2.0").put("method", "get").put("params",
-                                                            new JSONObject().put("uri", "lbry://" + lbryId)
-                                                                    .put("save_file", true)))))
-                                            .build(),
-                                    BodyHandlers.ofString()).body()).getJSONObject("result")
-                                            .getString("streaming_url"));
+            new JSONObject(Constants.h2client.send(HttpRequest
+                    .newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
+                    .POST(BodyPublishers.ofString(
+                            String.valueOf(new JSONObject().put("jsonrpc", "2.0").put("method", "get").put("params",
+                                    new JSONObject().put("uri", "lbry://" + lbryId).put("save_file", true)))))
+                    .build(), BodyHandlers.ofString()).body()).getJSONObject("result").getString("streaming_url");
 
         return null;
 
