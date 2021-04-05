@@ -16,7 +16,6 @@ dependencies {
     implementation 'it.unimi.dsi:fastutil-core:8.5.4'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.69'
-    implementation 'org.mongodb:mongodb-driver-sync:4.2.2'
     implementation 'com.github.TiA4f8R.NewPipeExtractor:NewPipeExtractor:df53170023ff5b97ad1d7ccc74bfce74c3998bcc'
     implementation 'com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.4'
@@ -32,6 +31,8 @@ dependencies {
     implementation 'io.activej:activej-boot:4.3'
     implementation 'io.activej:activej-specializer:4.3'
     implementation 'io.activej:activej-launchers-http:4.3'
+    implementation 'org.postgresql:postgresql:42.2.19'
+    implementation 'org.hibernate:hibernate-core:5.4.30.Final'
     implementation 'net.java.dev.jna:jna-platform:5.8.0'
 }
 

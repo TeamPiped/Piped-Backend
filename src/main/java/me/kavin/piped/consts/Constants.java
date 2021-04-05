@@ -11,7 +11,6 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.client.MongoClient;
 
 import me.kavin.piped.utils.PageMixin;
 
@@ -36,8 +35,6 @@ public class Constants {
             .version(Version.HTTP_2).build();
 //    public static final HttpClient h3client = Http3ClientBuilder.newBuilder().followRedirects(Redirect.NORMAL).build();
 
-    public static final MongoClient mongoClient;
-
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
 
     static {
@@ -51,7 +48,6 @@ public class Constants {
             PROXY_PART = prop.getProperty("PROXY_PART");
             CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
-            mongoClient = null/* MongoClients.create(prop.getProperty("MONGO_URI")) */;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
