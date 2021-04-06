@@ -16,6 +16,8 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: 11
+          distribution: 'adopt'
+          check-latest: true
 
       - name: Cache Gradle dependencies
         uses: actions/cache@v2.1.4
