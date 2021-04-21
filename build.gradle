@@ -28,7 +28,7 @@ dependencies {
     implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'io.activej:activej-common:4.1.1'
-    implementation 'io.activej:activej-http:4.1'
+    implementation 'io.activej:activej-http:4.1.1'
     implementation 'io.activej:activej-boot:4.1.1'
     implementation 'io.activej:activej-specializer:4.1.1'
     implementation 'io.activej:activej-launchers-http:4.1'
