@@ -79,7 +79,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
         })).map("/channels/:channelId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.channelResponse(request.getPathParameter("channelId")),
-                        "public, s-maxage=600");
+                        "public, max-age=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
@@ -88,14 +88,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 return getJsonResponse(
                         ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
                                 request.getQueryParameter("url"), request.getQueryParameter("id")),
-                        "public, s-maxage=3600");
+                        "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
         })).map("/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.playlistResponse(request.getPathParameter("playlistId")),
-                        "public, s-maxage=600");
+                        "public, max-age=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
@@ -104,21 +104,21 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 return getJsonResponse(
                         ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
                                 request.getQueryParameter("url"), request.getQueryParameter("id")),
-                        "public, s-maxage=3600");
+                        "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
         })).map("/suggestions", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.suggestionsResponse(request.getQueryParameter("query")),
-                        "public, s-maxage=600");
+                        "public, max-age=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
         })).map("/search", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.searchResponse(request.getQueryParameter("q")),
-                        "public, s-maxage=600");
+                        "public, max-age=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
@@ -127,27 +127,27 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 return getJsonResponse(
                         ResponseHelper.searchPageResponse(request.getQueryParameter("q"),
                                 request.getQueryParameter("url"), request.getQueryParameter("id")),
-                        "public, s-maxage=3600");
+                        "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
         })).map("/trending", AsyncServlet.ofBlocking(executor, request -> {
             try {
-                return getJsonResponse(ResponseHelper.trendingResponse(), "public, s-maxage=3600");
+                return getJsonResponse(ResponseHelper.trendingResponse(), "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
         })).map("/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.commentsResponse(request.getPathParameter("videoId")),
-                        "public, s-maxage=1200");
+                        "public, max-age=1200");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
         })).map("/nextpage/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.commentsPageResponse(request.getPathParameter("videoId"),
-                        request.getQueryParameter("url")), "public, s-maxage=3600");
+                        request.getQueryParameter("url")), "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
