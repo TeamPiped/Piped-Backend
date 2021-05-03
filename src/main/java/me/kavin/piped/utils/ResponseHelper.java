@@ -377,7 +377,7 @@ public class ResponseHelper {
         info.getRelatedItems().forEach(comment -> {
             comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                     comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                    comment.getUploaderUrl().substring(23), comment.getLikeCount(), comment.isHeartedByUploader(),
+                    comment.getUploaderUrl().substring(19), comment.getLikeCount(), comment.isHeartedByUploader(),
                     comment.isPinned(), comment.isUploaderVerified()));
         });
 
@@ -403,7 +403,7 @@ public class ResponseHelper {
         info.getItems().forEach(comment -> {
             comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                     comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                    comment.getUploaderUrl().substring(23), comment.getLikeCount(), comment.isHeartedByUploader(),
+                    comment.getUploaderUrl().substring(19), comment.getLikeCount(), comment.isHeartedByUploader(),
                     comment.isPinned(), comment.isUploaderVerified()));
         });
 
