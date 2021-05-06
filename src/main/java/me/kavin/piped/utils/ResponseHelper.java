@@ -315,8 +315,8 @@ public class ResponseHelper {
             case STREAM:
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getViewCount(),
-                        stream.getDuration()));
+                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
+                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration()));
                 break;
             case CHANNEL:
                 items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
@@ -348,8 +348,8 @@ public class ResponseHelper {
             case STREAM:
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getViewCount(),
-                        stream.getDuration()));
+                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
+                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration()));
                 break;
             case CHANNEL:
                 items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
