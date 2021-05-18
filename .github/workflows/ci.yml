@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: 11
-          distribution: 'adopt'
+          distribution: 'adopt-openj9'
           check-latest: true
 
       - name: Cache Gradle dependencies
