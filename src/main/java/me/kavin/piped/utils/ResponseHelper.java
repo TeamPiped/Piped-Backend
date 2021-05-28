@@ -166,9 +166,9 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] channelResponse(String channelId) throws Exception {
+    public static final byte[] channelResponse(String channelPath) throws Exception {
 
-        final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+        final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/" + channelPath);
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 

@@ -78,7 +78,22 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             }
         })).map("/channels/:channelId", AsyncServlet.ofBlocking(executor, request -> {
             try {
-                return getJsonResponse(ResponseHelper.channelResponse(request.getPathParameter("channelId")),
+                return getJsonResponse(
+                        ResponseHelper.channelResponse("channel/" + request.getPathParameter("channelId")),
+                        "public, max-age=600");
+            } catch (Exception e) {
+                return getErrorResponse(e);
+            }
+        })).map("/c/:name", AsyncServlet.ofBlocking(executor, request -> {
+            try {
+                return getJsonResponse(ResponseHelper.channelResponse("c/" + request.getPathParameter("name")),
+                        "public, max-age=600");
+            } catch (Exception e) {
+                return getErrorResponse(e);
+            }
+        })).map("/user/:name", AsyncServlet.ofBlocking(executor, request -> {
+            try {
+                return getJsonResponse(ResponseHelper.channelResponse("user/" + request.getPathParameter("name")),
                         "public, max-age=600");
             } catch (Exception e) {
                 return getErrorResponse(e);
