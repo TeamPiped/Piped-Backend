@@ -82,7 +82,7 @@ public class ResponseHelper {
 
         final List<Subtitle> subtitles = new ObjectArrayList<>();
 
-        final StreamInfo info = futureStream.get(10, TimeUnit.SECONDS);
+        final StreamInfo info = futureStream.get();
 
 //	System.out.println(Constants.mapper.writeValueAsString(info.getStreamSegments()));
         info.getSubtitles()
@@ -93,7 +93,7 @@ public class ResponseHelper {
         final List<PipedStream> videoStreams = new ObjectArrayList<>();
         final List<PipedStream> audioStreams = new ObjectArrayList<>();
 
-        final String lbryURL = futureLBRY.get(10, TimeUnit.SECONDS);
+        final String lbryURL = futureLBRY.get();
 
         if (lbryURL != null)
             videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));

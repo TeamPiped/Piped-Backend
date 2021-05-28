@@ -10,6 +10,7 @@ import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -28,6 +29,7 @@ import me.kavin.piped.utils.obj.SolvedCaptcha;
 public class DownloaderImpl extends Downloader {
 
     private static HttpCookie saved_cookie;
+    private static long cookie_received;
     private static final Object cookie_lock = new Object();
 
     /**
@@ -64,7 +66,8 @@ public class DownloaderImpl extends Downloader {
 
             synchronized (cookie_lock) {
 
-                if (saved_cookie != null && saved_cookie.hasExpired())
+                if (saved_cookie != null && saved_cookie.hasExpired()
+                        || (System.currentTimeMillis() - cookie_received > TimeUnit.MINUTES.toMillis(30)))
                     saved_cookie = null;
 
                 String redir_url = String.valueOf(response.request().uri());
@@ -120,6 +123,7 @@ public class DownloaderImpl extends Downloader {
                         saved_cookie = HttpCookie.parse(URLUtils.silentDecode(StringUtils
                                 .substringAfter(formResponse.headers().firstValue("Location").get(), "google_abuse=")))
                                 .get(0);
+                        cookie_received = System.currentTimeMillis();
 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
