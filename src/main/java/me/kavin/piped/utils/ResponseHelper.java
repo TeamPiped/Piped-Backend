@@ -19,12 +19,14 @@ import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
+import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
+import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.search.SearchInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
@@ -47,7 +49,9 @@ import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.StreamsPage;
 import me.kavin.piped.utils.obj.Subtitle;
+import me.kavin.piped.utils.obj.search.SearchChannel;
 import me.kavin.piped.utils.obj.search.SearchItem;
+import me.kavin.piped.utils.obj.search.SearchPlaylist;
 import me.kavin.piped.utils.obj.search.SearchStream;
 
 public class ResponseHelper {
@@ -316,11 +320,19 @@ public class ResponseHelper {
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
                         item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration()));
+                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration(),
+                        stream.isUploaderVerified()));
                 break;
             case CHANNEL:
-                items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23)));
+                ChannelInfoItem channel = (ChannelInfoItem) item;
+                items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
+                        channel.getStreamCount(), channel.isVerified()));
+                break;
+            case PLAYLIST:
+                PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+                items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
                 break;
             default:
                 break;
@@ -349,11 +361,19 @@ public class ResponseHelper {
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
                         item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration()));
+                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration(),
+                        stream.isUploaderVerified()));
                 break;
             case CHANNEL:
-                items.add(new SearchItem(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23)));
+                ChannelInfoItem channel = (ChannelInfoItem) item;
+                items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
+                        channel.getStreamCount(), channel.isVerified()));
+                break;
+            case PLAYLIST:
+                PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+                items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                        item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
                 break;
             default:
                 break;

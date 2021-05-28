@@ -4,15 +4,17 @@ public class SearchStream extends SearchItem {
 
     private String uploadDate, uploader, uploaderUrl;
     private long views, duration;
+    private boolean uploaderVerified;
 
     public SearchStream(String name, String thumbnail, String url, String uploadDate, String uploader,
-            String uploaderUrl, long views, long duration) {
+            String uploaderUrl, long views, long duration, boolean uploaderVerified) {
         super(name, thumbnail, url);
         this.uploadDate = uploadDate;
         this.uploader = uploader;
         this.uploaderUrl = uploaderUrl;
         this.views = views;
         this.duration = duration;
+        this.uploaderVerified = uploaderVerified;
     }
 
     public String getUploadDate() {
@@ -33,5 +35,9 @@ public class SearchStream extends SearchItem {
 
     public long getDuration() {
         return duration;
+    }
+
+    public boolean isUploaderVerified() {
+        return uploaderVerified;
     }
 }
