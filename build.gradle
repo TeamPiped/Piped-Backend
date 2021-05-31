@@ -29,7 +29,7 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'io.activej:activej-common:4.3'
     implementation 'io.activej:activej-http:4.3'
-    implementation 'io.activej:activej-boot:4.2'
+    implementation 'io.activej:activej-boot:4.3'
     implementation 'io.activej:activej-specializer:4.3'
     implementation 'io.activej:activej-launchers-http:4.3'
     implementation 'net.java.dev.jna:jna-platform:5.8.0'
