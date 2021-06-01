@@ -263,9 +263,10 @@ public class ResponseHelper {
         }
 
         final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
-                rewriteURL(info.getBannerUrl()), nextpage, body, info.getUploaderName(),
-                info.getUploaderUrl().substring(23), rewriteURL(info.getUploaderAvatarUrl()),
-                (int) info.getStreamCount(), relatedStreams);
+                rewriteURL(info.getBannerUrl()), nextpage, body,
+                info.getUploaderName().isEmpty() ? null : info.getUploaderName(),
+                info.getUploaderUrl().isEmpty() ? null : info.getUploaderUrl().substring(23),
+                rewriteURL(info.getUploaderAvatarUrl()), (int) info.getStreamCount(), relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(playlist);
 
