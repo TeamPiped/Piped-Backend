@@ -17,7 +17,7 @@ dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.68'
     implementation 'org.mongodb:mongodb-driver-sync:4.2.2'
-    implementation 'com.github.TeamNewPipe.NewPipeExtractor:NewPipeExtractor:7e4332e0cfe1e62f5904ddfe60770094c936a17d'
+    implementation 'com.github.TiA4f8R.NewPipeExtractor:NewPipeExtractor:f54bea20568fec9e82b6eba23873489845ed552f'
     implementation 'com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.3'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.3'
