@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONObject;
@@ -179,15 +178,14 @@ public class ResponseHelper {
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = null, body = null;
+        String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = page.getUrl();
-            body = Base64.encodeBase64String(info.getNextPage().getBody());
+            nextpage = Constants.mapper.writeValueAsString(page);
         }
 
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
-                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, body, relatedStreams);
+                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, relatedStreams);
 
         IPFS.publishData(channel);
 
@@ -195,11 +193,13 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] channelPageResponse(String channelId, String url, String body_req)
+    public static final byte[] channelPageResponse(String channelId, String prevpageStr)
             throws IOException, ExtractionException, InterruptedException {
 
+        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
+
         InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-                "https://youtube.com/channel/" + channelId, new Page(url, Base64.decodeBase64(body_req)));
+                "https://youtube.com/channel/" + channelId, prevpage);
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -210,14 +210,13 @@ public class ResponseHelper {
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = null, body = null;
+        String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = page.getUrl();
-            body = Base64.encodeBase64String(info.getNextPage().getBody());
+            nextpage = Constants.mapper.writeValueAsString(page);
         }
 
-        final StreamsPage streamspage = new StreamsPage(nextpage, body, relatedStreams);
+        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(streamspage);
 
@@ -255,15 +254,14 @@ public class ResponseHelper {
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = null, body = null;
+        String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = page.getUrl();
-            body = Base64.encodeBase64String(info.getNextPage().getBody());
+            nextpage = Constants.mapper.writeValueAsString(page);
         }
 
         final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
-                rewriteURL(info.getBannerUrl()), nextpage, body,
+                rewriteURL(info.getBannerUrl()), nextpage,
                 info.getUploaderName().isEmpty() ? null : info.getUploaderName(),
                 info.getUploaderUrl().isEmpty() ? null : info.getUploaderUrl().substring(23),
                 rewriteURL(info.getUploaderAvatarUrl()), (int) info.getStreamCount(), relatedStreams);
@@ -272,11 +270,13 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] playlistPageResponse(String playlistId, String url, String body_req)
+    public static final byte[] playlistPageResponse(String playlistId, String prevpageStr)
             throws IOException, ExtractionException, InterruptedException {
 
+        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
+
         InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-                "https://www.youtube.com/playlist?list=" + playlistId, new Page(url, Base64.decodeBase64(body_req)));
+                "https://www.youtube.com/playlist?list=" + playlistId, prevpage);
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -287,14 +287,13 @@ public class ResponseHelper {
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
         });
 
-        String nextpage = null, body = null;
+        String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = page.getUrl();
-            body = Base64.encodeBase64String(info.getNextPage().getBody());
+            nextpage = Constants.mapper.writeValueAsString(page);
         }
 
-        final StreamsPage streamspage = new StreamsPage(nextpage, body, relatedStreams);
+        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(streamspage);
 

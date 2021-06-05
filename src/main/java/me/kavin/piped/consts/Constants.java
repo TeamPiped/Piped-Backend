@@ -7,10 +7,13 @@ import java.net.http.HttpClient.Version;
 import java.util.Properties;
 
 import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoClient;
+
+import me.kavin.piped.utils.PageMixin;
 
 public class Constants {
 
@@ -35,7 +38,7 @@ public class Constants {
 
     public static final MongoClient mongoClient;
 
-    public static final ObjectMapper mapper = new ObjectMapper();
+    public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
 
     static {
         Properties prop = new Properties();

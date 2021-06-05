@@ -100,10 +100,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             }
         })).map("/nextpage/channels/:channelId", AsyncServlet.ofBlocking(executor, request -> {
             try {
-                return getJsonResponse(
-                        ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
-                                request.getQueryParameter("url"), request.getQueryParameter("id")),
-                        "public, max-age=3600");
+                return getJsonResponse(ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
+                        request.getQueryParameter("nextpage")), "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
@@ -116,10 +114,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             }
         })).map("/nextpage/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
             try {
-                return getJsonResponse(
-                        ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
-                                request.getQueryParameter("url"), request.getQueryParameter("id")),
-                        "public, max-age=3600");
+                return getJsonResponse(ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
+                        request.getQueryParameter("nextpage")), "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }

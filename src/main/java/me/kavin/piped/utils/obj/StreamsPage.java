@@ -4,12 +4,11 @@ import java.util.List;
 
 public class StreamsPage {
 
-    public String nextpage, nextbody;
+    public String nextpage;
     public List<StreamItem> relatedStreams;
 
-    public StreamsPage(String nextpage, String nextbody, List<StreamItem> relatedStreams) {
+    public StreamsPage(String nextpage, List<StreamItem> relatedStreams) {
         this.nextpage = nextpage;
-        this.nextbody = nextbody;
         this.relatedStreams = relatedStreams;
     }
 }
