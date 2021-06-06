@@ -7,11 +7,14 @@ import static io.activej.http.HttpHeaders.CONTENT_TYPE;
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
+import org.schabi.newpipe.extractor.exceptions.AgeRestrictedContentException;
+import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 import org.xml.sax.InputSource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -191,11 +194,15 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     private @NotNull HttpResponse getErrorResponse(Exception e) {
 
-        e.printStackTrace();
+        if (e instanceof ExecutionException)
+            e = (Exception) e.getCause();
+
+        if (!(e instanceof AgeRestrictedContentException || e instanceof ContentNotAvailableException))
+            e.printStackTrace();
 
         try {
-            return getJsonResponse(500,
-                    Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e))), "private");
+            return getJsonResponse(500, Constants.mapper
+                    .writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage())), "private");
         } catch (JsonProcessingException ex) {
             return HttpResponse.ofCode(500);
         }
