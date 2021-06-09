@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONObject;
 import org.schabi.newpipe.extractor.InfoItem;
@@ -102,27 +101,6 @@ public class ResponseHelper {
 
         if ((hls = info.getHlsUrl()) != null && !hls.isEmpty())
             livestream = true;
-
-        if (hls != null) {
-
-            java.util.stream.Stream<String> resp = Constants.h2client
-                    .send(HttpRequest.newBuilder(URI.create(hls)).GET().build(), BodyHandlers.ofLines()).body();
-            ObjectArrayList<String> lines = new ObjectArrayList<>();
-            resp.forEach(line -> lines.add(line));
-
-            for (int i = lines.size() - 1; i > 2; i--) {
-                String line = lines.get(i);
-                if (line.startsWith("https://manifest.googlevideo.com")) {
-                    String prevLine = lines.get(i - 1);
-                    String height = StringUtils.substringBetween(prevLine, "RESOLUTION=", ",").split("x")[1];
-                    int fps = Integer.parseInt(StringUtils.substringBetween(prevLine, "FRAME-RATE=", ","));
-                    String quality = height + "p";
-                    if (fps > 30)
-                        quality += fps;
-                    videoStreams.add(new PipedStream(line, "HLS", quality, "application/x-mpegURL", false));
-                }
-            }
-        }
 
         if (!livestream) {
             info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),

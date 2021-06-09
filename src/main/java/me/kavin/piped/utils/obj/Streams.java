@@ -2,6 +2,8 @@ package me.kavin.piped.utils.obj;
 
 import java.util.List;
 
+import me.kavin.piped.consts.Constants;
+
 public class Streams {
 
     public String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls;
@@ -15,6 +17,8 @@ public class Streams {
     public List<Subtitle> subtitles;
 
     public boolean livestream;
+
+    public final String proxyUrl = Constants.PROXY_PART;
 
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
             String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes,
