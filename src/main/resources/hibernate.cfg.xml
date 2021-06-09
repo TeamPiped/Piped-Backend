@@ -8,5 +8,7 @@
         <!-- Optional: Show SQL output for debugging -->
         <property name="hibernate.show_sql">true</property>
         <property name="hibernate.format_sql">true</property>
+        
+        <property name="hibernate.connection.provider_class">org.hibernate.hikaricp.internal.HikariCPConnectionProvider</property>
     </session-factory>
 </hibernate-configuration>

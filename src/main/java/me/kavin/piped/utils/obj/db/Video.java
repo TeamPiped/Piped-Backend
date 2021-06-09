@@ -26,18 +26,6 @@ public class Video {
     @Column(name = "uploaded")
     private long uploaded;
 
-    @Column(name = "uploader", length = 80)
-    private String uploader;
-
-    @Column(name = "uploader_url", length = 30)
-    private String uploaderUrl;
-
-    @Column(name = "uploader_avatar", length = 150)
-    private String uploaderAvatar;
-
-    @Column(name = "verified")
-    private boolean verified;
-
     @Column(name = "thumbnail", length = 150)
     private String thumbnail;
 
@@ -51,10 +39,6 @@ public class Video {
         this.views = views;
         this.duration = duration;
         this.uploaded = uploaded;
-        this.uploader = uploader;
-        this.uploaderUrl = uploaderUrl;
-        this.uploaderAvatar = uploaderAvatar;
-        this.verified = verified;
         this.thumbnail = thumbnail;
     }
 
@@ -96,38 +80,6 @@ public class Video {
 
     public void setUploaded(long uploaded) {
         this.uploaded = uploaded;
-    }
-
-    public String getUploader() {
-        return uploader;
-    }
-
-    public void setUploader(String uploader) {
-        this.uploader = uploader;
-    }
-
-    public String getUploaderUrl() {
-        return uploaderUrl;
-    }
-
-    public void setUploaderUrl(String uploaderUrl) {
-        this.uploaderUrl = uploaderUrl;
-    }
-
-    public String getUploaderAvatar() {
-        return uploaderAvatar;
-    }
-
-    public void setUploaderAvatar(String uploaderAvatar) {
-        this.uploaderAvatar = uploaderAvatar;
-    }
-
-    public boolean isVerified() {
-        return verified;
-    }
-
-    public void setVerified(boolean verified) {
-        this.verified = verified;
     }
 
     public String getThumbnail() {

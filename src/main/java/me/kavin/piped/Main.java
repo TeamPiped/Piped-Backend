@@ -4,6 +4,7 @@ import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 
 import io.activej.inject.Injector;
+import me.kavin.piped.utils.DatabaseSessionFactory;
 import me.kavin.piped.utils.DownloaderImpl;
 
 public class Main {
@@ -13,6 +14,10 @@ public class Main {
         NewPipe.init(new DownloaderImpl(), new Localization("en", "US"));
 
         Injector.useSpecializer();
+
+        new Thread(() -> {
+            DatabaseSessionFactory.createSession().close();
+        }).start();
 
         new ServerLauncher().launch(args);
 

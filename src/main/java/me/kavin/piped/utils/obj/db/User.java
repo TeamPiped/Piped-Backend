@@ -2,6 +2,7 @@ package me.kavin.piped.utils.obj.db;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
 
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -32,6 +33,9 @@ public class User implements Serializable {
     @Column(name = "password", columnDefinition = "text")
     private String password;
 
+    @Column(name = "session_id", length = 36)
+    private String sessionId;
+
     @ElementCollection
     @CollectionTable(name = "users_subscribed", joinColumns = @JoinColumn(name = "subscriber"), indexes = @Index(columnList = "subscriber", name = "subscriber_idx"))
     @Column(name = "channel", length = 30)
@@ -44,6 +48,7 @@ public class User implements Serializable {
         this.username = username;
         this.password = password;
         this.subscribed_ids = subscribed_ids;
+        this.sessionId = String.valueOf(UUID.randomUUID());
     }
 
     public long getId() {
@@ -64,6 +69,14 @@ public class User implements Serializable {
 
     public String getPassword() {
         return password;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     public void setPassword(String password) {

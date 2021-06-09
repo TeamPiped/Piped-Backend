@@ -8,12 +8,19 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hibernate.Session;
 import org.json.JSONObject;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
@@ -58,10 +65,17 @@ import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.StreamsPage;
 import me.kavin.piped.utils.obj.Subtitle;
+import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.search.SearchChannel;
 import me.kavin.piped.utils.obj.search.SearchItem;
 import me.kavin.piped.utils.obj.search.SearchPlaylist;
 import me.kavin.piped.utils.obj.search.SearchStream;
+import me.kavin.piped.utils.resp.AcceptedResponse;
+import me.kavin.piped.utils.resp.AlreadyRegisteredResponse;
+import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
+import me.kavin.piped.utils.resp.DatabaseHelper;
+import me.kavin.piped.utils.resp.IncorrectCredentialsResponse;
+import me.kavin.piped.utils.resp.LoginResponse;
 
 public class ResponseHelper {
 
@@ -461,9 +475,105 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] registerResponse(String user, String pass) throws IOException {
+    public static final byte[] registerResponse(String user, String pass)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 
-        return Constants.mapper.writeValueAsBytes(null);
+        user = user.toLowerCase();
+
+        Session s = DatabaseSessionFactory.createSession();
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<User> cr = cb.createQuery(User.class);
+        Root<User> root = cr.from(User.class);
+        cr.select(root).where(root.get("username").in(user));
+        boolean registered = s.createQuery(cr).uniqueResult() != null;
+
+        if (registered) {
+            s.close();
+            return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
+        }
+
+        User newuser = new User(user, PasswordHash.createHash(pass), Collections.emptyList());
+
+        s.save(newuser);
+        s.beginTransaction().commit();
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new LoginResponse(newuser.getSessionId()));
+
+    }
+
+    public static final byte[] loginResponse(String user, String pass)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        user = user.toLowerCase();
+
+        Session s = DatabaseSessionFactory.createSession();
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<User> cr = cb.createQuery(User.class);
+        Root<User> root = cr.from(User.class);
+        cr.select(root).where(root.get("username").in(user));
+
+        User dbuser = s.createQuery(cr).uniqueResult();
+
+        if (dbuser != null && PasswordHash.validatePassword(pass, dbuser.getPassword())) {
+            s.close();
+            return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+        }
+
+        User newuser = new User(user, PasswordHash.createHash(pass), Collections.emptyList());
+
+        s.save(newuser);
+        s.beginTransaction().commit();
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+
+    }
+
+    public static final byte[] subscribeResponse(String session, String channelId)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSession(s, session);
+
+        if (user != null) {
+            if (!user.getSubscribed().contains(channelId)) {
+                user.getSubscribed().add(channelId);
+                s.update(user);
+                s.beginTransaction().commit();
+            }
+            s.close();
+            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+    }
+
+    public static final byte[] unsubscribeResponse(String session, String channelId)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSession(s, session);
+
+        if (user != null) {
+            if (user.getSubscribed().remove(channelId)) {
+                s.update(user);
+                s.beginTransaction().commit();
+            }
+            s.close();
+            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
     }
 
