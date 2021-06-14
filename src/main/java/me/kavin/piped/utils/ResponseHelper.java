@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -285,10 +286,11 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] searchResponse(String q) throws IOException, ExtractionException, InterruptedException {
+    public static final byte[] searchResponse(String q, String filter)
+            throws IOException, ExtractionException, InterruptedException {
 
         final SearchInfo info = SearchInfo.getInfo(Constants.YOUTUBE_SERVICE,
-                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q));
+                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));
 
         ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
 
@@ -298,7 +300,7 @@ public class ResponseHelper {
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
                         item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration(),
+                        optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
                         stream.isUploaderVerified()));
                 break;
             case CHANNEL:
@@ -319,17 +321,19 @@ public class ResponseHelper {
 
         Page nextpage = info.getNextPage();
 
-        return nextpage != null
-                ? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
-                : Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
+        return Constants.mapper
+                .writeValueAsBytes(new SearchResults(items, Constants.mapper.writeValueAsString(nextpage)));
 
     }
 
-    public static final byte[] searchPageResponse(String q, String url, String id)
+    public static final byte[] searchPageResponse(String q, String filter, String prevpageStr)
             throws IOException, ExtractionException, InterruptedException {
 
+        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
+
         InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q), new Page(url, id));
+                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null),
+                prevpage);
 
         ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
 
@@ -360,9 +364,8 @@ public class ResponseHelper {
 
         Page nextpage = pages.getNextPage();
 
-        return nextpage != null
-                ? Constants.mapper.writeValueAsBytes(new SearchResults(nextpage.getUrl(), nextpage.getId(), items))
-                : Constants.mapper.writeValueAsBytes(new SearchResults(null, null, items));
+        return Constants.mapper
+                .writeValueAsBytes(new SearchResults(items, Constants.mapper.writeValueAsString(nextpage)));
 
     }
 
@@ -439,6 +442,10 @@ public class ResponseHelper {
 
         return null;
 
+    }
+
+    private static final String optionalSubstring(String s, int index) {
+        return s == null || s.isEmpty() ? null : s.substring(index);
     }
 
     private static String rewriteURL(final String old) {

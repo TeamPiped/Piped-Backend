@@ -5,12 +5,11 @@ import me.kavin.piped.utils.obj.search.SearchItem;
 
 public class SearchResults {
 
-    public String nextpage, id;
     public ObjectArrayList<SearchItem> items;
+    public String nextpage;
 
-    public SearchResults(String nextpage, String id, ObjectArrayList<SearchItem> items) {
+    public SearchResults(ObjectArrayList<SearchItem> items, String nextpage) {
         this.nextpage = nextpage;
-        this.id = id;
         this.items = items;
     }
 }
