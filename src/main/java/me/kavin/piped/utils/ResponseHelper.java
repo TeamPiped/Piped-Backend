@@ -343,7 +343,7 @@ public class ResponseHelper {
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
                         item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        stream.getUploaderUrl().substring(23), stream.getViewCount(), stream.getDuration(),
+                        optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
                         stream.isUploaderVerified()));
                 break;
             case CHANNEL:
