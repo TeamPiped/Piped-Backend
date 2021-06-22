@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11:jdk11u-ubi-nightly-slim AS build
+FROM adoptopenjdk/openjdk11:debianslim-slim AS build
 
 WORKDIR /app/
 
@@ -6,7 +6,7 @@ COPY . /app/
 
 RUN chmod +x ./gradlew && ./gradlew shadowJar
 
-FROM adoptopenjdk/openjdk11:ubi-minimal-jre
+FROM adoptopenjdk/openjdk11:debianslim-jre
 
 WORKDIR /app/
 

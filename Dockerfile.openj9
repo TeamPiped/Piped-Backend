@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11-openj9:slim AS build
+FROM adoptopenjdk/openjdk11-openj9:alpine-slim AS build
 
 WORKDIR /app/
 
@@ -6,7 +6,7 @@ COPY . /app/
 
 RUN chmod +x ./gradlew && ./gradlew shadowJar
 
-FROM adoptopenjdk/openjdk11-openj9:jre
+FROM adoptopenjdk/openjdk11-openj9:alpine-jre
 
 WORKDIR /app/
 
