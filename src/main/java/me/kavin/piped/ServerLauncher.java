@@ -79,7 +79,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        })).map("/channels/:channelId", AsyncServlet.ofBlocking(executor, request -> {
+        })).map("/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(
                         ResponseHelper.channelResponse("channel/" + request.getPathParameter("channelId")),
@@ -101,7 +101,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        })).map("/nextpage/channels/:channelId", AsyncServlet.ofBlocking(executor, request -> {
+        })).map("/nextpage/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
                         request.getQueryParameter("nextpage")), "public, max-age=3600");
