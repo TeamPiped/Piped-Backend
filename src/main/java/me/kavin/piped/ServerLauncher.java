@@ -1,26 +1,8 @@
 package me.kavin.piped;
 
-import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
-import static io.activej.http.HttpHeaders.CACHE_CONTROL;
-import static io.activej.http.HttpHeaders.CONTENT_TYPE;
-
-import java.io.ByteArrayInputStream;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.jetbrains.annotations.NotNull;
-import org.schabi.newpipe.extractor.exceptions.AgeRestrictedContentException;
-import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
-import org.xml.sax.InputSource;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
-
 import io.activej.config.Config;
 import io.activej.http.AsyncServlet;
 import io.activej.http.HttpMethod;
@@ -35,6 +17,22 @@ import me.kavin.piped.utils.CustomServletDecorator;
 import me.kavin.piped.utils.ResponseHelper;
 import me.kavin.piped.utils.SponsorBlockUtils;
 import me.kavin.piped.utils.resp.ErrorResponse;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jetbrains.annotations.NotNull;
+import org.schabi.newpipe.extractor.exceptions.AgeRestrictedContentException;
+import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
+import org.xml.sax.InputSource;
+
+import java.io.ByteArrayInputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
+import static io.activej.http.HttpHeaders.CACHE_CONTROL;
+import static io.activej.http.HttpHeaders.CONTENT_TYPE;
 
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
@@ -147,7 +145,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             }
         })).map("/trending", AsyncServlet.ofBlocking(executor, request -> {
             try {
-                return getJsonResponse(ResponseHelper.trendingResponse(), "public, max-age=3600");
+                return getJsonResponse(ResponseHelper.trendingResponse(request.getQueryParameter("region")), "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }

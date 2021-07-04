@@ -1,17 +1,16 @@
 package me.kavin.piped.utils;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import me.kavin.piped.consts.Constants;
+import me.kavin.piped.ipfs.IPFS;
+import me.kavin.piped.utils.obj.*;
+import me.kavin.piped.utils.obj.search.SearchChannel;
+import me.kavin.piped.utils.obj.search.SearchItem;
+import me.kavin.piped.utils.obj.search.SearchPlaylist;
+import me.kavin.piped.utils.obj.search.SearchStream;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONObject;
 import org.schabi.newpipe.extractor.InfoItem;
@@ -23,35 +22,27 @@ import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.kiosk.KioskExtractor;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
+import org.schabi.newpipe.extractor.kiosk.KioskList;
+import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.search.SearchInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import me.kavin.piped.consts.Constants;
-import me.kavin.piped.ipfs.IPFS;
-import me.kavin.piped.utils.obj.Channel;
-import me.kavin.piped.utils.obj.ChapterSegment;
-import me.kavin.piped.utils.obj.Comment;
-import me.kavin.piped.utils.obj.CommentsPage;
-import me.kavin.piped.utils.obj.PipedStream;
-import me.kavin.piped.utils.obj.Playlist;
-import me.kavin.piped.utils.obj.SearchResults;
-import me.kavin.piped.utils.obj.StreamItem;
-import me.kavin.piped.utils.obj.Streams;
-import me.kavin.piped.utils.obj.StreamsPage;
-import me.kavin.piped.utils.obj.Subtitle;
-import me.kavin.piped.utils.obj.search.SearchChannel;
-import me.kavin.piped.utils.obj.search.SearchItem;
-import me.kavin.piped.utils.obj.search.SearchPlaylist;
-import me.kavin.piped.utils.obj.search.SearchStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class ResponseHelper {
 
@@ -201,13 +192,17 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] trendingResponse() throws ParsingException, ExtractionException, IOException {
+    public static final byte[] trendingResponse(String region) throws ParsingException, ExtractionException, IOException {
+
+        region = (region == null || region.isEmpty()) ? "US" : region;
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        String url = Constants.YOUTUBE_SERVICE.getKioskList().getListLinkHandlerFactoryByType("Trending")
-                .getUrl("Trending");
-        KioskInfo info = KioskInfo.getInfo(Constants.YOUTUBE_SERVICE, url);
+        KioskList kioskList = Constants.YOUTUBE_SERVICE.getKioskList();
+        kioskList.forceContentCountry(new ContentCountry(region));
+        KioskExtractor extractor = kioskList.getDefaultKioskExtractor();
+        extractor.fetchPage();
+        KioskInfo info = KioskInfo.getInfo(extractor);
 
         info.getRelatedItems().forEach(o -> {
             StreamInfoItem item = o;
@@ -296,26 +291,26 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(item -> {
             switch (item.getInfoType()) {
-            case STREAM:
-                StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
-                        stream.isUploaderVerified()));
-                break;
-            case CHANNEL:
-                ChannelInfoItem channel = (ChannelInfoItem) item;
-                items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
-                        channel.getStreamCount(), channel.isVerified()));
-                break;
-            case PLAYLIST:
-                PlaylistInfoItem playlist = (PlaylistInfoItem) item;
-                items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
-                break;
-            default:
-                break;
+                case STREAM:
+                    StreamInfoItem stream = (StreamInfoItem) item;
+                    items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
+                            optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
+                            stream.isUploaderVerified()));
+                    break;
+                case CHANNEL:
+                    ChannelInfoItem channel = (ChannelInfoItem) item;
+                    items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
+                            channel.getStreamCount(), channel.isVerified()));
+                    break;
+                case PLAYLIST:
+                    PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+                    items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
+                    break;
+                default:
+                    break;
             }
         });
 
@@ -339,26 +334,26 @@ public class ResponseHelper {
 
         pages.getItems().forEach(item -> {
             switch (item.getInfoType()) {
-            case STREAM:
-                StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
-                        stream.isUploaderVerified()));
-                break;
-            case CHANNEL:
-                ChannelInfoItem channel = (ChannelInfoItem) item;
-                items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
-                        channel.getStreamCount(), channel.isVerified()));
-                break;
-            case PLAYLIST:
-                PlaylistInfoItem playlist = (PlaylistInfoItem) item;
-                items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
-                break;
-            default:
-                break;
+                case STREAM:
+                    StreamInfoItem stream = (StreamInfoItem) item;
+                    items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
+                            optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
+                            stream.isUploaderVerified()));
+                    break;
+                case CHANNEL:
+                    ChannelInfoItem channel = (ChannelInfoItem) item;
+                    items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
+                            channel.getStreamCount(), channel.isVerified()));
+                    break;
+                case PLAYLIST:
+                    PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+                    items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
+                    break;
+                default:
+                    break;
             }
         });
 
@@ -430,7 +425,7 @@ public class ResponseHelper {
         String lbryId = new JSONObject(Constants.h2client.send(HttpRequest
                 .newBuilder(URI.create("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId)))
                 .setHeader("User-Agent", Constants.USER_AGENT).build(), BodyHandlers.ofString()).body())
-                        .getJSONObject("data").getJSONObject("videos").optString(videoId);
+                .getJSONObject("data").getJSONObject("videos").optString(videoId);
 
         if (!lbryId.isEmpty())
             new JSONObject(Constants.h2client.send(HttpRequest
