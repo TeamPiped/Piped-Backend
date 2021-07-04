@@ -147,7 +147,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             }
         })).map("/trending", AsyncServlet.ofBlocking(executor, request -> {
             try {
-                return getJsonResponse(ResponseHelper.trendingResponse(), "public, max-age=3600");
+                return getJsonResponse(ResponseHelper.trendingResponse(request.getQueryParameter("region")),
+                        "public, max-age=3600");
             } catch (Exception e) {
                 return getErrorResponse(e);
             }

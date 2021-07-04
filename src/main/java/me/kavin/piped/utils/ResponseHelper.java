@@ -23,7 +23,10 @@ import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.kiosk.KioskExtractor;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
+import org.schabi.newpipe.extractor.kiosk.KioskList;
+import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.search.SearchInfo;
@@ -201,13 +204,16 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] trendingResponse() throws ParsingException, ExtractionException, IOException {
+    public static final byte[] trendingResponse(String region)
+            throws ParsingException, ExtractionException, IOException {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        String url = Constants.YOUTUBE_SERVICE.getKioskList().getListLinkHandlerFactoryByType("Trending")
-                .getUrl("Trending");
-        KioskInfo info = KioskInfo.getInfo(Constants.YOUTUBE_SERVICE, url);
+        KioskList kioskList = Constants.YOUTUBE_SERVICE.getKioskList();
+        kioskList.forceContentCountry(new ContentCountry(region));
+        KioskExtractor<?> extractor = kioskList.getDefaultKioskExtractor();
+        extractor.fetchPage();
+        KioskInfo info = KioskInfo.getInfo(extractor);
 
         info.getRelatedItems().forEach(o -> {
             StreamInfoItem item = o;
