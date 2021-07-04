@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -33,6 +34,12 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.rometools.rome.feed.synd.SyndEntry;
+import com.rometools.rome.feed.synd.SyndEntryImpl;
+import com.rometools.rome.feed.synd.SyndFeed;
+import com.rometools.rome.feed.synd.SyndFeedImpl;
+import com.rometools.rome.io.FeedException;
+import com.rometools.rome.io.SyndFeedOutput;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
@@ -275,6 +282,36 @@ public class ResponseHelper {
         final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(streamspage);
+
+    }
+
+    public static final byte[] playlistRSSResponse(String playlistId)
+            throws IOException, ExtractionException, InterruptedException, FeedException {
+
+        final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
+
+        final List<SyndEntry> entries = new ObjectArrayList<>();
+
+        SyndFeed feed = new SyndFeedImpl();
+        feed.setFeedType("rss_2.0");
+        feed.setTitle(info.getName());
+        feed.setAuthor(info.getUploaderName());
+        feed.setLink(info.getUrl());
+        feed.setDescription(String.format("%s - Piped", info.getName()));
+
+        info.getRelatedItems().forEach(o -> {
+            StreamInfoItem item = o;
+            SyndEntry entry = new SyndEntryImpl();
+            entry.setAuthor(item.getUploaderName());
+            entry.setUri(item.getUrl());
+            entry.setTitle(item.getName());
+            entry.setForeignMarkup(null)
+            entries.add(entry);
+        });
+
+        feed.setEntries(entries);
+
+        return new SyndFeedOutput().outputString(feed).getBytes(StandardCharsets.UTF_8);
 
     }
 
