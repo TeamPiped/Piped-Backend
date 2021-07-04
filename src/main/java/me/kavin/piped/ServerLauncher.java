@@ -122,6 +122,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
+        })).map("/rss/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
+            try {
+                return getJsonResponse(ResponseHelper.playlistRSSResponse(request.getPathParameter("playlistId")),
+                        "public, s-maxage=600");
+            } catch (Exception e) {
+                return getErrorResponse(e);
+            }
         })).map("/suggestions", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 return getJsonResponse(ResponseHelper.suggestionsResponse(request.getQueryParameter("query")),

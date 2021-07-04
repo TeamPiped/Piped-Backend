@@ -305,7 +305,6 @@ public class ResponseHelper {
             entry.setAuthor(item.getUploaderName());
             entry.setUri(item.getUrl());
             entry.setTitle(item.getName());
-            entry.setForeignMarkup(null)
             entries.add(entry);
         });
 
