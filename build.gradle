@@ -20,7 +20,7 @@ dependencies {
     implementation 'com.github.TiA4f8R.NewPipeExtractor:NewPipeExtractor:df53170023ff5b97ad1d7ccc74bfce74c3998bcc'
     implementation 'com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.3'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.3'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.4'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
     implementation 'org.json:json:20210307'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.0.3'
