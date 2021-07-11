@@ -2,8 +2,11 @@ package me.kavin.piped.utils.obj.db;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.Index;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
@@ -29,17 +32,21 @@ public class Video {
     @Column(name = "thumbnail", length = 150)
     private String thumbnail;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uploader_id")
+    private Channel channel;
+
     public Video() {
     }
 
-    public Video(String id, String title, long views, int duration, long uploaded, String uploader, String uploaderUrl,
-            String uploaderAvatar, boolean verified, String thumbnail) {
+    public Video(String id, String title, long views, int duration, long uploaded, String thumbnail, Channel channel) {
         this.id = id;
         this.title = title;
         this.views = views;
         this.duration = duration;
         this.uploaded = uploaded;
         this.thumbnail = thumbnail;
+        this.channel = channel;
     }
 
     public String getId() {
@@ -88,5 +95,13 @@ public class Video {
 
     public void setThumbnail(String thumbnail) {
         this.thumbnail = thumbnail;
+    }
+
+    public Channel getChannel() {
+        return channel;
+    }
+
+    public void setChannel(Channel channel) {
+        this.channel = channel;
     }
 }

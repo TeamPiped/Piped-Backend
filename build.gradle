@@ -34,7 +34,8 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.2.19'
     implementation 'org.hibernate:hibernate-core:5.4.30.Final'
     implementation 'org.hibernate:hibernate-hikaricp:5.4.30.Final'
-    implementation 'net.java.dev.jna:jna-platform:5.8.0'
+    implementation 'org.springframework.security:spring-security-crypto:5.5.1'
+    implementation 'commons-logging:commons-logging:1.2'
 }
 
 shadowJar {

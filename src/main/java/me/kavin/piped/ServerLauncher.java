@@ -192,7 +192,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        })).map("/subscribe", AsyncServlet.ofBlocking(executor, request -> {
+        })).map(HttpMethod.POST, "/subscribe", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 SubscriptionUpdateRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
                         SubscriptionUpdateRequest.class);
@@ -201,7 +201,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        })).map("/unsubscribe", AsyncServlet.ofBlocking(executor, request -> {
+        })).map(HttpMethod.POST, "/unsubscribe", AsyncServlet.ofBlocking(executor, request -> {
             try {
                 SubscriptionUpdateRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
                         SubscriptionUpdateRequest.class);
@@ -211,7 +211,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             } catch (Exception e) {
                 return getErrorResponse(e);
             }
-        }));
+        })).map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200));
 
         return new CustomServletDecorator(router);
     }

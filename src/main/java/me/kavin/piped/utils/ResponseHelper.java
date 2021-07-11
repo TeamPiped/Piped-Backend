@@ -40,6 +40,7 @@ import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.search.SearchInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -475,6 +476,8 @@ public class ResponseHelper {
 
     }
 
+    private static final Argon2PasswordEncoder argon2PasswordEncoder = new Argon2PasswordEncoder();
+
     public static final byte[] registerResponse(String user, String pass)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 
@@ -492,7 +495,7 @@ public class ResponseHelper {
             return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
         }
 
-        User newuser = new User(user, PasswordHash.createHash(pass), Collections.emptyList());
+        User newuser = new User(user, argon2PasswordEncoder.encode(pass), Collections.emptyList());
 
         s.save(newuser);
         s.beginTransaction().commit();
@@ -516,15 +519,10 @@ public class ResponseHelper {
 
         User dbuser = s.createQuery(cr).uniqueResult();
 
-        if (dbuser != null && PasswordHash.validatePassword(pass, dbuser.getPassword())) {
+        if (dbuser != null && argon2PasswordEncoder.matches(pass, dbuser.getPassword())) {
             s.close();
             return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
         }
-
-        User newuser = new User(user, PasswordHash.createHash(pass), Collections.emptyList());
-
-        s.save(newuser);
-        s.beginTransaction().commit();
 
         s.close();
 
