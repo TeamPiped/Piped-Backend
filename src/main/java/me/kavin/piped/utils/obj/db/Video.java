@@ -10,7 +10,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "videos", indexes = { @Index(columnList = "id", name = "id_idx") })
+@Table(name = "videos", indexes = { @Index(columnList = "id", name = "id_idx"),
+        @Index(columnList = "uploader_id", name = "uploader_id_idx") })
 public class Video {
 
     @Id
@@ -24,7 +25,7 @@ public class Video {
     private long views;
 
     @Column(name = "duration")
-    private int duration;
+    private long duration;
 
     @Column(name = "uploaded")
     private long uploaded;
@@ -39,7 +40,7 @@ public class Video {
     public Video() {
     }
 
-    public Video(String id, String title, long views, int duration, long uploaded, String thumbnail, Channel channel) {
+    public Video(String id, String title, long views, long duration, long uploaded, String thumbnail, Channel channel) {
         this.id = id;
         this.title = title;
         this.views = views;
@@ -73,11 +74,11 @@ public class Video {
         this.views = views;
     }
 
-    public int getDuration() {
+    public long getDuration() {
         return duration;
     }
 
-    public void setDuration(int duration) {
+    public void setDuration(long duration) {
         this.duration = duration;
     }
 

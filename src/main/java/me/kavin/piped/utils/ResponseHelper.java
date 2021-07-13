@@ -6,12 +6,14 @@ import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -52,6 +54,7 @@ import com.rometools.rome.feed.synd.SyndFeedImpl;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.ipfs.IPFS;
@@ -59,6 +62,7 @@ import me.kavin.piped.utils.obj.Channel;
 import me.kavin.piped.utils.obj.ChapterSegment;
 import me.kavin.piped.utils.obj.Comment;
 import me.kavin.piped.utils.obj.CommentsPage;
+import me.kavin.piped.utils.obj.FeedItem;
 import me.kavin.piped.utils.obj.PipedStream;
 import me.kavin.piped.utils.obj.Playlist;
 import me.kavin.piped.utils.obj.SearchResults;
@@ -67,6 +71,7 @@ import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.StreamsPage;
 import me.kavin.piped.utils.obj.Subtitle;
 import me.kavin.piped.utils.obj.db.User;
+import me.kavin.piped.utils.obj.db.Video;
 import me.kavin.piped.utils.obj.search.SearchChannel;
 import me.kavin.piped.utils.obj.search.SearchItem;
 import me.kavin.piped.utils.obj.search.SearchPlaylist;
@@ -74,9 +79,9 @@ import me.kavin.piped.utils.obj.search.SearchStream;
 import me.kavin.piped.utils.resp.AcceptedResponse;
 import me.kavin.piped.utils.resp.AlreadyRegisteredResponse;
 import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
-import me.kavin.piped.utils.resp.DatabaseHelper;
 import me.kavin.piped.utils.resp.IncorrectCredentialsResponse;
 import me.kavin.piped.utils.resp.LoginResponse;
+import me.kavin.piped.utils.resp.SubscribeStatusResponse;
 
 public class ResponseHelper {
 
@@ -158,6 +163,10 @@ public class ResponseHelper {
 
         info.getStreamSegments().forEach(
                 segment -> segments.add(new ChapterSegment(segment.getTitle(), segment.getStartTimeSeconds())));
+
+        if (info.getUploadDate() != null && System.currentTimeMillis()
+                - info.getUploadDate().offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(10))
+            updateViews(info.getId(), info.getViewCount());
 
         final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
@@ -544,6 +553,44 @@ public class ResponseHelper {
                 s.beginTransaction().commit();
             }
             s.close();
+
+            Multithreading.runAsync(() -> {
+                Session sess = DatabaseSessionFactory.createSession();
+
+                me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(sess, channelId);
+
+                if (channel == null) {
+                    ChannelInfo info = null;
+
+                    try {
+                        info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+                    } catch (IOException | ExtractionException e) {
+                        ExceptionUtils.rethrow(e);
+                    }
+
+                    channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(), info.getAvatarUrl(),
+                            false);
+                    sess.save(channel);
+                    sess.beginTransaction().commit();
+
+                    try {
+                        subscribePubSub(channelId);
+                    } catch (IOException | InterruptedException e) {
+                        ExceptionUtils.rethrow(e);
+                    }
+
+                    for (StreamInfoItem item : info.getRelatedItems()) {
+                        long time = item.getUploadDate() != null
+                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                : System.currentTimeMillis();
+                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(10))
+                            handleNewVideo(item.getUrl(), time);
+                    }
+                }
+
+                sess.close();
+            });
+
             return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
         }
 
@@ -558,7 +605,7 @@ public class ResponseHelper {
 
         Session s = DatabaseSessionFactory.createSession();
 
-        User user = DatabaseHelper.getUserFromSession(s, session);
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
 
         if (user != null) {
             if (user.getSubscribed().remove(channelId)) {
@@ -567,6 +614,60 @@ public class ResponseHelper {
             }
             s.close();
             return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+    }
+
+    public static final byte[] isSubscribedResponse(String session, String channelId)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+
+        if (user != null) {
+            if (user.getSubscribed().contains(channelId)) {
+                s.close();
+                return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(true));
+            }
+            s.close();
+            return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(false));
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+    }
+
+    public static final byte[] feedResponse(String session)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+
+        if (user != null) {
+            List<Video> videos = DatabaseHelper.getVideosFromChannelIds(s, user.getSubscribed());
+
+            List<FeedItem> feedItems = new ObjectArrayList<>();
+
+            videos.forEach(video -> {
+                feedItems.add(new FeedItem(video.getId(), video.getTitle(), rewriteURL(video.getThumbnail()),
+                        video.getChannel().getUploaderId(), video.getChannel().getUploader(),
+                        rewriteURL(video.getChannel().getUploaderAvatar()), video.getViews(), video.getDuration(),
+                        video.getUploaded(), video.getChannel().isVerified()));
+            });
+
+            Collections.sort(feedItems, (a, b) -> (int) (b.uploaded - a.uploaded));
+
+            s.close();
+
+            return Constants.mapper.writeValueAsBytes(feedItems);
         }
 
         s.close();
@@ -591,6 +692,92 @@ public class ResponseHelper {
                     .build(), BodyHandlers.ofString()).body()).getJSONObject("result").getString("streaming_url");
 
         return null;
+
+    }
+
+    public static void handleNewVideo(String url, long time) {
+        try {
+            handleNewVideo(StreamInfo.getInfo(url), time);
+        } catch (IOException | ExtractionException e) {
+            ExceptionUtils.rethrow(e);
+        }
+    }
+
+    private static void handleNewVideo(StreamInfo info, long time) {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s,
+                info.getUploaderUrl().substring("https://www.youtube.com/channel/".length()));
+
+        long infoTime = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                : System.currentTimeMillis();
+
+        Video video;
+
+        if (channel != null && (video = DatabaseHelper.getVideoFromId(s, info.getId())) == null
+                && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(10)) {
+
+            video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
+                    Math.max(infoTime, time), info.getThumbnailUrl(), channel);
+
+            s.save(video);
+
+            s.beginTransaction().commit();
+        }
+
+        s.close();
+
+    }
+
+    private static void updateViews(String id, long views) {
+        Multithreading.runAsync(() -> {
+            try {
+                Session s = DatabaseSessionFactory.createSession();
+
+                Video video = DatabaseHelper.getVideoFromId(s, id);
+
+                if (video != null) {
+                    video.setViews(views);
+                    s.update(video);
+                    s.beginTransaction().commit();
+                }
+
+                s.close();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public static void subscribePubSub(String channelId) throws IOException, InterruptedException {
+
+        System.out.println(String.format("PubSub: Subscribing to %s", channelId));
+
+        String callback = Constants.PUBLIC_URL + "/webhooks/pubsub";
+        String topic = "https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + channelId;
+
+        Builder builder = HttpRequest.newBuilder(URI.create("https://pubsubhubbub.appspot.com/subscribe"));
+
+        Map<String, String> formParams = new Object2ObjectOpenHashMap<>();
+        StringBuilder formBody = new StringBuilder();
+
+        builder.header("content-type", "application/x-www-form-urlencoded");
+
+        formParams.put("hub.callback", callback);
+        formParams.put("hub.topic", topic);
+        formParams.put("hub.verify", "async");
+        formParams.put("hub.mode", "subscribe");
+        formParams.put("hub.lease_seconds", "432000");
+
+        formParams.forEach((name, value) -> {
+            formBody.append(name + "=" + URLUtils.silentEncode(value) + "&");
+        });
+
+        builder.method("POST", BodyPublishers.ofString(String.valueOf(formBody.substring(0, formBody.length() - 1))));
+
+        Constants.h2client.send(builder.build(), BodyHandlers.ofInputStream());
 
     }
 

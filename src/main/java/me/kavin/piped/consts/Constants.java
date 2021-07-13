@@ -29,6 +29,8 @@ public class Constants {
 
     public static final StreamingService YOUTUBE_SERVICE;
 
+    public static final String PUBLIC_URL;
+
     public static final HttpClient h2client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
             .version(Version.HTTP_2).build();
     public static final HttpClient h2_no_redir_client = HttpClient.newBuilder().followRedirects(Redirect.NEVER)
@@ -48,6 +50,7 @@ public class Constants {
             PROXY_PART = prop.getProperty("PROXY_PART");
             CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
+            PUBLIC_URL = prop.getProperty("API_URL");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
