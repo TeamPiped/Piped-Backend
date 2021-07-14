@@ -696,6 +696,67 @@ public class ResponseHelper {
 
     }
 
+    public static final byte[] importResponse(String session, String[] channelIds)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+
+        if (user != null) {
+
+            for (String channelId : channelIds) {
+
+                if (!user.getSubscribed().contains(channelId)) {
+                    user.getSubscribed().add(channelId);
+                    s.update(user);
+                }
+
+                me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s, channelId);
+
+                if (channel == null) {
+                    ChannelInfo info = null;
+
+                    try {
+                        info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+                    } catch (IOException | ExtractionException e) {
+                        ExceptionUtils.rethrow(e);
+                    }
+
+                    channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(), info.getAvatarUrl(),
+                            false);
+                    s.save(channel);
+
+                    try {
+                        subscribePubSub(channelId);
+                    } catch (IOException | InterruptedException e) {
+                        ExceptionUtils.rethrow(e);
+                    }
+
+                    for (StreamInfoItem item : info.getRelatedItems()) {
+                        long time = item.getUploadDate() != null
+                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                : System.currentTimeMillis();
+                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(10))
+                            handleNewVideo(item.getUrl(), time);
+                    }
+                }
+
+            }
+
+            s.beginTransaction().commit();
+
+            s.close();
+
+            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+    }
+
     private static final String getLBRYStreamURL(String videoId) throws IOException, InterruptedException {
 
         String lbryId = new JSONObject(Constants.h2client.send(HttpRequest

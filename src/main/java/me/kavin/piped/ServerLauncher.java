@@ -240,6 +240,16 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e);
                     }
+                })).map(POST, "/import", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                                String[].class);
+                        return getJsonResponse(
+                                ResponseHelper.importResponse(request.getHeader(AUTHORIZATION), subscriptions),
+                                "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
                 }));
 
         return new CustomServletDecorator(router);
