@@ -164,9 +164,10 @@ public class ResponseHelper {
         info.getStreamSegments().forEach(
                 segment -> segments.add(new ChapterSegment(segment.getTitle(), segment.getStartTimeSeconds())));
 
-        if (info.getUploadDate() != null && System.currentTimeMillis()
-                - info.getUploadDate().offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(10))
-            updateViews(info.getId(), info.getViewCount());
+        long time = info.getUploadDate().offsetDateTime().toInstant().toEpochMilli();
+
+        if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(10))
+            updateViews(info.getId(), info.getViewCount(), time, false);
 
         final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
@@ -189,6 +190,25 @@ public class ResponseHelper {
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
                     item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+        });
+
+        Multithreading.runAsync(() -> {
+            Session s = DatabaseSessionFactory.createSession();
+
+            me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s, info.getId());
+
+            if (channel != null) {
+                for (StreamInfoItem item : info.getRelatedItems()) {
+                    long time = item.getUploadDate() != null
+                            ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                            : System.currentTimeMillis();
+                    if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(10))
+                        updateViews(item.getUrl().substring("https://www.youtube.com/watch?v=".length()),
+                                item.getViewCount(), time, true);
+                }
+            }
+
+            s.close();
         });
 
         String nextpage = null;
@@ -544,7 +564,7 @@ public class ResponseHelper {
 
         Session s = DatabaseSessionFactory.createSession();
 
-        User user = DatabaseHelper.getUserFromSession(s, session);
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
 
         if (user != null) {
             if (!user.getSubscribed().contains(channelId)) {
@@ -713,7 +733,7 @@ public class ResponseHelper {
         long infoTime = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
 
-        Video video;
+        Video video = null;
 
         if (channel != null && (video = DatabaseHelper.getVideoFromId(s, info.getId())) == null
                 && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(10)) {
@@ -724,13 +744,19 @@ public class ResponseHelper {
             s.save(video);
 
             s.beginTransaction().commit();
+        } else if (video != null) {
+            video.setViews(info.getViewCount());
+
+            s.update(video);
+
+            s.beginTransaction().commit();
         }
 
         s.close();
 
     }
 
-    private static void updateViews(String id, long views) {
+    private static void updateViews(String id, long views, long time, boolean addIfNonExistent) {
         Multithreading.runAsync(() -> {
             try {
                 Session s = DatabaseSessionFactory.createSession();
@@ -741,7 +767,8 @@ public class ResponseHelper {
                     video.setViews(views);
                     s.update(video);
                     s.beginTransaction().commit();
-                }
+                } else if (addIfNonExistent)
+                    handleNewVideo("https://www.youtube.com/watch?v=" + id, time);
 
                 s.close();
 
