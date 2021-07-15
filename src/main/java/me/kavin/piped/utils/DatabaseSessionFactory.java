@@ -6,6 +6,7 @@ import org.hibernate.cfg.Configuration;
 
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
+import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
 
@@ -22,7 +23,7 @@ public class DatabaseSessionFactory {
         configuration.configure();
 
         sessionFactory = configuration.addAnnotatedClass(User.class).addAnnotatedClass(Video.class)
-                .addAnnotatedClass(Channel.class).buildSessionFactory();
+                .addAnnotatedClass(Channel.class).addAnnotatedClass(PubSub.class).buildSessionFactory();
     }
 
     public static final Session createSession() {

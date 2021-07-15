@@ -1,5 +1,7 @@
 package me.kavin.piped;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -14,6 +16,7 @@ import io.activej.inject.Injector;
 import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.DatabaseSessionFactory;
 import me.kavin.piped.utils.DownloaderImpl;
+import me.kavin.piped.utils.Multithreading;
 import me.kavin.piped.utils.ResponseHelper;
 
 public class Main {
@@ -24,18 +27,24 @@ public class Main {
 
         Injector.useSpecializer();
 
-        new Thread(() -> {
-            DatabaseSessionFactory.createSession().close();
-        }).start();
-
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 try {
                     Session s = DatabaseSessionFactory.createSession();
 
-                    for (String channelId : DatabaseHelper.getGlobalSubscribedChannelIds(s))
-                        ResponseHelper.subscribePubSub(channelId);
+                    List<String> channels = DatabaseHelper.getGlobalSubscribedChannelIds(s);
+
+                    for (String channelId : channels)
+                        Multithreading.runAsyncLimitedPubSub(() -> {
+                            Session sess = DatabaseSessionFactory.createSession();
+                            try {
+                                ResponseHelper.subscribePubSub(channelId, sess);
+                            } catch (IOException | InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            sess.close();
+                        });
 
                     s.close();
                 } catch (Exception e) {

@@ -12,9 +12,9 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 import org.schabi.newpipe.extractor.exceptions.AgeRestrictedContentException;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
@@ -35,6 +35,7 @@ import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.CustomServletDecorator;
+import me.kavin.piped.utils.DatabaseSessionFactory;
 import me.kavin.piped.utils.Multithreading;
 import me.kavin.piped.utils.ResponseHelper;
 import me.kavin.piped.utils.SponsorBlockUtils;
@@ -46,7 +47,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     @Provides
     Executor executor() {
-        return Executors.newCachedThreadPool();
+        return Multithreading.getCachedExecutor();
     }
 
     @Provides
@@ -63,11 +64,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                 new InputSource(new ByteArrayInputStream(request.loadBody().getResult().asArray())));
 
                         Multithreading.runAsync(() -> {
+                            Session s = DatabaseSessionFactory.createSession();
                             feed.getEntries().forEach(entry -> {
                                 System.out.println(entry.getLinks().get(0).getHref());
                                 ResponseHelper.handleNewVideo(entry.getLinks().get(0).getHref(),
-                                        entry.getPublishedDate().getTime());
+                                        entry.getPublishedDate().getTime(), null, s);
                             });
+                            s.close();
                         });
 
                         return HttpResponse.ofCode(204);

@@ -10,5 +10,6 @@
         <property name="hibernate.format_sql">true</property>
         
         <property name="hibernate.connection.provider_class">org.hibernate.hikaricp.internal.HikariCPConnectionProvider</property>
+        <property name="hibernate.connection.handling_mode">DELAYED_ACQUISITION_AND_RELEASE_AFTER_STATEMENT</property>
     </session-factory>
 </hibernate-configuration>

@@ -12,6 +12,7 @@ import org.hibernate.Session;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.utils.obj.db.Channel;
+import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
 
@@ -59,7 +60,7 @@ public class DatabaseHelper {
 
         @SuppressWarnings("unchecked")
         List<String> subscriptions = new ObjectArrayList<>(
-                new LinkedHashSet<>(s.createNativeQuery("Select channel from users_subscribed").getResultList()));
+                new LinkedHashSet<>(s.createNativeQuery("select channel from users_subscribed").getResultList()));
 
         return subscriptions;
     }
@@ -68,6 +69,15 @@ public class DatabaseHelper {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Video> cr = cb.createQuery(Video.class);
         Root<Video> root = cr.from(Video.class);
+        cr.select(root).where(root.get("id").in(id));
+
+        return s.createQuery(cr).uniqueResult();
+    }
+
+    public static final PubSub getPubSubFromId(Session s, String id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<PubSub> cr = cb.createQuery(PubSub.class);
+        Root<PubSub> root = cr.from(PubSub.class);
         cr.select(root).where(root.get("id").in(id));
 
         return s.createQuery(cr).uniqueResult();
