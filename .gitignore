@@ -15,6 +15,9 @@ bin/
 ### Gradle ###
 /build/
 
+# Database Data
+/data/
+
 # TxT File
 *.txt
 

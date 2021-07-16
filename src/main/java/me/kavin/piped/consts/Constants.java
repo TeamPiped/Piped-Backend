@@ -11,8 +11,8 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.client.MongoClient;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
 
 public class Constants {
@@ -30,15 +30,17 @@ public class Constants {
 
     public static final StreamingService YOUTUBE_SERVICE;
 
+    public static final String PUBLIC_URL;
+
     public static final HttpClient h2client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
             .version(Version.HTTP_2).build();
     public static final HttpClient h2_no_redir_client = HttpClient.newBuilder().followRedirects(Redirect.NEVER)
             .version(Version.HTTP_2).build();
 //    public static final HttpClient h3client = Http3ClientBuilder.newBuilder().followRedirects(Redirect.NORMAL).build();
 
-    public static final MongoClient mongoClient;
-
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
+
+    public static final Object2ObjectOpenHashMap<String, String> hibernateProperties = new Object2ObjectOpenHashMap<>();
 
     static {
         Properties prop = new Properties();
@@ -51,7 +53,12 @@ public class Constants {
             PROXY_PART = prop.getProperty("PROXY_PART");
             CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
-            mongoClient = null/* MongoClients.create(prop.getProperty("MONGO_URI")) */;
+            PUBLIC_URL = prop.getProperty("API_URL");
+            prop.forEach((_key, _value) -> {
+                String key = String.valueOf(_key), value = String.valueOf(_value);
+                if (key.startsWith("hibernate"))
+                    hibernateProperties.put(key, value);
+            });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

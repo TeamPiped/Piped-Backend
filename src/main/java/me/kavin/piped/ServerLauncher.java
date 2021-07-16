@@ -1,17 +1,20 @@
 package me.kavin.piped;
 
 import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
+import static io.activej.http.HttpHeaders.AUTHORIZATION;
 import static io.activej.http.HttpHeaders.CACHE_CONTROL;
 import static io.activej.http.HttpHeaders.CONTENT_TYPE;
+import static io.activej.http.HttpMethod.GET;
+import static io.activej.http.HttpMethod.POST;
 
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 import org.schabi.newpipe.extractor.exceptions.AgeRestrictedContentException;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
@@ -32,148 +35,225 @@ import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.CustomServletDecorator;
+import me.kavin.piped.utils.DatabaseSessionFactory;
+import me.kavin.piped.utils.Multithreading;
 import me.kavin.piped.utils.ResponseHelper;
 import me.kavin.piped.utils.SponsorBlockUtils;
 import me.kavin.piped.utils.resp.ErrorResponse;
+import me.kavin.piped.utils.resp.LoginRequest;
+import me.kavin.piped.utils.resp.SubscriptionUpdateRequest;
 
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     @Provides
     Executor executor() {
-        return Executors.newCachedThreadPool();
+        return Multithreading.getCachedExecutor();
     }
 
     @Provides
     AsyncServlet mainServlet(Executor executor) {
 
-        RoutingServlet router = RoutingServlet.create().map(HttpMethod.GET, "/webhooks/pubsub", request -> {
-            return HttpResponse.ok200().withPlainText(request.getQueryParameter("hub.challenge"));
-        }).map(HttpMethod.POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
-            try {
+        RoutingServlet router = RoutingServlet.create()
+                .map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200))
+                .map(GET, "/webhooks/pubsub", request -> {
+                    return HttpResponse.ok200().withPlainText(request.getQueryParameter("hub.challenge"));
+                }).map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
 
-                SyndFeed feed = new SyndFeedInput()
-                        .build(new InputSource(new ByteArrayInputStream(request.loadBody().getResult().asArray())));
+                        SyndFeed feed = new SyndFeedInput().build(
+                                new InputSource(new ByteArrayInputStream(request.loadBody().getResult().asArray())));
 
-                feed.getEntries().forEach(entry -> {
-                    System.out.println(entry.getLinks().get(0).getHref());
-                    System.out.println(entry.getAuthors().get(0).getUri());
-                });
+                        Multithreading.runAsync(() -> {
+                            Session s = DatabaseSessionFactory.createSession();
+                            feed.getEntries().forEach(entry -> {
+                                System.out.println(entry.getLinks().get(0).getHref());
+                                ResponseHelper.handleNewVideo(entry.getLinks().get(0).getHref(),
+                                        entry.getPublishedDate().getTime(), null, s);
+                            });
+                            s.close();
+                        });
 
-                return HttpResponse.ofCode(204);
+                        return HttpResponse.ofCode(204);
 
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/sponsors/:videoId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(SponsorBlockUtils
-                        .getSponsors(request.getPathParameter("videoId"), request.getQueryParameter("category"))
-                        .getBytes(StandardCharsets.UTF_8), "public, max-age=3600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/streams/:videoId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.streamsResponse(request.getPathParameter("videoId")),
-                        "public, s-maxage=21540");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(
-                        ResponseHelper.channelResponse("channel/" + request.getPathParameter("channelId")),
-                        "public, max-age=600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/c/:name", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.channelResponse("c/" + request.getPathParameter("name")),
-                        "public, max-age=600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/user/:name", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.channelResponse("user/" + request.getPathParameter("name")),
-                        "public, max-age=600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/nextpage/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
-                        request.getQueryParameter("nextpage")), "public, max-age=3600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.playlistResponse(request.getPathParameter("playlistId")),
-                        "public, max-age=600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/nextpage/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
-                        request.getQueryParameter("nextpage")), "public, max-age=3600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/rss/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.playlistRSSResponse(request.getPathParameter("playlistId")),
-                        "public, s-maxage=600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/suggestions", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.suggestionsResponse(request.getQueryParameter("query")),
-                        "public, max-age=600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/search", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.searchResponse(request.getQueryParameter("q"),
-                        request.getQueryParameter("filter")), "public, max-age=600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/nextpage/search", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(
-                        ResponseHelper.searchPageResponse(request.getQueryParameter("q"),
-                                request.getQueryParameter("filter"), request.getQueryParameter("nextpage")),
-                        "public, max-age=3600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/trending", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.trendingResponse(request.getQueryParameter("region")),
-                        "public, max-age=3600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.commentsResponse(request.getPathParameter("videoId")),
-                        "public, max-age=1200");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        })).map("/nextpage/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
-            try {
-                return getJsonResponse(ResponseHelper.commentsPageResponse(request.getPathParameter("videoId"),
-                        request.getQueryParameter("url")), "public, max-age=3600");
-            } catch (Exception e) {
-                return getErrorResponse(e);
-            }
-        }));
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/sponsors/:videoId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                SponsorBlockUtils.getSponsors(request.getPathParameter("videoId"),
+                                        request.getQueryParameter("category")).getBytes(StandardCharsets.UTF_8),
+                                "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/streams/:videoId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.streamsResponse(request.getPathParameter("videoId")),
+                                "public, s-maxage=21540");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                ResponseHelper.channelResponse("channel/" + request.getPathParameter("channelId")),
+                                "public, max-age=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/c/:name", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.channelResponse("c/" + request.getPathParameter("name")),
+                                "public, max-age=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/user/:name", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                ResponseHelper.channelResponse("user/" + request.getPathParameter("name")),
+                                "public, max-age=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/nextpage/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
+                                request.getQueryParameter("nextpage")), "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.playlistResponse(request.getPathParameter("playlistId")),
+                                "public, max-age=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/nextpage/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
+                                        request.getQueryParameter("nextpage")),
+                                "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/rss/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                ResponseHelper.playlistRSSResponse(request.getPathParameter("playlistId")),
+                                "public, s-maxage=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/suggestions", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.suggestionsResponse(request.getQueryParameter("query")),
+                                "public, max-age=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/search", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.searchResponse(request.getQueryParameter("q"),
+                                request.getQueryParameter("filter")), "public, max-age=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/nextpage/search", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                ResponseHelper.searchPageResponse(request.getQueryParameter("q"),
+                                        request.getQueryParameter("filter"), request.getQueryParameter("nextpage")),
+                                "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/trending", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.trendingResponse(request.getQueryParameter("region")),
+                                "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.commentsResponse(request.getPathParameter("videoId")),
+                                "public, max-age=1200");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/nextpage/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.commentsPageResponse(request.getPathParameter("videoId"),
+                                request.getQueryParameter("url")), "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(POST, "/register", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        LoginRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                                LoginRequest.class);
+                        return getJsonResponse(ResponseHelper.registerResponse(body.username, body.password),
+                                "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(POST, "/login", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        LoginRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                                LoginRequest.class);
+                        return getJsonResponse(ResponseHelper.loginResponse(body.username, body.password), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(POST, "/subscribe", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        SubscriptionUpdateRequest body = Constants.mapper
+                                .readValue(request.loadBody().getResult().asArray(), SubscriptionUpdateRequest.class);
+                        return getJsonResponse(
+                                ResponseHelper.subscribeResponse(request.getHeader(AUTHORIZATION), body.channelId),
+                                "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(POST, "/unsubscribe", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        SubscriptionUpdateRequest body = Constants.mapper
+                                .readValue(request.loadBody().getResult().asArray(), SubscriptionUpdateRequest.class);
+                        return getJsonResponse(
+                                ResponseHelper.unsubscribeResponse(request.getHeader(AUTHORIZATION), body.channelId),
+                                "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/subscribed", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.isSubscribedResponse(request.getHeader(AUTHORIZATION),
+                                request.getQueryParameter("channelId")), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(GET, "/feed", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.feedResponse(request.getQueryParameter("authToken")),
+                                "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                })).map(POST, "/import", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                                String[].class);
+                        return getJsonResponse(
+                                ResponseHelper.importResponse(request.getHeader(AUTHORIZATION), subscriptions),
+                                "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e);
+                    }
+                }));
 
         return new CustomServletDecorator(router);
     }

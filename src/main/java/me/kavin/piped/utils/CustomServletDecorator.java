@@ -1,5 +1,6 @@
 package me.kavin.piped.utils;
 
+import static io.activej.http.HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS;
 import static io.activej.http.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,8 @@ public class CustomServletDecorator implements AsyncServlet {
 
             HttpHeaderValue headerValue = HttpHeaderValue.of("app;dur=" + (System.nanoTime() - before) / 1000000.0);
 
-            return response.withHeader(HEADER, headerValue).withHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+            return response.withHeader(HEADER, headerValue).withHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .withHeader(ACCESS_CONTROL_ALLOW_HEADERS, "*");
 
         });
     }
