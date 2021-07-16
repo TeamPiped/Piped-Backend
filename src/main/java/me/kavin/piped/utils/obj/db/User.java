@@ -16,7 +16,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "users", indexes = { @Index(columnList = "id", name = "id_idx"),
+@Table(name = "users", indexes = { @Index(columnList = "id", name = "users_id_idx"),
         @Index(columnList = "username", name = "username_idx") })
 public class User implements Serializable {
 

@@ -1,6 +1,7 @@
 package me.kavin.piped;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,6 +35,13 @@ public class Main {
                     Session s = DatabaseSessionFactory.createSession();
 
                     List<String> channels = DatabaseHelper.getGlobalSubscribedChannelIds(s);
+
+                    DatabaseHelper.getPubSubFromIds(s, channels).forEach(pubsub -> {
+                        if (System.currentTimeMillis() - pubsub.getSubbedAt() < TimeUnit.DAYS.toMillis(4))
+                            channels.remove(pubsub.getId());
+                    });
+
+                    Collections.shuffle(channels);
 
                     for (String channelId : channels)
                         Multithreading.runAsyncLimitedPubSub(() -> {

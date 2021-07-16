@@ -6,3 +6,4 @@ Dockerfile
 LICENSE
 *.md
 config.properties
+data/

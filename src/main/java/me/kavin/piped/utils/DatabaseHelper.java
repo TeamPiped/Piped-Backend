@@ -82,4 +82,13 @@ public class DatabaseHelper {
 
         return s.createQuery(cr).uniqueResult();
     }
+
+    public static final List<PubSub> getPubSubFromIds(Session s, List<String> id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<PubSub> cr = cb.createQuery(PubSub.class);
+        Root<PubSub> root = cr.from(PubSub.class);
+        cr.select(root).where(root.get("id").in(id));
+
+        return s.createQuery(cr).getResultList();
+    }
 }

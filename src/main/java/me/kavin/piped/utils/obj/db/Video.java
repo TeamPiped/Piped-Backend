@@ -10,8 +10,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "videos", indexes = { @Index(columnList = "id", name = "id_idx"),
-        @Index(columnList = "uploader_id", name = "uploader_id_idx") })
+@Table(name = "videos", indexes = { @Index(columnList = "id", name = "videos_id_idx"),
+        @Index(columnList = "uploader_id", name = "video_uploader_id_idx") })
 public class Video {
 
     @Id
