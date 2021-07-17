@@ -608,7 +608,7 @@ public class ResponseHelper {
                                     ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                                     : System.currentTimeMillis();
                             if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(10))
-                                handleNewVideo(item.getUrl(), time, channel, s);
+                                handleNewVideo(item.getUrl(), time, channel, sess);
                         }
                     }
 
@@ -813,8 +813,8 @@ public class ResponseHelper {
     public static void handleNewVideo(String url, long time, me.kavin.piped.utils.obj.db.Channel channel, Session s) {
         try {
             handleNewVideo(StreamInfo.getInfo(url), time, channel, s);
-        } catch (IOException | ExtractionException e) {
-            ExceptionUtils.rethrow(e);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
