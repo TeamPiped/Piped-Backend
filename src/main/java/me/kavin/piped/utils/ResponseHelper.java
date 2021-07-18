@@ -165,7 +165,8 @@ public class ResponseHelper {
         info.getStreamSegments().forEach(
                 segment -> segments.add(new ChapterSegment(segment.getTitle(), segment.getStartTimeSeconds())));
 
-        long time = info.getUploadDate().offsetDateTime().toInstant().toEpochMilli();
+        long time = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                : System.currentTimeMillis();
 
         if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(10))
             updateViews(info.getId(), info.getViewCount(), time, false);
