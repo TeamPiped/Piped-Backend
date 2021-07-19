@@ -33,7 +33,7 @@ dependencies {
     implementation 'io.activej:activej-launchers-http:4.3'
     implementation 'org.postgresql:postgresql:42.2.23'
     implementation 'org.hibernate:hibernate-core:5.4.30.Final'
-    implementation 'org.hibernate:hibernate-hikaricp:5.4.30.Final'
+    implementation 'org.hibernate:hibernate-hikaricp:5.5.4.Final'
     implementation 'com.zaxxer:HikariCP:5.0.0'
     implementation 'org.springframework.security:spring-security-crypto:5.5.1'
     implementation 'commons-logging:commons-logging:1.2'
