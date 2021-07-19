@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +52,8 @@ import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndEntryImpl;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.feed.synd.SyndFeedImpl;
+import com.rometools.rome.feed.synd.SyndPerson;
+import com.rometools.rome.feed.synd.SyndPersonImpl;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
 
@@ -698,6 +701,59 @@ public class ResponseHelper {
             s.close();
 
             return Constants.mapper.writeValueAsBytes(feedItems);
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+    }
+
+    public static final byte[] feedResponseRSS(String session)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, FeedException {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+
+        if (user != null) {
+
+            SyndFeed feed = new SyndFeedImpl();
+            feed.setFeedType("atom_1.0");
+            feed.setTitle("Piped - Feed");
+            feed.setDescription(String.format("Piped's RSS subscription feed for %s.", user.getUsername()));
+            feed.setUri("https://piped.kavin.rocks/feed");
+
+            if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
+
+                List<Video> videos = DatabaseHelper.getVideosFromChannelIds(s, user.getSubscribed());
+
+                Collections.sort(videos, (a, b) -> (int) (b.getUploaded() - a.getUploaded()));
+
+                final List<SyndEntry> entries = new ObjectArrayList<>();
+
+                for (Video video : videos) {
+                    SyndEntry entry = new SyndEntryImpl();
+
+                    SyndPerson person = new SyndPersonImpl();
+                    person.setName(video.getChannel().getUploader());
+                    person.setUri("https://piped.kavin.rocks/channel/" + video.getChannel().getUploaderId());
+
+                    entry.setAuthors(Collections.singletonList(person));
+
+                    entry.setUri("https://piped.kavin.rocks/watch?v=" + video.getId());
+                    entry.setTitle(video.getTitle());
+                    entry.setPublishedDate(new Date(video.getUploaded()));
+                    entries.add(entry);
+                }
+
+                feed.setEntries(entries);
+
+            }
+
+            s.close();
+
+            return new SyndFeedOutput().outputString(feed).getBytes(StandardCharsets.UTF_8);
         }
 
         s.close();
