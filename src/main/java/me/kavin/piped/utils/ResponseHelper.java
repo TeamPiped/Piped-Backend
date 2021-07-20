@@ -903,6 +903,8 @@ public class ResponseHelper {
 
             s.update(video);
 
+            if (!s.getTransaction().isActive())
+                s.getTransaction().begin();
             s.getTransaction().commit();
         }
 
