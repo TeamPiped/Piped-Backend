@@ -44,15 +44,16 @@ public class Main {
                     Collections.shuffle(channels);
 
                     for (String channelId : channels)
-                        Multithreading.runAsyncLimitedPubSub(() -> {
-                            Session sess = DatabaseSessionFactory.createSession();
-                            try {
-                                ResponseHelper.subscribePubSub(channelId, sess);
-                            } catch (IOException | InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            sess.close();
-                        });
+                        if (channelId != null)
+                            Multithreading.runAsyncLimitedPubSub(() -> {
+                                Session sess = DatabaseSessionFactory.createSession();
+                                try {
+                                    ResponseHelper.subscribePubSub(channelId, sess);
+                                } catch (IOException | InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                sess.close();
+                            });
 
                     s.close();
                 } catch (Exception e) {
