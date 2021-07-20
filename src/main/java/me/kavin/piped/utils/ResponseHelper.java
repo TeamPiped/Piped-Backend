@@ -84,6 +84,7 @@ import me.kavin.piped.utils.resp.AcceptedResponse;
 import me.kavin.piped.utils.resp.AlreadyRegisteredResponse;
 import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
 import me.kavin.piped.utils.resp.IncorrectCredentialsResponse;
+import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.LoginResponse;
 import me.kavin.piped.utils.resp.SubscribeStatusResponse;
 
@@ -262,6 +263,9 @@ public class ResponseHelper {
 
     public static final byte[] trendingResponse(String region)
             throws ParsingException, ExtractionException, IOException {
+
+        if (region == null)
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -515,6 +519,9 @@ public class ResponseHelper {
     public static final byte[] registerResponse(String user, String pass)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 
+        if (user == null || pass == null)
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
         user = user.toLowerCase();
 
         Session s = DatabaseSessionFactory.createSession();
@@ -543,6 +550,9 @@ public class ResponseHelper {
 
     public static final byte[] loginResponse(String user, String pass)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        if (user == null || pass == null)
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         user = user.toLowerCase();
 
