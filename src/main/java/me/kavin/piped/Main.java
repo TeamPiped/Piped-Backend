@@ -1,6 +1,5 @@
 package me.kavin.piped;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
@@ -49,7 +48,7 @@ public class Main {
                                 Session sess = DatabaseSessionFactory.createSession();
                                 try {
                                     ResponseHelper.subscribePubSub(channelId, sess);
-                                } catch (IOException | InterruptedException e) {
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                                 sess.close();

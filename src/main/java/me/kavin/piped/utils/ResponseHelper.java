@@ -609,13 +609,15 @@ public class ResponseHelper {
                         sess.save(channel);
                         sess.beginTransaction().commit();
 
-                        try {
-                            Session sessSub = DatabaseSessionFactory.createSession();
-                            subscribePubSub(channelId, sessSub);
-                            sessSub.close();
-                        } catch (IOException | InterruptedException e) {
-                            ExceptionUtils.rethrow(e);
-                        }
+                        Multithreading.runAsync(() -> {
+                            try {
+                                Session sessSub = DatabaseSessionFactory.createSession();
+                                subscribePubSub(channelId, sessSub);
+                                sessSub.close();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
 
                         for (StreamInfoItem item : info.getRelatedItems()) {
                             long time = item.getUploadDate() != null
@@ -822,7 +824,7 @@ public class ResponseHelper {
                                     Session sessSub = DatabaseSessionFactory.createSession();
                                     subscribePubSub(channelId, sessSub);
                                     sessSub.close();
-                                } catch (IOException | InterruptedException e) {
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             });
