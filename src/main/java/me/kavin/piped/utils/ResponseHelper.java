@@ -699,10 +699,11 @@ public class ResponseHelper {
                 List<Video> videos = DatabaseHelper.getVideosFromChannelIds(s, user.getSubscribed());
 
                 videos.forEach(video -> {
-                    feedItems.add(new FeedItem(video.getId(), video.getTitle(), rewriteURL(video.getThumbnail()),
-                            video.getChannel().getUploaderId(), video.getChannel().getUploader(),
-                            rewriteURL(video.getChannel().getUploaderAvatar()), video.getViews(), video.getDuration(),
-                            video.getUploaded(), video.getChannel().isVerified()));
+                    feedItems.add(new FeedItem("/watch?v=" + video.getId(), video.getTitle(),
+                            rewriteURL(video.getThumbnail()), "/channel/" + video.getChannel().getUploaderId(),
+                            video.getChannel().getUploader(), rewriteURL(video.getChannel().getUploaderAvatar()),
+                            video.getViews(), video.getDuration(), video.getUploaded(),
+                            video.getChannel().isVerified()));
                 });
 
                 Collections.sort(feedItems, (a, b) -> (int) (b.uploaded - a.uploaded));
