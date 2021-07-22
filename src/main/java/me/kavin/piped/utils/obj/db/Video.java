@@ -18,7 +18,7 @@ public class Video {
     @Column(name = "id", unique = true, length = 16)
     private String id;
 
-    @Column(name = "title", length = 100)
+    @Column(name = "title", length = 120)
     private String title;
 
     @Column(name = "views")
