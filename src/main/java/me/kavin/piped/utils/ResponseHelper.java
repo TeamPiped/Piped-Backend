@@ -75,6 +75,7 @@ import me.kavin.piped.utils.obj.SearchResults;
 import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.StreamsPage;
+import me.kavin.piped.utils.obj.SubscriptionChannel;
 import me.kavin.piped.utils.obj.Subtitle;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
@@ -856,6 +857,41 @@ public class ResponseHelper {
             }
 
             return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+    }
+
+    public static final byte[] subscriptionsResponse(String session)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+
+        if (user != null) {
+
+            List<SubscriptionChannel> subscriptionItems = new ObjectArrayList<>();
+
+            if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
+
+                List<me.kavin.piped.utils.obj.db.Channel> channels = DatabaseHelper.getChannelFromIds(s,
+                        user.getSubscribed());
+
+                channels.forEach(channel -> {
+                    subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
+                            channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()));
+                });
+
+                Collections.sort(subscriptionItems, (a, b) -> (a.name.compareTo(b.name)));
+            }
+
+            s.close();
+
+            return Constants.mapper.writeValueAsBytes(subscriptionItems);
         }
 
         s.close();

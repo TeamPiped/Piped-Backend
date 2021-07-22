@@ -46,6 +46,15 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
+    public static final List<Channel> getChannelFromIds(Session s, List<String> id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<Channel> cr = cb.createQuery(Channel.class);
+        Root<Channel> root = cr.from(Channel.class);
+        cr.select(root).where(root.get("uploader_id").in(id));
+
+        return s.createQuery(cr).getResultList();
+    }
+
     public static final List<Video> getVideosFromChannelIds(Session s, List<String> id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Video> cr = cb.createQuery(Video.class);
