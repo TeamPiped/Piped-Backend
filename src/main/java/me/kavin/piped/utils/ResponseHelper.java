@@ -1,12 +1,14 @@
 package me.kavin.piped.utils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -22,6 +24,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
 import org.json.JSONObject;
@@ -975,18 +978,22 @@ public class ResponseHelper {
             builder.method("POST",
                     BodyPublishers.ofString(String.valueOf(formBody.substring(0, formBody.length() - 1))));
 
-            Constants.h2client.send(builder.build(), BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> resp = Constants.h2client.send(builder.build(), BodyHandlers.ofInputStream());
 
-            if (pubsub == null)
-                pubsub = new PubSub(channelId, System.currentTimeMillis());
-            else
-                pubsub.setSubbedAt(System.currentTimeMillis());
+            if (resp.statusCode() == 204) {
+                if (pubsub == null)
+                    pubsub = new PubSub(channelId, System.currentTimeMillis());
+                else
+                    pubsub.setSubbedAt(System.currentTimeMillis());
 
-            s.saveOrUpdate(pubsub);
+                s.saveOrUpdate(pubsub);
 
-            if (!s.getTransaction().isActive())
-                s.getTransaction().begin();
-            s.getTransaction().commit();
+                if (!s.getTransaction().isActive())
+                    s.getTransaction().begin();
+                s.getTransaction().commit();
+            } else
+                System.out.println(
+                        "Failed to subscribe: " + resp.statusCode() + "\n" + IOUtils.toString(resp.body(), "UTF-8"));
         }
 
     }

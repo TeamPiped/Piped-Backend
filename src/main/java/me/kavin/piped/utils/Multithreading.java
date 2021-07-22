@@ -20,7 +20,7 @@ public class Multithreading {
     }
 
     public static void runAsyncLimitedPubSub(final Runnable runnable) {
-        esLimited.submit(runnable);
+        esLimitedPubSub.submit(runnable);
     }
 
     public static ExecutorService getCachedExecutor() {
