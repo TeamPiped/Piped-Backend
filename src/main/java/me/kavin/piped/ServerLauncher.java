@@ -289,7 +289,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     private @NotNull HttpResponse getErrorResponse(Exception e) {
 
-        if (e instanceof ExecutionException)
+        if (e.getCause() != null && e instanceof ExecutionException)
             e = (Exception) e.getCause();
 
         if (!(e instanceof AgeRestrictedContentException || e instanceof ContentNotAvailableException))
