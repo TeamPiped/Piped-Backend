@@ -980,7 +980,7 @@ public class ResponseHelper {
 
             HttpResponse<InputStream> resp = Constants.h2client.send(builder.build(), BodyHandlers.ofInputStream());
 
-            if (resp.statusCode() == 204) {
+            if (resp.statusCode() == 202) {
                 if (pubsub == null)
                     pubsub = new PubSub(channelId, System.currentTimeMillis());
                 else
