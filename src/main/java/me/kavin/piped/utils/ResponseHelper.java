@@ -908,7 +908,7 @@ public class ResponseHelper {
                         .getJSONObject("data").getJSONObject("videos").optString(videoId);
 
         if (!lbryId.isEmpty())
-            new JSONObject(Constants.h2client.send(HttpRequest
+            return new JSONObject(Constants.h2client.send(HttpRequest
                     .newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
                     .POST(BodyPublishers.ofString(
                             String.valueOf(new JSONObject().put("jsonrpc", "2.0").put("method", "get").put("params",
