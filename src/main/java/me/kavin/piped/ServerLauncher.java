@@ -188,7 +188,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/nextpage/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.commentsPageResponse(request.getPathParameter("videoId"),
-                                request.getQueryParameter("url")), "public, max-age=3600");
+                                request.getQueryParameter("nextpage")), "public, max-age=3600");
                     } catch (Exception e) {
                         return getErrorResponse(e);
                     }

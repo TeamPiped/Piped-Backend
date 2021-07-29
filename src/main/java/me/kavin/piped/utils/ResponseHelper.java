@@ -482,9 +482,10 @@ public class ResponseHelper {
         });
 
         String nextpage = null;
-
-        if (info.getNextPage() != null)
-            nextpage = info.getNextPage().getUrl();
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = Constants.mapper.writeValueAsString(page);
+        }
 
         CommentsPage commentsItem = new CommentsPage(comments, nextpage);
 
@@ -492,11 +493,13 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] commentsPageResponse(String videoId, String url) throws Exception {
+    public static final byte[] commentsPageResponse(String videoId, String prevpageStr) throws Exception {
+
+        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
         CommentsInfo init = commentsCache.get(videoId);
 
-        InfoItemsPage<CommentsInfoItem> info = CommentsInfo.getMoreItems(init, new Page(url));
+        InfoItemsPage<CommentsInfoItem> info = CommentsInfo.getMoreItems(init, prevpage);
 
         List<Comment> comments = new ObjectArrayList<>();
 
@@ -508,9 +511,10 @@ public class ResponseHelper {
         });
 
         String nextpage = null;
-
-        if (info.getNextPage() != null)
-            nextpage = info.getNextPage().getUrl();
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = Constants.mapper.writeValueAsString(page);
+        }
 
         CommentsPage commentsItem = new CommentsPage(comments, nextpage);
 
