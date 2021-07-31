@@ -477,8 +477,8 @@ public class ResponseHelper {
         info.getRelatedItems().forEach(comment -> {
             comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                     comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                    comment.getUploaderUrl().substring(19), comment.getLikeCount(), comment.isHeartedByUploader(),
-                    comment.isPinned(), comment.isUploaderVerified()));
+                    optionalSubstring(comment.getUploaderUrl(), 19), comment.getLikeCount(),
+                    comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
         });
 
         String nextpage = null;
@@ -487,7 +487,7 @@ public class ResponseHelper {
             nextpage = Constants.mapper.writeValueAsString(page);
         }
 
-        CommentsPage commentsItem = new CommentsPage(comments, nextpage);
+        CommentsPage commentsItem = new CommentsPage(comments, nextpage, info.isCommentsDisabled());
 
         return Constants.mapper.writeValueAsBytes(commentsItem);
 
@@ -516,7 +516,7 @@ public class ResponseHelper {
             nextpage = Constants.mapper.writeValueAsString(page);
         }
 
-        CommentsPage commentsItem = new CommentsPage(comments, nextpage);
+        CommentsPage commentsItem = new CommentsPage(comments, nextpage, init.isCommentsDisabled());
 
         return Constants.mapper.writeValueAsBytes(commentsItem);
 
