@@ -6,7 +6,7 @@ import me.kavin.piped.consts.Constants;
 
 public class Streams {
 
-    public String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls;
+    public String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls, lbryId;
 
     public long duration, views, likes, dislikes;
 
@@ -23,7 +23,7 @@ public class Streams {
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
             String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes,
             List<PipedStream> audioStreams, List<PipedStream> videoStreams, List<StreamItem> relatedStreams,
-            List<Subtitle> subtitles, boolean livestream, String hls) {
+            List<Subtitle> subtitles, boolean livestream, String hls, String lbryId) {
         this.title = title;
         this.description = description;
         this.uploadDate = uploadDate;
@@ -41,5 +41,6 @@ public class Streams {
         this.subtitles = subtitles;
         this.livestream = livestream;
         this.hls = hls;
+        this.lbryId = lbryId;
     }
 }

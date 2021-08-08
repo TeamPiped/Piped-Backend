@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -109,9 +110,18 @@ public class ResponseHelper {
             return null;
         });
 
+        CompletableFuture<String> futureLbryId = CompletableFuture.supplyAsync(() -> {
+            try {
+                return getLBRYId(videoId);
+            } catch (Exception e) {
+                ExceptionUtils.rethrow(e);
+            }
+            return null;
+        });
+
         CompletableFuture<String> futureLBRY = CompletableFuture.supplyAsync(() -> {
             try {
-                return getLBRYStreamURL(videoId);
+                return getLBRYStreamURL(futureLbryId);
             } catch (Exception e) {
                 ExceptionUtils.rethrow(e);
             }
@@ -183,7 +193,7 @@ public class ResponseHelper {
                 info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), audioStreams, videoStreams,
-                relatedStreams, subtitles, livestream, hls);
+                relatedStreams, subtitles, livestream, hls, futureLbryId.get());
 
         return Constants.mapper.writeValueAsBytes(streams);
 
@@ -904,12 +914,17 @@ public class ResponseHelper {
 
     }
 
-    private static final String getLBRYStreamURL(String videoId) throws IOException, InterruptedException {
-
-        String lbryId = new JSONObject(Constants.h2client.send(HttpRequest
+    private static final String getLBRYId(String videoId) throws IOException, InterruptedException {
+        return new JSONObject(Constants.h2client.send(HttpRequest
                 .newBuilder(URI.create("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId)))
                 .setHeader("User-Agent", Constants.USER_AGENT).build(), BodyHandlers.ofString()).body())
                         .getJSONObject("data").getJSONObject("videos").optString(videoId);
+    }
+
+    private static final String getLBRYStreamURL(CompletableFuture<String> futureLbryId)
+            throws IOException, InterruptedException, ExecutionException {
+
+        String lbryId = futureLbryId.get();
 
         if (!lbryId.isEmpty())
             return new JSONObject(Constants.h2client.send(HttpRequest
