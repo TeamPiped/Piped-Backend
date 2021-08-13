@@ -1,11 +1,15 @@
 package me.kavin.piped.consts;
 
 import java.io.FileReader;
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.http.HttpClient;
+import java.net.http.HttpClient.Builder;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpClient.Version;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
@@ -32,11 +36,10 @@ public class Constants {
 
     public static final String PUBLIC_URL;
 
-    public static final HttpClient h2client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
-            .version(Version.HTTP_2).build();
-    public static final HttpClient h2_no_redir_client = HttpClient.newBuilder().followRedirects(Redirect.NEVER)
-            .version(Version.HTTP_2).build();
-//    public static final HttpClient h3client = Http3ClientBuilder.newBuilder().followRedirects(Redirect.NORMAL).build();
+    public static final String HTTP_PROXY;
+
+    public static final HttpClient h2client;
+    public static final HttpClient h2_no_redir_client;
 
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
 
@@ -54,11 +57,23 @@ public class Constants {
             CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
             PUBLIC_URL = prop.getProperty("API_URL");
+            HTTP_PROXY = prop.getProperty("HTTP_PROXY");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
             });
+            Builder builder = HttpClient.newBuilder().followRedirects(Redirect.NORMAL).version(Version.HTTP_2);
+            Builder builder_noredir = HttpClient.newBuilder().followRedirects(Redirect.NEVER).version(Version.HTTP_2);
+            if (HTTP_PROXY != null && HTTP_PROXY.contains(":")) {
+                String host = StringUtils.substringBefore(HTTP_PROXY, ":");
+                String port = StringUtils.substringAfter(HTTP_PROXY, ":");
+                InetSocketAddress sa = new InetSocketAddress(host, Integer.parseInt(port));
+                ProxySelector ps = ProxySelector.of(sa);
+                ProxySelector.setDefault(ps);
+            }
+            h2client = builder.build();
+            h2_no_redir_client = builder_noredir.build();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
