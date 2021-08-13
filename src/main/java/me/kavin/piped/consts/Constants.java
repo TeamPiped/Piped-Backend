@@ -2,8 +2,12 @@ package me.kavin.piped.consts;
 
 import java.io.FileReader;
 import java.net.http.HttpClient;
+import java.net.http.HttpClient.Builder;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpClient.Version;
+import java.net.ProxySelector;
+import java.net.InetSocketAddress;
+
 import java.util.Properties;
 
 import org.schabi.newpipe.extractor.NewPipe;
@@ -32,10 +36,10 @@ public class Constants {
 
     public static final String PUBLIC_URL;
 
-    public static final HttpClient h2client = HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
-            .version(Version.HTTP_2).build();
-    public static final HttpClient h2_no_redir_client = HttpClient.newBuilder().followRedirects(Redirect.NEVER)
-            .version(Version.HTTP_2).build();
+    public static final String HTTP_PROXY;
+
+    public static final HttpClient h2client;
+    public static final HttpClient h2_no_redir_client;
 //    public static final HttpClient h3client = Http3ClientBuilder.newBuilder().followRedirects(Redirect.NORMAL).build();
 
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
@@ -54,11 +58,24 @@ public class Constants {
             CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
             PUBLIC_URL = prop.getProperty("API_URL");
+            HTTP_PROXY = prop.getProperty("HTTP_PROXY");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
             });
+            Builder h2c =  HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
+                    .version(Version.HTTP_2);
+            Builder h2nrc = HttpClient.newBuilder().followRedirects(Redirect.NEVER)
+                    .version(Version.HTTP_2);
+            if (HTTP_PROXY != null && !HTTP_PROXY.trim().isEmpty()) {
+                String[] parts = HTTP_PROXY.split(":");
+                ProxySelector proxy = ProxySelector.of(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
+                h2c = h2c.proxy(proxy);
+                h2nrc = h2nrc.proxy(proxy);
+            }
+            h2client = h2c.build();
+            h2_no_redir_client = h2nrc.build();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
