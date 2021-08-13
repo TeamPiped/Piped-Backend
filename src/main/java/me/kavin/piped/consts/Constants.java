@@ -1,15 +1,15 @@
 package me.kavin.piped.consts;
 
 import java.io.FileReader;
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Builder;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpClient.Version;
-import java.net.ProxySelector;
-import java.net.InetSocketAddress;
-
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
@@ -40,7 +40,6 @@ public class Constants {
 
     public static final HttpClient h2client;
     public static final HttpClient h2_no_redir_client;
-//    public static final HttpClient h3client = Http3ClientBuilder.newBuilder().followRedirects(Redirect.NORMAL).build();
 
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
 
@@ -64,18 +63,17 @@ public class Constants {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
             });
-            Builder h2c =  HttpClient.newBuilder().followRedirects(Redirect.NORMAL)
-                    .version(Version.HTTP_2);
-            Builder h2nrc = HttpClient.newBuilder().followRedirects(Redirect.NEVER)
-                    .version(Version.HTTP_2);
-            if (HTTP_PROXY != null && !HTTP_PROXY.trim().isEmpty()) {
-                String[] parts = HTTP_PROXY.split(":");
-                ProxySelector proxy = ProxySelector.of(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
-                h2c = h2c.proxy(proxy);
-                h2nrc = h2nrc.proxy(proxy);
+            Builder builder = HttpClient.newBuilder().followRedirects(Redirect.NORMAL).version(Version.HTTP_2);
+            Builder builder_noredir = HttpClient.newBuilder().followRedirects(Redirect.NEVER).version(Version.HTTP_2);
+            if (HTTP_PROXY != null && HTTP_PROXY.contains(":")) {
+                String host = StringUtils.substringBefore(HTTP_PROXY, ":");
+                String port = StringUtils.substringAfter(HTTP_PROXY, ":");
+                InetSocketAddress sa = new InetSocketAddress(host, Integer.parseInt(port));
+                ProxySelector ps = ProxySelector.of(sa);
+                ProxySelector.setDefault(ps);
             }
-            h2client = h2c.build();
-            h2_no_redir_client = h2nrc.build();
+            h2client = builder.build();
+            h2_no_redir_client = builder_noredir.build();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
