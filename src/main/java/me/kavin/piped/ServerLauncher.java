@@ -279,7 +279,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             Config config() {
                 return Config.create()
                         .with("http.listenAddresses",
-                                Config.ofValue(ofInetSocketAddress(), new InetSocketAddress(PORT)))
+                                Config.ofValue(ofInetSocketAddress(), new InetSocketAddress(Constants.PORT)))
                         .with("workers", Constants.HTTP_WORKERS);
             }
         };
