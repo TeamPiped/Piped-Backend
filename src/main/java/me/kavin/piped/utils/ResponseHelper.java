@@ -238,7 +238,7 @@ public class ResponseHelper {
         }
 
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
-                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, relatedStreams);
+                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, info.getSubscriberCount(), relatedStreams);
 
         IPFS.publishData(channel);
 
