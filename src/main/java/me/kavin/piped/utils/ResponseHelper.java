@@ -193,7 +193,7 @@ public class ResponseHelper {
                 info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), audioStreams, videoStreams,
-                relatedStreams, subtitles, livestream, hls, futureLbryId.get());
+                relatedStreams, subtitles, livestream, hls, info.getDashMpdUrl(), futureLbryId.get());
 
         return Constants.mapper.writeValueAsBytes(streams);
 
@@ -238,7 +238,8 @@ public class ResponseHelper {
         }
 
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
-                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, info.getSubscriberCount(), relatedStreams);
+                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, info.getSubscriberCount(),
+                relatedStreams);
 
         IPFS.publishData(channel);
 
