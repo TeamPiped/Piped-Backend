@@ -175,7 +175,7 @@ public class ResponseHelper {
             StreamInfoItem item = (StreamInfoItem) o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount(), item.isUploaderVerified()));
         });
 
         List<ChapterSegment> segments = new ObjectArrayList<>();
@@ -209,7 +209,7 @@ public class ResponseHelper {
             StreamInfoItem item = o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount(), item.isUploaderVerified()));
         });
 
         Multithreading.runAsync(() -> {
@@ -245,8 +245,8 @@ public class ResponseHelper {
         }
 
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
-                rewriteURL(info.getBannerUrl()), info.getDescription(), nextpage, info.getSubscriberCount(),
-                relatedStreams);
+                rewriteURL(info.getBannerUrl()), info.getDescription(), info.getSubscriberCount(), info.isVerified(),
+                nextpage, relatedStreams);
 
         IPFS.publishData(channel);
 
@@ -268,7 +268,7 @@ public class ResponseHelper {
             StreamInfoItem item = o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount(), item.isUploaderVerified()));
         });
 
         String nextpage = null;
@@ -301,7 +301,7 @@ public class ResponseHelper {
             StreamInfoItem item = o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount(), item.isUploaderVerified()));
         });
 
         return Constants.mapper.writeValueAsBytes(relatedStreams);
@@ -318,7 +318,7 @@ public class ResponseHelper {
             StreamInfoItem item = o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount(), item.isUploaderVerified()));
         });
 
         String nextpage = null;
@@ -351,7 +351,7 @@ public class ResponseHelper {
             StreamInfoItem item = o;
             relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
                     rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
-                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount()));
+                    item.getTextualUploadDate(), item.getDuration(), item.getViewCount(), item.isUploaderVerified()));
         });
 
         String nextpage = null;
