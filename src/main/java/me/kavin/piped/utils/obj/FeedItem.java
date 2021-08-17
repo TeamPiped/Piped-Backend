@@ -6,10 +6,10 @@ public class FeedItem {
 
     public long views, duration, uploaded;
 
-    public boolean verified;
+    public boolean uploaderVerified;
 
     public FeedItem(String url, String title, String thumbnail, String uploaderUrl, String uploaderName,
-            String uploaderAvatar, long views, long duration, long uploaded, boolean verified) {
+            String uploaderAvatar, long views, long duration, long uploaded, boolean uploaderVerified) {
         this.url = url;
         this.title = title;
         this.thumbnail = thumbnail;
@@ -19,6 +19,6 @@ public class FeedItem {
         this.views = views;
         this.duration = duration;
         this.uploaded = uploaded;
-        this.verified = verified;
+        this.uploaderVerified = uploaderVerified;
     }
 }

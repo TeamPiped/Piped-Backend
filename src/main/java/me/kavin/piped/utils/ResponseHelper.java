@@ -218,6 +218,13 @@ public class ResponseHelper {
             me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s, info.getId());
 
             if (channel != null) {
+                if (channel.isVerified() != info.isVerified()) {
+                    channel.setVerified(info.isVerified());
+                    if (!s.getTransaction().isActive())
+                        s.getTransaction().begin();
+                    s.update(channel);
+                    s.getTransaction().commit();
+                }
                 for (StreamInfoItem item : info.getRelatedItems()) {
                     long time = item.getUploadDate() != null
                             ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
@@ -624,7 +631,7 @@ public class ResponseHelper {
                         }
 
                         channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
-                                info.getAvatarUrl(), false);
+                                info.getAvatarUrl(), info.isVerified());
                         sess.save(channel);
                         sess.beginTransaction().commit();
 
@@ -835,7 +842,7 @@ public class ResponseHelper {
                             }
 
                             channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
-                                    info.getAvatarUrl(), false);
+                                    info.getAvatarUrl(), info.isVerified());
                             sess.save(channel);
 
                             Multithreading.runAsync(() -> {
