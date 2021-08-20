@@ -1,6 +1,5 @@
 package me.kavin.piped.utils;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -10,7 +9,6 @@ import javax.persistence.criteria.Root;
 
 import org.hibernate.Session;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
@@ -65,15 +63,6 @@ public class DatabaseHelper {
         return s.createQuery(cr).getResultList();
     }
 
-    public static final List<String> getGlobalSubscribedChannelIds(Session s) {
-
-        @SuppressWarnings("unchecked")
-        List<String> subscriptions = new ObjectArrayList<>(
-                new LinkedHashSet<>(s.createNativeQuery("select channel from users_subscribed").getResultList()));
-
-        return subscriptions;
-    }
-
     public static final Video getVideoFromId(Session s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Video> cr = cb.createQuery(Video.class);
@@ -90,14 +79,5 @@ public class DatabaseHelper {
         cr.select(root).where(root.get("id").in(id));
 
         return s.createQuery(cr).uniqueResult();
-    }
-
-    public static final List<PubSub> getPubSubFromIds(Session s, List<String> id) {
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<PubSub> cr = cb.createQuery(PubSub.class);
-        Root<PubSub> root = cr.from(PubSub.class);
-        cr.select(root).where(root.get("id").in(id));
-
-        return s.createQuery(cr).getResultList();
     }
 }
