@@ -13,11 +13,11 @@ import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 
 import io.activej.inject.Injector;
-import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.DatabaseSessionFactory;
 import me.kavin.piped.utils.DownloaderImpl;
 import me.kavin.piped.utils.Multithreading;
 import me.kavin.piped.utils.ResponseHelper;
+import me.kavin.piped.utils.obj.db.PubSub;
 
 public class Main {
 
@@ -33,21 +33,22 @@ public class Main {
                 try {
                     Session s = DatabaseSessionFactory.createSession();
 
-                    List<String> channels = DatabaseHelper.getGlobalSubscribedChannelIds(s);
+                    List<PubSub> pubSubList = s.createNativeQuery(
+                            "select distinct pubsub.* from pubsub inner join users_subscribed on pubsub.id = users_subscribed.channel",
+                            PubSub.class).getResultList();
 
-                    DatabaseHelper.getPubSubFromIds(s, channels).forEach(pubsub -> {
-                        if (System.currentTimeMillis() - pubsub.getSubbedAt() < TimeUnit.DAYS.toMillis(4))
-                            channels.remove(pubsub.getId());
+                    pubSubList.removeIf(pubsub -> {
+                        return System.currentTimeMillis() - pubsub.getSubbedAt() < TimeUnit.DAYS.toMillis(4);
                     });
 
-                    Collections.shuffle(channels);
+                    Collections.shuffle(pubSubList);
 
-                    for (String channelId : channels)
-                        if (channelId != null)
+                    for (PubSub pubsub : pubSubList)
+                        if (pubsub != null)
                             Multithreading.runAsyncLimitedPubSub(() -> {
                                 Session sess = DatabaseSessionFactory.createSession();
                                 try {
-                                    ResponseHelper.subscribePubSub(channelId, sess);
+                                    ResponseHelper.subscribePubSub(pubsub.getId(), sess);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
