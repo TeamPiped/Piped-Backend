@@ -801,7 +801,7 @@ public class ResponseHelper {
 
     }
 
-    public static final byte[] importResponse(String session, String[] channelIds)
+    public static final byte[] importResponse(String session, String[] channelIds, boolean override)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 
         Session s = DatabaseSessionFactory.createSession();
@@ -811,9 +811,12 @@ public class ResponseHelper {
         if (user != null) {
 
             Multithreading.runAsync(() -> {
-                for (String channelId : channelIds)
-                    if (!user.getSubscribed().contains(channelId))
-                        user.getSubscribed().add(channelId);
+                if (override)
+                    user.setSubscribed(Arrays.asList(channelIds));
+                else
+                    for (String channelId : channelIds)
+                        if (!user.getSubscribed().contains(channelId))
+                            user.getSubscribed().add(channelId);
 
                 if (channelIds.length > 0) {
                     s.update(user);

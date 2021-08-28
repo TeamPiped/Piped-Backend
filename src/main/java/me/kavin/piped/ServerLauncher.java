@@ -254,9 +254,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
                                 String[].class);
-                        return getJsonResponse(
-                                ResponseHelper.importResponse(request.getHeader(AUTHORIZATION), subscriptions),
-                                "private");
+                        return getJsonResponse(ResponseHelper.importResponse(request.getHeader(AUTHORIZATION),
+                                subscriptions, Boolean.parseBoolean(request.getQueryParameter("override"))), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e);
                     }
