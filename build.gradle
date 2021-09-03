@@ -16,7 +16,7 @@ dependencies {
     implementation 'it.unimi.dsi:fastutil-core:8.5.4'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.69'
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:f0aa46b008f2256b3e86a2182d53854fce1f8cb7'
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:62b87552f51022be76804f3bed65447aeb9fce9b'
     implementation 'com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.5'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.5'
