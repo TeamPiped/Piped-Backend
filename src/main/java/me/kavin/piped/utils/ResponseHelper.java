@@ -83,9 +83,7 @@ import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
 import me.kavin.piped.utils.obj.search.SearchChannel;
-import me.kavin.piped.utils.obj.search.SearchItem;
 import me.kavin.piped.utils.obj.search.SearchPlaylist;
-import me.kavin.piped.utils.obj.search.SearchStream;
 import me.kavin.piped.utils.resp.AcceptedResponse;
 import me.kavin.piped.utils.resp.AlreadyRegisteredResponse;
 import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
@@ -417,15 +415,16 @@ public class ResponseHelper {
         final SearchInfo info = SearchInfo.getInfo(Constants.YOUTUBE_SERVICE,
                 Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));
 
-        ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
+        ObjectArrayList<Object> items = new ObjectArrayList<>();
 
         info.getRelatedItems().forEach(item -> {
             switch (item.getInfoType()) {
             case STREAM:
                 StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
+                items.add(new StreamItem(stream.getUrl().substring(23), stream.getName(),
+                        rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
+                        stream.getUploaderUrl().substring(23), rewriteURL(stream.getUploaderAvatarUrl()),
+                        stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
                         stream.isUploaderVerified()));
                 break;
             case CHANNEL:
@@ -460,15 +459,16 @@ public class ResponseHelper {
                 Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null),
                 prevpage);
 
-        ObjectArrayList<SearchItem> items = new ObjectArrayList<>();
+        ObjectArrayList<Object> items = new ObjectArrayList<>();
 
         pages.getItems().forEach(item -> {
             switch (item.getInfoType()) {
             case STREAM:
                 StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new SearchStream(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), stream.getTextualUploadDate(), stream.getUploaderName(),
-                        optionalSubstring(stream.getUploaderUrl(), 23), stream.getViewCount(), stream.getDuration(),
+                items.add(new StreamItem(stream.getUrl().substring(23), stream.getName(),
+                        rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
+                        stream.getUploaderUrl().substring(23), rewriteURL(stream.getUploaderAvatarUrl()),
+                        stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
                         stream.isUploaderVerified()));
                 break;
             case CHANNEL:
