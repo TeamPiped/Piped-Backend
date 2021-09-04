@@ -423,7 +423,7 @@ public class ResponseHelper {
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new StreamItem(stream.getUrl().substring(23), stream.getName(),
                         rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
-                        stream.getUploaderUrl().substring(23), rewriteURL(stream.getUploaderAvatarUrl()),
+                        optionalSubstring(stream.getUploaderUrl(), 23), rewriteURL(stream.getUploaderAvatarUrl()),
                         stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
                         stream.isUploaderVerified()));
                 break;
@@ -467,7 +467,7 @@ public class ResponseHelper {
                 StreamInfoItem stream = (StreamInfoItem) item;
                 items.add(new StreamItem(stream.getUrl().substring(23), stream.getName(),
                         rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
-                        stream.getUploaderUrl().substring(23), rewriteURL(stream.getUploaderAvatarUrl()),
+                        optionalSubstring(stream.getUploaderUrl(), 23), rewriteURL(stream.getUploaderAvatarUrl()),
                         stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
                         stream.isUploaderVerified()));
                 break;
