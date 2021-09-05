@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -26,6 +27,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -88,6 +90,7 @@ import me.kavin.piped.utils.obj.search.SearchPlaylist;
 import me.kavin.piped.utils.resp.AcceptedResponse;
 import me.kavin.piped.utils.resp.AlreadyRegisteredResponse;
 import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
+import me.kavin.piped.utils.resp.CompromisedPasswordResponse;
 import me.kavin.piped.utils.resp.IncorrectCredentialsResponse;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.LoginResponse;
@@ -551,8 +554,8 @@ public class ResponseHelper {
 
     private static final Argon2PasswordEncoder argon2PasswordEncoder = new Argon2PasswordEncoder();
 
-    public static final byte[] registerResponse(String user, String pass)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public static final byte[] registerResponse(String user, String pass) throws IOException, NoSuchAlgorithmException,
+            InvalidKeySpecException, InterruptedException, URISyntaxException {
 
         if (user == null || pass == null)
             return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
@@ -569,6 +572,18 @@ public class ResponseHelper {
         if (registered) {
             s.close();
             return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
+        }
+
+        {
+            String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
+            String prefix = sha1Hash.substring(0, 5);
+            String suffix = sha1Hash.substring(5);
+            String[] entries = RequestUtils
+                    .sendGet("https://api.pwnedpasswords.com/range/" + prefix, "github.com/TeamPiped/Piped-Backend")
+                    .split("\n");
+            for (String entry : entries)
+                if (StringUtils.substringBefore(entry, ":").equals(suffix))
+                    return Constants.mapper.writeValueAsBytes(new CompromisedPasswordResponse());
         }
 
         User newuser = new User(user, argon2PasswordEncoder.encode(pass), Collections.emptyList());
