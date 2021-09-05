@@ -27,6 +27,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
 import org.json.JSONObject;
@@ -172,8 +173,8 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(o -> {
             StreamInfoItem item = (StreamInfoItem) o;
-            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                     rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
                     item.getViewCount(), item.isUploaderVerified()));
         });
@@ -190,7 +191,7 @@ public class ResponseHelper {
             updateViews(info.getId(), info.getViewCount(), time, false);
 
         final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
-                info.getTextualUploadDate(), info.getUploaderName(), info.getUploaderUrl().substring(23),
+                info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, hls, info.getDashMpdUrl(),
@@ -208,8 +209,8 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(o -> {
             StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                     rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
                     item.getViewCount(), item.isUploaderVerified()));
         });
@@ -268,8 +269,8 @@ public class ResponseHelper {
 
         info.getItems().forEach(o -> {
             StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                     rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
                     item.getViewCount(), item.isUploaderVerified()));
         });
@@ -302,8 +303,8 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(o -> {
             StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                     rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
                     item.getViewCount(), item.isUploaderVerified()));
         });
@@ -320,8 +321,8 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(o -> {
             StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                     rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
                     item.getViewCount(), item.isUploaderVerified()));
         });
@@ -335,8 +336,8 @@ public class ResponseHelper {
         final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
                 rewriteURL(info.getBannerUrl()), nextpage,
                 info.getUploaderName().isEmpty() ? null : info.getUploaderName(),
-                info.getUploaderUrl().isEmpty() ? null : info.getUploaderUrl().substring(23),
-                rewriteURL(info.getUploaderAvatarUrl()), (int) info.getStreamCount(), relatedStreams);
+                substringYouTube(info.getUploaderUrl()), rewriteURL(info.getUploaderAvatarUrl()),
+                (int) info.getStreamCount(), relatedStreams);
 
         return Constants.mapper.writeValueAsBytes(playlist);
 
@@ -354,8 +355,8 @@ public class ResponseHelper {
 
         info.getItems().forEach(o -> {
             StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(item.getUrl().substring(23), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), item.getUploaderUrl().substring(23),
+            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
+                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                     rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
                     item.getViewCount(), item.isUploaderVerified()));
         });
@@ -421,22 +422,22 @@ public class ResponseHelper {
             switch (item.getInfoType()) {
             case STREAM:
                 StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new StreamItem(stream.getUrl().substring(23), stream.getName(),
+                items.add(new StreamItem(substringYouTube(stream.getUrl()), stream.getName(),
                         rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
-                        optionalSubstring(stream.getUploaderUrl(), 23), rewriteURL(stream.getUploaderAvatarUrl()),
+                        substringYouTube(stream.getUploaderUrl()), rewriteURL(stream.getUploaderAvatarUrl()),
                         stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
                         stream.isUploaderVerified()));
                 break;
             case CHANNEL:
                 ChannelInfoItem channel = (ChannelInfoItem) item;
                 items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
+                        substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
                         channel.getStreamCount(), channel.isVerified()));
                 break;
             case PLAYLIST:
                 PlaylistInfoItem playlist = (PlaylistInfoItem) item;
                 items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
+                        substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
                 break;
             default:
                 break;
@@ -465,22 +466,22 @@ public class ResponseHelper {
             switch (item.getInfoType()) {
             case STREAM:
                 StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new StreamItem(stream.getUrl().substring(23), stream.getName(),
+                items.add(new StreamItem(substringYouTube(stream.getUrl()), stream.getName(),
                         rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
-                        optionalSubstring(stream.getUploaderUrl(), 23), rewriteURL(stream.getUploaderAvatarUrl()),
+                        substringYouTube(stream.getUploaderUrl()), rewriteURL(stream.getUploaderAvatarUrl()),
                         stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
                         stream.isUploaderVerified()));
                 break;
             case CHANNEL:
                 ChannelInfoItem channel = (ChannelInfoItem) item;
                 items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), channel.getDescription(), channel.getSubscriberCount(),
+                        substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
                         channel.getStreamCount(), channel.isVerified()));
                 break;
             case PLAYLIST:
                 PlaylistInfoItem playlist = (PlaylistInfoItem) item;
                 items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        item.getUrl().substring(23), playlist.getUploaderName(), playlist.getStreamCount()));
+                        substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
                 break;
             default:
                 break;
@@ -503,8 +504,8 @@ public class ResponseHelper {
         info.getRelatedItems().forEach(comment -> {
             comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                     comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                    optionalSubstring(comment.getUploaderUrl(), 23), comment.getLikeCount(),
-                    comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
+                    substringYouTube(comment.getUploaderUrl()), comment.getLikeCount(), comment.isHeartedByUploader(),
+                    comment.isPinned(), comment.isUploaderVerified()));
         });
 
         String nextpage = null;
@@ -532,8 +533,8 @@ public class ResponseHelper {
         info.getItems().forEach(comment -> {
             comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                     comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                    optionalSubstring(comment.getUploaderUrl(), 23), comment.getLikeCount(),
-                    comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
+                    substringYouTube(comment.getUploaderUrl()), comment.getLikeCount(), comment.isHeartedByUploader(),
+                    comment.isPinned(), comment.isUploaderVerified()));
         });
 
         String nextpage = null;
@@ -1072,8 +1073,8 @@ public class ResponseHelper {
 
     }
 
-    private static final String optionalSubstring(String s, int index) {
-        return s == null || s.isEmpty() ? null : s.substring(index);
+    private static final String substringYouTube(String s) {
+        return s == null || s.isEmpty() ? null : StringUtils.substringAfter(s, "youtube.com");
     }
 
     private static String rewriteURL(final String old) {
