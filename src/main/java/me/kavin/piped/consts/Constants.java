@@ -38,6 +38,8 @@ public class Constants {
 
     public static final String HTTP_PROXY;
 
+    public static final String FRONTEND_URL;
+
     public static final HttpClient h2client;
     public static final HttpClient h2_no_redir_client;
 
@@ -58,6 +60,7 @@ public class Constants {
             CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
             PUBLIC_URL = prop.getProperty("API_URL");
             HTTP_PROXY = prop.getProperty("HTTP_PROXY");
+            FRONTEND_URL = prop.getProperty("FRONTEND_URL", "https://pipedapi.kavin.rocks");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))

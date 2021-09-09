@@ -785,7 +785,7 @@ public class ResponseHelper {
             feed.setFeedType("atom_1.0");
             feed.setTitle("Piped - Feed");
             feed.setDescription(String.format("Piped's RSS subscription feed for %s.", user.getUsername()));
-            feed.setUri("https://piped.kavin.rocks/feed");
+            feed.setUri(Constants.FRONTEND_URL + "/feed");
 
             if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
 
@@ -800,11 +800,11 @@ public class ResponseHelper {
 
                     SyndPerson person = new SyndPersonImpl();
                     person.setName(video.getChannel().getUploader());
-                    person.setUri("https://piped.kavin.rocks/channel/" + video.getChannel().getUploaderId());
+                    person.setUri(Constants.FRONTEND_URL + "/channel/" + video.getChannel().getUploaderId());
 
                     entry.setAuthors(Collections.singletonList(person));
 
-                    entry.setUri("https://piped.kavin.rocks/watch?v=" + video.getId());
+                    entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
                     entry.setTitle(video.getTitle());
                     entry.setPublishedDate(new Date(video.getUploaded()));
                     entries.add(entry);
