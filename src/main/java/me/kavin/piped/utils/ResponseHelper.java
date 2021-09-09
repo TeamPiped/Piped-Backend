@@ -665,7 +665,7 @@ public class ResponseHelper {
                                 subscribePubSub(channelId, sessSub);
                                 sessSub.close();
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                ExceptionHandler.handle(e);
                             }
                         });
 
@@ -878,7 +878,7 @@ public class ResponseHelper {
                                     subscribePubSub(channelId, sessSub);
                                     sessSub.close();
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    ExceptionHandler.handle(e);
                                 }
                             });
 
@@ -898,7 +898,7 @@ public class ResponseHelper {
                         sess.close();
 
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        ExceptionHandler.handle(e);
                     }
 
                 });
@@ -977,7 +977,7 @@ public class ResponseHelper {
         try {
             handleNewVideo(StreamInfo.getInfo(url), time, channel, s);
         } catch (Exception e) {
-            e.printStackTrace();
+            ExceptionHandler.handle(e);
         }
     }
 
@@ -1033,7 +1033,7 @@ public class ResponseHelper {
                 s.close();
 
             } catch (Exception e) {
-                e.printStackTrace();
+                ExceptionHandler.handle(e);
             }
         });
     }
@@ -1043,7 +1043,6 @@ public class ResponseHelper {
         PubSub pubsub = DatabaseHelper.getPubSubFromId(s, channelId);
 
         if (pubsub == null || System.currentTimeMillis() - pubsub.getSubbedAt() > TimeUnit.DAYS.toMillis(4)) {
-            System.out.println(String.format("PubSub: Subscribing to %s", channelId));
 
             String callback = Constants.PUBLIC_URL + "/webhooks/pubsub";
             String topic = "https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + channelId;
@@ -1105,7 +1104,7 @@ public class ResponseHelper {
         try {
             url = new URL(old);
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            ExceptionHandler.handle(e);
         }
 
         final String host = url.getHost();
