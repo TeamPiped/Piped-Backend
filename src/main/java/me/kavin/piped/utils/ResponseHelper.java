@@ -174,13 +174,7 @@ public class ResponseHelper {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        info.getRelatedItems().forEach(o -> {
-            StreamInfoItem item = (StreamInfoItem) o;
-            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                    rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
-                    item.getViewCount(), item.isUploaderVerified()));
-        });
+        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         List<ChapterSegment> segments = new ObjectArrayList<>();
 
@@ -210,13 +204,7 @@ public class ResponseHelper {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        info.getRelatedItems().forEach(o -> {
-            StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                    rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
-                    item.getViewCount(), item.isUploaderVerified()));
-        });
+        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         Multithreading.runAsync(() -> {
             Session s = DatabaseSessionFactory.createSession();
@@ -270,13 +258,7 @@ public class ResponseHelper {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        info.getItems().forEach(o -> {
-            StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                    rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
-                    item.getViewCount(), item.isUploaderVerified()));
-        });
+        info.getItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         String nextpage = null;
         if (info.hasNextPage()) {
@@ -304,13 +286,7 @@ public class ResponseHelper {
         extractor.fetchPage();
         KioskInfo info = KioskInfo.getInfo(extractor);
 
-        info.getRelatedItems().forEach(o -> {
-            StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                    rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
-                    item.getViewCount(), item.isUploaderVerified()));
-        });
+        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         return Constants.mapper.writeValueAsBytes(relatedStreams);
     }
@@ -322,13 +298,7 @@ public class ResponseHelper {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        info.getRelatedItems().forEach(o -> {
-            StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                    rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
-                    item.getViewCount(), item.isUploaderVerified()));
-        });
+        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         String nextpage = null;
         if (info.hasNextPage()) {
@@ -356,13 +326,7 @@ public class ResponseHelper {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        info.getItems().forEach(o -> {
-            StreamInfoItem item = o;
-            relatedStreams.add(new StreamItem(substringYouTube(item.getUrl()), item.getName(),
-                    rewriteURL(item.getThumbnailUrl()), item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                    rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
-                    item.getViewCount(), item.isUploaderVerified()));
-        });
+        info.getItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         String nextpage = null;
         if (info.hasNextPage()) {
@@ -424,12 +388,7 @@ public class ResponseHelper {
         info.getRelatedItems().forEach(item -> {
             switch (item.getInfoType()) {
             case STREAM:
-                StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new StreamItem(substringYouTube(stream.getUrl()), stream.getName(),
-                        rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
-                        substringYouTube(stream.getUploaderUrl()), rewriteURL(stream.getUploaderAvatarUrl()),
-                        stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
-                        stream.isUploaderVerified()));
+                items.add(collectRelatedStream(item));
                 break;
             case CHANNEL:
                 ChannelInfoItem channel = (ChannelInfoItem) item;
@@ -468,12 +427,7 @@ public class ResponseHelper {
         pages.getItems().forEach(item -> {
             switch (item.getInfoType()) {
             case STREAM:
-                StreamInfoItem stream = (StreamInfoItem) item;
-                items.add(new StreamItem(substringYouTube(stream.getUrl()), stream.getName(),
-                        rewriteURL(stream.getThumbnailUrl()), stream.getUploaderName(),
-                        substringYouTube(stream.getUploaderUrl()), rewriteURL(stream.getUploaderAvatarUrl()),
-                        stream.getTextualUploadDate(), stream.getDuration(), stream.getViewCount(),
-                        stream.isUploaderVerified()));
+                items.add(collectRelatedStream(item));
                 break;
             case CHANNEL:
                 ChannelInfoItem channel = (ChannelInfoItem) item;
@@ -1089,6 +1043,16 @@ public class ResponseHelper {
 
     private static final String substringYouTube(String s) {
         return s == null || s.isEmpty() ? null : StringUtils.substringAfter(s, "youtube.com");
+    }
+
+    private static StreamItem collectRelatedStream(Object o) {
+
+        StreamInfoItem item = (StreamInfoItem) o;
+
+        return new StreamItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
+                item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
+                rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
+                item.getViewCount(), item.isUploaderVerified());
     }
 
     private static String rewriteURL(final String old) {
