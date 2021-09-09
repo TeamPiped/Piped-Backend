@@ -1057,9 +1057,6 @@ public class ResponseHelper {
 
     private static String rewriteURL(final String old) {
 
-        if (Constants.debug)
-            return old;
-
         if (old == null || old.isEmpty())
             return null;
 
