@@ -694,26 +694,30 @@ public class ResponseHelper {
 
         Session s = DatabaseSessionFactory.createSession();
 
-        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+        User user = DatabaseHelper.getUserFromSession(s, session);
 
         if (user != null) {
 
+            @SuppressWarnings("unchecked")
+            List<Object[]> queryResults = s.createNativeQuery(
+                    "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
+                    .setParameter("user", user.getId()).addEntity("Video", Video.class)
+                    .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
+
             List<FeedItem> feedItems = new ObjectArrayList<>();
 
-            if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
+            queryResults.forEach(obj -> {
+                Video video = (Video) obj[0];
+                me.kavin.piped.utils.obj.db.Channel channel = (me.kavin.piped.utils.obj.db.Channel) obj[1];
 
-                List<Video> videos = DatabaseHelper.getVideosFromChannelIds(s, user.getSubscribed());
+                feedItems.add(new FeedItem("/watch?v=" + video.getId(), video.getTitle(),
+                        rewriteURL(video.getThumbnail()), "/channel/" + channel.getUploaderId(), channel.getUploader(),
+                        rewriteURL(channel.getUploaderAvatar()), video.getViews(), video.getDuration(),
+                        video.getUploaded(), channel.isVerified()));
 
-                videos.forEach(video -> {
-                    feedItems.add(new FeedItem("/watch?v=" + video.getId(), video.getTitle(),
-                            rewriteURL(video.getThumbnail()), "/channel/" + video.getChannel().getUploaderId(),
-                            video.getChannel().getUploader(), rewriteURL(video.getChannel().getUploaderAvatar()),
-                            video.getViews(), video.getDuration(), video.getUploaded(),
-                            video.getChannel().isVerified()));
-                });
+            });
 
-                Collections.sort(feedItems, (a, b) -> (int) (b.uploaded - a.uploaded));
-            }
+            Collections.sort(feedItems, (a, b) -> (int) (b.uploaded - a.uploaded));
 
             s.close();
 
@@ -731,7 +735,7 @@ public class ResponseHelper {
 
         Session s = DatabaseSessionFactory.createSession();
 
-        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+        User user = DatabaseHelper.getUserFromSession(s, session);
 
         if (user != null) {
 
@@ -743,18 +747,25 @@ public class ResponseHelper {
 
             if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
 
-                List<Video> videos = DatabaseHelper.getVideosFromChannelIds(s, user.getSubscribed());
+                @SuppressWarnings("unchecked")
+                List<Object[]> queryResults = s.createNativeQuery(
+                        "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
+                        .setParameter("user", user.getId()).addEntity("Video", Video.class)
+                        .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
 
-                Collections.sort(videos, (a, b) -> (int) (b.getUploaded() - a.getUploaded()));
+                Collections.sort(queryResults,
+                        (a, b) -> (int) (((Video) b[0]).getUploaded() - ((Video) a[0]).getUploaded()));
 
                 final List<SyndEntry> entries = new ObjectArrayList<>();
 
-                for (Video video : videos) {
+                for (Object[] result : queryResults) {
+                    Video video = (Video) result[0];
+                    me.kavin.piped.utils.obj.db.Channel channel = (me.kavin.piped.utils.obj.db.Channel) result[1];
                     SyndEntry entry = new SyndEntryImpl();
 
                     SyndPerson person = new SyndPersonImpl();
-                    person.setName(video.getChannel().getUploader());
-                    person.setUri(Constants.FRONTEND_URL + "/channel/" + video.getChannel().getUploaderId());
+                    person.setName(channel.getUploader());
+                    person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
 
                     entry.setAuthors(Collections.singletonList(person));
 
