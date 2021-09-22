@@ -459,10 +459,15 @@ public class ResponseHelper {
         List<Comment> comments = new ObjectArrayList<>();
 
         info.getRelatedItems().forEach(comment -> {
-            comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
-                    comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                    substringYouTube(comment.getUploaderUrl()), comment.getLikeCount(), comment.isHeartedByUploader(),
-                    comment.isPinned(), comment.isUploaderVerified()));
+            try {
+                comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
+                        comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
+                        substringYouTube(comment.getUploaderUrl()),
+                        Constants.mapper.writeValueAsString(comment.getReplies()), comment.getLikeCount(),
+                        comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
+            } catch (JsonProcessingException e) {
+                ExceptionHandler.handle(e);
+            }
         });
 
         String nextpage = null;
@@ -488,10 +493,15 @@ public class ResponseHelper {
         List<Comment> comments = new ObjectArrayList<>();
 
         info.getItems().forEach(comment -> {
-            comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
-                    comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                    substringYouTube(comment.getUploaderUrl()), comment.getLikeCount(), comment.isHeartedByUploader(),
-                    comment.isPinned(), comment.isUploaderVerified()));
+            try {
+                comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
+                        comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
+                        substringYouTube(comment.getUploaderUrl()),
+                        Constants.mapper.writeValueAsString(comment.getReplies()), comment.getLikeCount(),
+                        comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
+            } catch (JsonProcessingException e) {
+                ExceptionHandler.handle(e);
+            }
         });
 
         String nextpage = null;
