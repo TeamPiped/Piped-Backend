@@ -1,5 +1,7 @@
 package me.kavin.piped.utils;
 
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -51,6 +53,7 @@ import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.search.SearchInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.schabi.newpipe.extractor.stream.StreamType;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -149,11 +152,7 @@ public class ResponseHelper {
         if (lbryURL != null)
             videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
 
-        final String hls;
-        boolean livestream = false;
-
-        if ((hls = info.getHlsUrl()) != null && !hls.isEmpty())
-            livestream = true;
+        boolean livestream = info.getStreamType() == StreamType.LIVE_STREAM;
 
         if (!livestream) {
             info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
@@ -191,8 +190,8 @@ public class ResponseHelper {
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.isUploaderVerified(),
-                audioStreams, videoStreams, relatedStreams, subtitles, livestream, hls, info.getDashMpdUrl(),
-                futureLbryId.get());
+                audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteURL(info.getHlsUrl()),
+                rewriteURL(info.getDashMpdUrl()), futureLbryId.get());
 
         return Constants.mapper.writeValueAsBytes(streams);
 
@@ -253,7 +252,7 @@ public class ResponseHelper {
 
         Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
-        InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+        InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://youtube.com/channel/" + channelId, prevpage);
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
@@ -280,7 +279,7 @@ public class ResponseHelper {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        KioskList kioskList = Constants.YOUTUBE_SERVICE.getKioskList();
+        KioskList kioskList = YOUTUBE_SERVICE.getKioskList();
         kioskList.forceContentCountry(new ContentCountry(region));
         KioskExtractor<?> extractor = kioskList.getDefaultKioskExtractor();
         extractor.fetchPage();
@@ -321,7 +320,7 @@ public class ResponseHelper {
 
         Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
-        InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
+        InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://www.youtube.com/playlist?list=" + playlistId, prevpage);
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
@@ -372,16 +371,15 @@ public class ResponseHelper {
     public static final byte[] suggestionsResponse(String query)
             throws JsonProcessingException, IOException, ExtractionException {
 
-        return Constants.mapper
-                .writeValueAsBytes(Constants.YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
+        return Constants.mapper.writeValueAsBytes(YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
     }
 
     public static final byte[] searchResponse(String q, String filter)
             throws IOException, ExtractionException, InterruptedException {
 
-        final SearchInfo info = SearchInfo.getInfo(Constants.YOUTUBE_SERVICE,
-                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));
+        final SearchInfo info = SearchInfo.getInfo(YOUTUBE_SERVICE,
+                YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));
 
         ObjectArrayList<Object> items = new ObjectArrayList<>();
 
@@ -418,9 +416,8 @@ public class ResponseHelper {
 
         Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
-        InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(Constants.YOUTUBE_SERVICE,
-                Constants.YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null),
-                prevpage);
+        InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(YOUTUBE_SERVICE,
+                YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null), prevpage);
 
         ObjectArrayList<Object> items = new ObjectArrayList<>();
 
