@@ -578,15 +578,14 @@ public class ResponseHelper {
 
         User dbuser = s.createQuery(cr).uniqueResult();
 
-        String hash = dbuser.getPassword();
-
         if (dbuser != null) {
-            if (hash.startsWith("$argon2") && argon2PasswordEncoder.matches(pass, hash)) {
-                s.close();
-                return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
-            }
-
-            if (bcryptPasswordEncoder.matches(pass, hash)) {
+            String hash = dbuser.getPassword();
+            if (hash.startsWith("$argon2")) {
+                if (argon2PasswordEncoder.matches(pass, hash)) {
+                    s.close();
+                    return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+                }
+            } else if (bcryptPasswordEncoder.matches(pass, hash)) {
                 s.close();
                 return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
             }
