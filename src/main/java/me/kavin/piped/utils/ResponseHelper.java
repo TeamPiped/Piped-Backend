@@ -55,6 +55,7 @@ import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -559,6 +560,8 @@ public class ResponseHelper {
 
     }
 
+    private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
+
     public static final byte[] loginResponse(String user, String pass)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 
@@ -575,9 +578,18 @@ public class ResponseHelper {
 
         User dbuser = s.createQuery(cr).uniqueResult();
 
-        if (dbuser != null && argon2PasswordEncoder.matches(pass, dbuser.getPassword())) {
-            s.close();
-            return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+        String hash = dbuser.getPassword();
+
+        if (dbuser != null) {
+            if (hash.startsWith("$argon2") && argon2PasswordEncoder.matches(pass, hash)) {
+                s.close();
+                return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+            }
+
+            if (bcryptPasswordEncoder.matches(pass, hash)) {
+                s.close();
+                return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+            }
         }
 
         s.close();
