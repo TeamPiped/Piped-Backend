@@ -536,7 +536,7 @@ public class ResponseHelper {
             return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
         }
 
-        {
+        if (Constants.COMPROMISED_PASSWORD_CHECK) {
             String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
             String prefix = sha1Hash.substring(0, 5);
             String suffix = sha1Hash.substring(5);
