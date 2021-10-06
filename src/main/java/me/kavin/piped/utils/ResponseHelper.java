@@ -121,7 +121,7 @@ public class ResponseHelper {
             try {
                 return getLBRYId(videoId);
             } catch (Exception e) {
-                ExceptionUtils.rethrow(e);
+                ExceptionHandler.handle(e);
             }
             return null;
         });
@@ -130,7 +130,7 @@ public class ResponseHelper {
             try {
                 return getLBRYStreamURL(futureLbryId);
             } catch (Exception e) {
-                ExceptionUtils.rethrow(e);
+                ExceptionHandler.handle(e);
             }
             return null;
         });
@@ -945,12 +945,16 @@ public class ResponseHelper {
         String lbryId = futureLbryId.get();
 
         if (!lbryId.isEmpty())
-            return new JSONObject(Constants.h2client.send(HttpRequest
-                    .newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
-                    .POST(BodyPublishers.ofString(
-                            String.valueOf(new JSONObject().put("jsonrpc", "2.0").put("method", "get").put("params",
-                                    new JSONObject().put("uri", "lbry://" + lbryId).put("save_file", true)))))
-                    .build(), BodyHandlers.ofString()).body()).getJSONObject("result").getString("streaming_url");
+            return new JSONObject(
+                    Constants.h2client.send(
+                            HttpRequest.newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
+                                    .POST(BodyPublishers.ofString(
+                                            String.valueOf(new JSONObject().put("id", System.currentTimeMillis())
+                                                    .put("jsonrpc", "2.0").put("method", "get").put("params",
+                                                            new JSONObject().put("uri", "lbry://" + lbryId)
+                                                                    .put("save_file", true)))))
+                                    .build(),
+                            BodyHandlers.ofString()).body()).getJSONObject("result").getString("streaming_url");
 
         return null;
 
