@@ -407,8 +407,8 @@ public class ResponseHelper {
 
         Page nextpage = info.getNextPage();
 
-        return Constants.mapper
-                .writeValueAsBytes(new SearchResults(items, Constants.mapper.writeValueAsString(nextpage)));
+        return Constants.mapper.writeValueAsBytes(new SearchResults(items,
+                Constants.mapper.writeValueAsString(nextpage), info.getSearchSuggestion(), info.isCorrectedSearch()));
 
     }
 
