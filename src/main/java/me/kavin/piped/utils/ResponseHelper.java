@@ -148,7 +148,13 @@ public class ResponseHelper {
         final List<PipedStream> videoStreams = new ObjectArrayList<>();
         final List<PipedStream> audioStreams = new ObjectArrayList<>();
 
-        final String lbryURL = futureLBRY.get();
+        String lbryURL = null;
+
+        try {
+            lbryURL = futureLBRY.get(3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            // ignored
+        }
 
         if (lbryURL != null)
             videoStreams.add(new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
@@ -942,7 +948,12 @@ public class ResponseHelper {
     private static final String getLBRYStreamURL(CompletableFuture<String> futureLbryId)
             throws IOException, InterruptedException, ExecutionException {
 
-        String lbryId = futureLbryId.get();
+        String lbryId = "";
+        try {
+            lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            // ignored
+        }
 
         if (!lbryId.isEmpty())
             return new JSONObject(
