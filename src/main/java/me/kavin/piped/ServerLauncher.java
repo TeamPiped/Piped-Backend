@@ -87,7 +87,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/streams/:videoId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.streamsResponse(request.getPathParameter("videoId")),
-                                "public, s-maxage=21540");
+                                "public, s-maxage=21540, max-age=30");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
