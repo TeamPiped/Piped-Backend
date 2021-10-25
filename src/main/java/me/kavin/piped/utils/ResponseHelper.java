@@ -382,6 +382,14 @@ public class ResponseHelper {
 
     }
 
+    public static final byte[] opensearchSuggestionsResponse(String query)
+            throws JsonProcessingException, IOException, ExtractionException {
+
+        return Constants.mapper.writeValueAsBytes(
+                Arrays.asList(query, YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query)));
+
+    }
+
     public static final byte[] searchResponse(String q, String filter)
             throws IOException, ExtractionException, InterruptedException {
 

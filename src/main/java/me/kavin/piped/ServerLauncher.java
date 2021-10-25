@@ -145,9 +145,18 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                    // TODO: Replace with opensearch, below, for caching reasons.
                 })).map(GET, "/suggestions", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.suggestionsResponse(request.getQueryParameter("query")),
+                                "public, max-age=600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/opensearch/suggestions", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                ResponseHelper.opensearchSuggestionsResponse(request.getQueryParameter("query")),
                                 "public, max-age=600");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
