@@ -6,7 +6,7 @@ COPY . /app/
 
 RUN chmod +x ./gradlew && ./gradlew shadowJar
 
-FROM adoptopenjdk/openjdk11:debianslim-jre
+FROM adoptopenjdk/openjdk11:debianslim-jre-nightly
 
 WORKDIR /app/
 
