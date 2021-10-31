@@ -218,8 +218,10 @@ public class ResponseHelper {
             me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s, info.getId());
 
             if (channel != null) {
-                if (channel.isVerified() != info.isVerified()) {
+                if (channel.isVerified() != info.isVerified()
+                        || !channel.getUploaderAvatar().equals(info.getAvatarUrl())) {
                     channel.setVerified(info.isVerified());
+                    channel.setUploaderAvatar(info.getAvatarUrl());
                     if (!s.getTransaction().isActive())
                         s.getTransaction().begin();
                     s.update(channel);

@@ -24,7 +24,7 @@ public class CustomServletDecorator implements AsyncServlet {
     }
 
     @Override
-    public @NotNull Promisable<HttpResponse> serve(@NotNull HttpRequest request) {
+    public @NotNull Promisable<HttpResponse> serve(@NotNull HttpRequest request) throws Exception {
         long before = System.nanoTime();
         return servlet.serve(request).promise().map(response -> {
 
