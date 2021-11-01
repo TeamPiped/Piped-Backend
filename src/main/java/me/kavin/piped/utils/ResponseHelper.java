@@ -474,10 +474,13 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(comment -> {
             try {
+                String repliespage = null;
+                if (comment.getReplies() != null)
+                    repliespage = Constants.mapper.writeValueAsString(comment.getReplies());
+
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                         comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                        substringYouTube(comment.getUploaderUrl()),
-                        Constants.mapper.writeValueAsString(comment.getReplies()), comment.getLikeCount(),
+                        substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
                 ExceptionHandler.handle(e);
@@ -508,10 +511,13 @@ public class ResponseHelper {
 
         info.getItems().forEach(comment -> {
             try {
+                String repliespage = null;
+                if (comment.getReplies() != null)
+                    repliespage = Constants.mapper.writeValueAsString(comment.getReplies());
+
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                         comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                        substringYouTube(comment.getUploaderUrl()),
-                        Constants.mapper.writeValueAsString(comment.getReplies()), comment.getLikeCount(),
+                        substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
                 ExceptionHandler.handle(e);
