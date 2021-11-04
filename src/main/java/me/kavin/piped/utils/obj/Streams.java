@@ -23,11 +23,13 @@ public class Streams {
 
     public final String proxyUrl = Constants.PROXY_PART;
 
+    public List<ChapterSegment> chapters;
+
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
             String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes,
             boolean uploaderVerified, List<PipedStream> audioStreams, List<PipedStream> videoStreams,
             List<StreamItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
-            String lbryId) {
+            String lbryId, List<ChapterSegment> chapters) {
         this.title = title;
         this.description = description;
         this.uploadDate = uploadDate;
@@ -48,5 +50,6 @@ public class Streams {
         this.hls = hls;
         this.dash = dash;
         this.lbryId = lbryId;
+        this.chapters = chapters;
     }
 }

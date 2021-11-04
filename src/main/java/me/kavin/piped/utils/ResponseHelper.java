@@ -136,10 +136,15 @@ public class ResponseHelper {
         });
 
         final List<Subtitle> subtitles = new ObjectArrayList<>();
+        final List<ChapterSegment> chapters = new ObjectArrayList<>();
 
         final StreamInfo info = futureStream.get();
 
-//	System.out.println(Constants.mapper.writeValueAsString(info.getStreamSegments()));
+        info.getStreamSegments().forEach(segment -> {
+            chapters.add(
+                    new ChapterSegment(segment.getTitle(), segment.getPreviewUrl(), segment.getStartTimeSeconds()));
+        });
+
         info.getSubtitles()
                 .forEach(subtitle -> subtitles.add(new Subtitle(rewriteURL(subtitle.getUrl()),
                         subtitle.getFormat().getMimeType(), subtitle.getDisplayLanguageName(),
@@ -184,8 +189,8 @@ public class ResponseHelper {
 
         List<ChapterSegment> segments = new ObjectArrayList<>();
 
-        info.getStreamSegments().forEach(
-                segment -> segments.add(new ChapterSegment(segment.getTitle(), segment.getStartTimeSeconds())));
+        info.getStreamSegments().forEach(segment -> segments
+                .add(new ChapterSegment(segment.getTitle(), segment.getPreviewUrl(), segment.getStartTimeSeconds())));
 
         long time = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
@@ -198,7 +203,7 @@ public class ResponseHelper {
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteURL(info.getHlsUrl()),
-                rewriteURL(info.getDashMpdUrl()), futureLbryId.get());
+                rewriteURL(info.getDashMpdUrl()), futureLbryId.get(), chapters);
 
         return Constants.mapper.writeValueAsBytes(streams);
 
