@@ -1136,7 +1136,10 @@ public class ResponseHelper {
 
         String path = url.getPath();
 
-        path = path.replace("-rj", "-rw");
+        if (path.contains("=")) {
+            path = StringUtils.substringBefore(path, "=") + "="
+                    + StringUtils.substringAfter(path, "=").replace("-rj", "-rw");
+        }
 
         return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=")
                 + URLUtils.silentEncode(host);
