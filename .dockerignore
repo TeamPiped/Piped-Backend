@@ -2,6 +2,7 @@
 build
 bin
 Dockerfile
+Dockerfile.*
 *.bat
 LICENSE
 *.md
