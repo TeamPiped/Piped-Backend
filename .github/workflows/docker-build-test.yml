@@ -1,0 +1,21 @@
+name: Docker-Compose Build and Test
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+  pull_request:
+
+jobs:
+  build-hotspot-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.4.0
+        with:
+          fetch-depth: 0
+      - name: Build Locally
+        run: docker build . -t 1337kavin/piped:latest
+      - name: Start Docker-Compose services
+        run: docker-compose up -d && sleep 5
+      - name: Run tests
+        run: ./api-test.sh
