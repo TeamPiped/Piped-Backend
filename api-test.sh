@@ -43,8 +43,6 @@ curl ${CURLOPTS[@]} $HOST/nextpage/comments/BtN-goy9VOY -G --data-urlencode "nex
 USER=admin
 PASS=$(openssl rand -base64 12)
 
-echo $USER
-
 AUTH_REQ=$(jq -n --compact-output --arg username "$USER" --arg password "$PASS" '{"username": $username, "password": $password}')
 
 # Register Account
