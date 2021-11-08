@@ -301,8 +301,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     private @NotNull HttpResponse getErrorResponse(Exception e, String path) {
 
-        System.err.println("An error occoured in the path: " + path);
-        e = ExceptionHandler.handle(e);
+        e = ExceptionHandler.handle(e, path);
 
         try {
             return getJsonResponse(500, Constants.mapper
