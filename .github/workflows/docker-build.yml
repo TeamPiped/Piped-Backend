@@ -61,6 +61,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.openj9
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: 1337kavin/piped:latest,1337kavin/piped:openj9
