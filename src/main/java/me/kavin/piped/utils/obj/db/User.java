@@ -17,7 +17,8 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "users", indexes = { @Index(columnList = "id", name = "users_id_idx"),
-        @Index(columnList = "username", name = "username_idx") })
+        @Index(columnList = "username", name = "username_idx"),
+        @Index(columnList = "session_id", name = "users_session_id_idx") })
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
