@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11:debianslim-slim AS build
+FROM eclipse-temurin:11-jdk AS build
 
 WORKDIR /app/
 
@@ -6,7 +6,7 @@ COPY . /app/
 
 RUN chmod +x ./gradlew && ./gradlew shadowJar
 
-FROM adoptopenjdk/openjdk11:debianslim-jre-nightly
+FROM eclipse-temurin:11-jre
 
 WORKDIR /app/
 
