@@ -37,7 +37,9 @@ public class User implements Serializable {
     private String sessionId;
 
     @ElementCollection
-    @CollectionTable(name = "users_subscribed", joinColumns = @JoinColumn(name = "subscriber"), indexes = @Index(columnList = "subscriber", name = "subscriber_idx"))
+    @CollectionTable(name = "users_subscribed", joinColumns = @JoinColumn(name = "subscriber"), indexes = {
+            @Index(columnList = "subscriber", name = "users_subscribed_subscriber_idx"),
+            @Index(columnList = "channel", name = "users_subscribed_channel_idx") })
     @Column(name = "channel", length = 30)
     private List<String> subscribed_ids;
 
