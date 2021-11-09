@@ -116,7 +116,7 @@ public class ResponseHelper {
                 ExceptionUtils.rethrow(e);
             }
             return null;
-        });
+        }, Multithreading.getCachedExecutor());
 
         CompletableFuture<String> futureLbryId = CompletableFuture.supplyAsync(() -> {
             try {
@@ -125,16 +125,20 @@ public class ResponseHelper {
                 ExceptionHandler.handle(e);
             }
             return null;
-        });
+        }, Multithreading.getCachedExecutor());
 
         CompletableFuture<String> futureLBRY = CompletableFuture.supplyAsync(() -> {
             try {
-                return getLBRYStreamURL(futureLbryId);
+                String lbryId = null;
+
+                lbryId = futureLbryId.completeOnTimeout(null, 2, TimeUnit.SECONDS).get();
+
+                return getLBRYStreamURL(lbryId);
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             }
             return null;
-        });
+        }, Multithreading.getCachedExecutor());
 
         final List<Subtitle> subtitles = new ObjectArrayList<>();
         final List<ChapterSegment> chapters = new ObjectArrayList<>();
@@ -157,7 +161,7 @@ public class ResponseHelper {
         String lbryURL = null;
 
         try {
-            lbryURL = futureLBRY.get(3, TimeUnit.SECONDS);
+            lbryURL = futureLBRY.completeOnTimeout(null, 3, TimeUnit.SECONDS).get();
         } catch (Exception e) {
             // ignored
         }
@@ -849,22 +853,31 @@ public class ResponseHelper {
         if (user != null) {
 
             Multithreading.runAsync(() -> {
-                if (override)
-                    user.setSubscribed(Arrays.asList(channelIds));
-                else
+                try {
+                    s.getTransaction().begin();
+                    if (override)
+                        s.createNativeQuery("delete from users_subscribed where subscriber = :id")
+                                .setParameter("id", user.getId()).executeUpdate();
+
                     for (String channelId : channelIds)
-                        if (!user.getSubscribed().contains(channelId))
-                            user.getSubscribed().add(channelId);
+                        if (override || !user.getSubscribed().contains(channelId))
+                            s.createNativeQuery("insert into users_subscribed (subscriber, channel) values (?,?)")
+                                    .setParameter(1, user.getId()).setParameter(2, channelId).executeUpdate();
 
-                if (channelIds.length > 0) {
-                    s.update(user);
-                    s.beginTransaction().commit();
+                    if (channelIds.length > 0) {
+                        s.getTransaction().commit();
+                    }
+
+                    s.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-                s.close();
             });
 
             for (String channelId : channelIds) {
+
+                if (channelId.length() > 0)
+                    break;
 
                 Multithreading.runAsyncLimited(() -> {
                     try {
@@ -970,17 +983,10 @@ public class ResponseHelper {
                         .getJSONObject("data").getJSONObject("videos").optString(videoId);
     }
 
-    private static final String getLBRYStreamURL(CompletableFuture<String> futureLbryId)
+    private static final String getLBRYStreamURL(String lbryId)
             throws IOException, InterruptedException, ExecutionException {
 
-        String lbryId = "";
-        try {
-            lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            // ignored
-        }
-
-        if (!lbryId.isEmpty())
+        if (lbryId != null && !lbryId.isEmpty())
             return new JSONObject(
                     Constants.h2client.send(
                             HttpRequest.newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
