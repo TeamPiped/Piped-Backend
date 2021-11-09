@@ -95,6 +95,7 @@ import me.kavin.piped.utils.resp.AcceptedResponse;
 import me.kavin.piped.utils.resp.AlreadyRegisteredResponse;
 import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
 import me.kavin.piped.utils.resp.CompromisedPasswordResponse;
+import me.kavin.piped.utils.resp.DisabledRegistrationResponse;
 import me.kavin.piped.utils.resp.IncorrectCredentialsResponse;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.LoginResponse;
@@ -545,6 +546,9 @@ public class ResponseHelper {
 
     public static final byte[] registerResponse(String user, String pass) throws IOException, NoSuchAlgorithmException,
             InvalidKeySpecException, InterruptedException, URISyntaxException {
+
+        if (Constants.DISABLE_REGISTRATION)
+            return Constants.mapper.writeValueAsBytes(new DisabledRegistrationResponse());
 
         if (user == null || pass == null)
             return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());

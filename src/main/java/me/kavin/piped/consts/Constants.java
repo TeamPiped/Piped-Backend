@@ -43,6 +43,8 @@ public class Constants {
 
     public static final boolean COMPROMISED_PASSWORD_CHECK;
 
+    public static final boolean DISABLE_REGISTRATION;
+
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
 
     public static final Object2ObjectOpenHashMap<String, String> hibernateProperties = new Object2ObjectOpenHashMap<>();
@@ -62,6 +64,7 @@ public class Constants {
             HTTP_PROXY = prop.getProperty("HTTP_PROXY");
             FRONTEND_URL = prop.getProperty("FRONTEND_URL", "https://pipedapi.kavin.rocks");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(prop.getProperty("COMPROMISED_PASSWORD_CHECK", "true"));
+            DISABLE_REGISTRATION = Boolean.parseBoolean(prop.getProperty("DISABLE_REGISTRATION", "false"));
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
