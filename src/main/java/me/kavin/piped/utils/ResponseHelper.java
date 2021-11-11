@@ -967,6 +967,17 @@ public class ResponseHelper {
 
     }
 
+    public static final String registeredBadgeRedirect() {
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        long registered = ((Long) s.createQuery("select count(*) from User").uniqueResult()).longValue();
+
+        s.close();
+
+        return String.format("https://img.shields.io/badge/Registered%%20Users-%s-blue", String.valueOf(registered));
+    }
+
     private static final String getLBRYId(String videoId) throws IOException, InterruptedException {
         return new JSONObject(Constants.h2client.send(HttpRequest
                 .newBuilder(URI.create("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId)))

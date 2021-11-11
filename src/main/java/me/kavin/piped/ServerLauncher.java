@@ -4,6 +4,7 @@ import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.AUTHORIZATION;
 import static io.activej.http.HttpHeaders.CACHE_CONTROL;
 import static io.activej.http.HttpHeaders.CONTENT_TYPE;
+import static io.activej.http.HttpHeaders.LOCATION;
 import static io.activej.http.HttpMethod.GET;
 import static io.activej.http.HttpMethod.POST;
 
@@ -269,6 +270,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return getJsonResponse(ResponseHelper.subscriptionsResponse(request.getHeader(AUTHORIZATION)),
                                 "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/registered/badge", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return HttpResponse.ofCode(302).withHeader(LOCATION, ResponseHelper.registeredBadgeRedirect())
+                                .withHeader(CACHE_CONTROL, "public, max-age=30");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
