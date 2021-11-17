@@ -31,7 +31,6 @@ dependencies {
     implementation 'io.activej:activej-boot:5.0'
     implementation 'io.activej:activej-specializer:5.0'
     implementation 'io.activej:activej-launchers-http:5.0'
-    implementation 'com.h2database:h2:2.0.202'
     implementation 'org.postgresql:postgresql:42.3.1'
     implementation 'org.hibernate:hibernate-core:5.6.1.Final'
     implementation 'org.hibernate:hibernate-hikaricp:5.6.1.Final'
