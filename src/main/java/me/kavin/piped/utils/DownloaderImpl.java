@@ -20,6 +20,8 @@ import org.schabi.newpipe.extractor.downloader.Request;
 import org.schabi.newpipe.extractor.downloader.Response;
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.grack.nanojson.JsonParserException;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -32,11 +34,20 @@ public class DownloaderImpl extends Downloader {
     private static long cookie_received;
     private static final Object cookie_lock = new Object();
 
+    final LoadingCache<Request, Response> responseCache = Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES)
+            .maximumSize(1000).build(key -> {
+                return executeRequest(key);
+            });
+
+    @Override
+    public Response execute(Request request) throws IOException, ReCaptchaException {
+        return responseCache.get(request);
+    }
+
     /**
      * Executes a request with HTTP/2.
      */
-    @Override
-    public Response execute(Request request) throws IOException, ReCaptchaException {
+    public Response executeRequest(Request request) throws IOException, ReCaptchaException {
 
         // TODO: HTTP/3 aka QUIC
         Builder builder = HttpRequest.newBuilder(URI.create(request.url()));
