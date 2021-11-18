@@ -34,12 +34,9 @@ public class Main {
                     Session s = DatabaseSessionFactory.createSession();
 
                     List<PubSub> pubSubList = s.createNativeQuery(
-                            "select distinct pubsub.* from pubsub inner join users_subscribed on pubsub.id = users_subscribed.channel",
-                            PubSub.class).getResultList();
-
-                    pubSubList.removeIf(pubsub -> {
-                        return System.currentTimeMillis() - pubsub.getSubbedAt() < TimeUnit.DAYS.toMillis(4);
-                    });
+                            "select distinct pubsub.* from pubsub inner join users_subscribed on pubsub.id = users_subscribed.channel where pubsub.subbed_at < :time",
+                            PubSub.class).setParameter("time", System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4))
+                            .getResultList();
 
                     Collections.shuffle(pubSubList);
 

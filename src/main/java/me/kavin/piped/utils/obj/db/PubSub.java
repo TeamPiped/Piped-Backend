@@ -7,7 +7,8 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "pubsub", indexes = { @Index(columnList = "id", name = "pubsub_id_idx") })
+@Table(name = "pubsub", indexes = { @Index(columnList = "id", name = "pubsub_id_idx"),
+        @Index(columnList = "subbed_at", name = "pubsub_subbed_at_idx") })
 public class PubSub {
 
     @Id
