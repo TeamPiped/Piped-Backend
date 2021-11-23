@@ -55,16 +55,17 @@ public class Constants {
             YOUTUBE_SERVICE = NewPipe.getService(0);
             prop.load(new FileReader("config.properties"));
 
-            PORT = Integer.parseInt(prop.getProperty("PORT", "8080"));
-            HTTP_WORKERS = prop.getProperty("HTTP_WORKERS", String.valueOf(Runtime.getRuntime().availableProcessors()));
-            PROXY_PART = prop.getProperty("PROXY_PART");
-            CAPTCHA_BASE_URL = prop.getProperty("CAPTCHA_BASE_URL");
-            CAPTCHA_API_KEY = prop.getProperty("CAPTCHA_API_KEY");
-            PUBLIC_URL = prop.getProperty("API_URL");
-            HTTP_PROXY = prop.getProperty("HTTP_PROXY");
-            FRONTEND_URL = prop.getProperty("FRONTEND_URL", "https://pipedapi.kavin.rocks");
-            COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(prop.getProperty("COMPROMISED_PASSWORD_CHECK", "true"));
-            DISABLE_REGISTRATION = Boolean.parseBoolean(prop.getProperty("DISABLE_REGISTRATION", "false"));
+            PORT = Integer.parseInt(getProperty(prop, "PORT", "8080"));
+            HTTP_WORKERS = getProperty(prop, "HTTP_WORKERS",
+                    String.valueOf(Runtime.getRuntime().availableProcessors()));
+            PROXY_PART = getProperty(prop, "PROXY_PART");
+            CAPTCHA_BASE_URL = getProperty(prop, "CAPTCHA_BASE_URL");
+            CAPTCHA_API_KEY = getProperty(prop, "CAPTCHA_API_KEY");
+            PUBLIC_URL = getProperty(prop, "API_URL");
+            HTTP_PROXY = getProperty(prop, "HTTP_PROXY");
+            FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://pipedapi.kavin.rocks");
+            COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
+            DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
@@ -84,5 +85,19 @@ public class Constants {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static final String getProperty(final Properties prop, String key) {
+        return getProperty(prop, key, null);
+    }
+
+    private static final String getProperty(final Properties prop, String key, String def) {
+
+        final String envVal = System.getenv(key);
+
+        if (envVal != null)
+            return envVal;
+
+        return prop.getProperty(key, def);
     }
 }
