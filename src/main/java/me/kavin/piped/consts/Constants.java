@@ -66,6 +66,10 @@ public class Constants {
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://pipedapi.kavin.rocks");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
+            System.getenv().forEach((key, value) -> {
+                if (key.startsWith("hibernate"))
+                    hibernateProperties.put(key, value);
+            });
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
