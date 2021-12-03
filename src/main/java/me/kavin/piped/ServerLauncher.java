@@ -212,7 +212,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         LoginRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
                                 LoginRequest.class);
-                        return getJsonResponse(ResponseHelper.loginResponse(body.username, body.password), "private");
+                        return getJsonResponse(ResponseHelper.loginResponse(body.username, body.password, body.totp),
+                                "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

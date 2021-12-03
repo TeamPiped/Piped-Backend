@@ -37,6 +37,9 @@ public class User implements Serializable {
     @Column(name = "session_id", length = 36)
     private String sessionId;
 
+    @Column(name = "totp_token", length = 32, insertable = false)
+    private String totp;
+
     @ElementCollection
     @CollectionTable(name = "users_subscribed", joinColumns = @JoinColumn(name = "subscriber"), indexes = {
             @Index(columnList = "subscriber", name = "users_subscribed_subscriber_idx"),
@@ -84,6 +87,14 @@ public class User implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getTotp() {
+        return totp;
+    }
+
+    public void setTotp(String totp) {
+        this.totp = totp;
     }
 
     public List<String> getSubscribed() {
