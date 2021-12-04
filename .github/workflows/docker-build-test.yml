@@ -13,7 +13,7 @@ jobs:
       matrix:
         docker-compose-file:
           - docker-compose.yml
-          - testing/docker-compose.h2.yml
+          - testing/docker-compose.hsqldb.yml
     steps:
       - uses: actions/checkout@v2.4.0
         with:
