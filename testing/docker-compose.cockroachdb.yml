@@ -6,6 +6,8 @@ services:
             - "127.0.0.1:8080:8080"
         volumes:
             - ./config.cockroachdb.properties:/app/config.properties
+        depends_on:
+            - cockroachdb
     cockroachdb:
         image: cockroachdb/cockroach:latest-v21.2
         command: start-single-node --insecure
