@@ -376,7 +376,7 @@ public class ResponseHelper {
             StreamInfoItem item = o;
             SyndEntry entry = new SyndEntryImpl();
             entry.setAuthor(item.getUploaderName());
-            entry.setUri(item.getUrl());
+            entry.setLink(item.getUrl());
             entry.setTitle(item.getName());
             entries.add(entry);
         });
@@ -822,7 +822,7 @@ public class ResponseHelper {
 
                     entry.setAuthors(Collections.singletonList(person));
 
-                    entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                    entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
                     entry.setTitle(video.getTitle());
                     entry.setPublishedDate(new Date(video.getUploaded()));
                     entries.add(entry);
