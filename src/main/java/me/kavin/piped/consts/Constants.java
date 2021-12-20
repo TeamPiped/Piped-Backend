@@ -63,7 +63,7 @@ public class Constants {
             CAPTCHA_API_KEY = getProperty(prop, "CAPTCHA_API_KEY");
             PUBLIC_URL = getProperty(prop, "API_URL");
             HTTP_PROXY = getProperty(prop, "HTTP_PROXY");
-            FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://pipedapi.kavin.rocks");
+            FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.kavin.rocks");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
             System.getenv().forEach((key, value) -> {
