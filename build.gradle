@@ -37,6 +37,7 @@ dependencies {
     implementation 'org.hibernate:hibernate-hikaricp:5.6.3.Final'
     implementation 'com.zaxxer:HikariCP:5.0.0'
     implementation 'org.springframework.security:spring-security-crypto:5.6.0'
+    implementation 'dev.samstevens.totp:totp:1.7.1'
     implementation 'commons-logging:commons-logging:1.2'
 }
 

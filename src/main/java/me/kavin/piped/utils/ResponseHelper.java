@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +70,12 @@ import com.rometools.rome.feed.synd.SyndPersonImpl;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
 
+import dev.samstevens.totp.code.CodeGenerator;
+import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.code.DefaultCodeGenerator;
+import dev.samstevens.totp.code.DefaultCodeVerifier;
+import dev.samstevens.totp.time.SystemTimeProvider;
+import dev.samstevens.totp.time.TimeProvider;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
@@ -97,6 +104,7 @@ import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
 import me.kavin.piped.utils.resp.CompromisedPasswordResponse;
 import me.kavin.piped.utils.resp.DisabledRegistrationResponse;
 import me.kavin.piped.utils.resp.IncorrectCredentialsResponse;
+import me.kavin.piped.utils.resp.InvalidOldPasswordResponse;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.LoginResponse;
 import me.kavin.piped.utils.resp.SubscribeStatusResponse;
@@ -597,7 +605,11 @@ public class ResponseHelper {
 
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
 
-    public static final byte[] loginResponse(String user, String pass)
+    private static final TimeProvider timeProvider = new SystemTimeProvider();
+    private static final CodeGenerator codeGenerator = new DefaultCodeGenerator();
+    private static final CodeVerifier verifier = new DefaultCodeVerifier(codeGenerator, timeProvider);
+
+    public static final byte[] loginResponse(String user, String pass, String totp)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 
         if (user == null || pass == null)
@@ -616,20 +628,103 @@ public class ResponseHelper {
         if (dbuser != null) {
             String hash = dbuser.getPassword();
             if (hash.startsWith("$argon2")) {
-                if (argon2PasswordEncoder.matches(pass, hash)) {
+                if (!argon2PasswordEncoder.matches(pass, hash)) {
                     s.close();
-                    return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+                    return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
                 }
-            } else if (bcryptPasswordEncoder.matches(pass, hash)) {
+            } else if (!bcryptPasswordEncoder.matches(pass, hash)) {
                 s.close();
-                return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+                return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
             }
+
+            String totpSecret = dbuser.getTotp();
+            if (totpSecret != null && !verifier.isValidCode(totpSecret, totp))
+                return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+
+            return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
         }
 
         s.close();
 
         return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
 
+    }
+
+    public static final byte[] changePasswordResponse(String session, String oldpass, String newpass)
+            throws IOException, InterruptedException, URISyntaxException {
+
+        if (oldpass == null || newpass == null)
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        Session s = DatabaseSessionFactory.createSession();
+
+        User user = DatabaseHelper.getUserFromSession(s, session);
+
+        if (user != null) {
+            String hash = user.getPassword();
+            if (hash.startsWith("$argon2")) {
+                if (!argon2PasswordEncoder.matches(oldpass, hash)) {
+                    s.close();
+                    return Constants.mapper.writeValueAsBytes(new InvalidOldPasswordResponse());
+                }
+            } else if (!bcryptPasswordEncoder.matches(oldpass, hash)) {
+                s.close();
+                return Constants.mapper.writeValueAsBytes(new InvalidOldPasswordResponse());
+            }
+
+            if (Constants.COMPROMISED_PASSWORD_CHECK) {
+                String sha1Hash = DigestUtils.sha1Hex(newpass).toUpperCase();
+                String prefix = sha1Hash.substring(0, 5);
+                String suffix = sha1Hash.substring(5);
+                String[] entries = RequestUtils
+                        .sendGet("https://api.pwnedpasswords.com/range/" + prefix, "github.com/TeamPiped/Piped-Backend")
+                        .split("\n");
+                for (String entry : entries)
+                    if (StringUtils.substringBefore(entry, ":").equals(suffix))
+                        return Constants.mapper.writeValueAsBytes(new CompromisedPasswordResponse());
+            }
+
+            user.setPassword(argon2PasswordEncoder.encode(newpass));
+            s.saveOrUpdate(user);
+            s.getTransaction().begin();
+            s.getTransaction().commit();
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+    }
+
+    public static final byte[] authValidResponse(String session) throws JsonProcessingException {
+        Session s = DatabaseSessionFactory.createSession();
+
+        if (((Long) s.createQuery("SELECT COUNT(user) from User user where user.sessionId = :sessionId")
+                .setParameter("sessionId", session).uniqueResult()).intValue() > 0) {
+            s.close();
+            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+    }
+
+    public static final byte[] logoutResponse(String session) throws JsonProcessingException {
+        Session s = DatabaseSessionFactory.createSession();
+
+        s.getTransaction().begin();
+
+        if (s.createQuery("UPDATE User user SET user.sessionId = :newSessionId where user.sessionId = :sessionId")
+                .setParameter("sessionId", session).setParameter("newSessionId", String.valueOf(UUID.randomUUID()))
+                .executeUpdate() > 0) {
+            s.getTransaction().commit();
+            s.close();
+            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+
+        s.close();
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static final byte[] subscribeResponse(String session, String channelId)
