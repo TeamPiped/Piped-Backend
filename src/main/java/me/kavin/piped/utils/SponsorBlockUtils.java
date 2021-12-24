@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
@@ -15,11 +17,15 @@ import com.grack.nanojson.JsonParserException;
 import com.grack.nanojson.JsonWriter;
 
 import me.kavin.piped.consts.Constants;
+import me.kavin.piped.utils.resp.InvalidRequestResponse;
 
 public class SponsorBlockUtils {
 
     public static final String getSponsors(String id, String categories)
             throws IOException, InterruptedException, NoSuchAlgorithmException, JsonParserException {
+
+        if (StringUtils.isEmpty(categories))
+            return Constants.mapper.writeValueAsString(new InvalidRequestResponse());
 
         String hash = toSha256(id);
 
