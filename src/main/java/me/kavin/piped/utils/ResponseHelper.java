@@ -369,14 +369,16 @@ public class ResponseHelper {
         feed.setFeedType("rss_2.0");
         feed.setTitle(info.getName());
         feed.setAuthor(info.getUploaderName());
-        feed.setLink(info.getUrl());
         feed.setDescription(String.format("%s - Piped", info.getName()));
+        feed.setLink(Constants.FRONTEND_URL + substringYouTube(info.getUrl()));
+        feed.setPublishedDate(new Date());
 
         info.getRelatedItems().forEach(o -> {
             StreamInfoItem item = o;
             SyndEntry entry = new SyndEntryImpl();
             entry.setAuthor(item.getUploaderName());
             entry.setLink(item.getUrl());
+            entry.setUri(item.getUrl());
             entry.setTitle(item.getName());
             entries.add(entry);
         });
@@ -797,6 +799,7 @@ public class ResponseHelper {
             feed.setTitle("Piped - Feed");
             feed.setDescription(String.format("Piped's RSS subscription feed for %s.", user.getUsername()));
             feed.setUri(Constants.FRONTEND_URL + "/feed");
+            feed.setPublishedDate(new Date());
 
             if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
 
@@ -823,6 +826,7 @@ public class ResponseHelper {
                     entry.setAuthors(Collections.singletonList(person));
 
                     entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                    entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
                     entry.setTitle(video.getTitle());
                     entry.setPublishedDate(new Date(video.getUploaded()));
                     entries.add(entry);
@@ -1119,7 +1123,7 @@ public class ResponseHelper {
     }
 
     private static final String substringYouTube(String s) {
-        return s == null || s.isEmpty() ? null : StringUtils.substringAfter(s, "youtube.com");
+        return StringUtils.isEmpty(s) ? null : StringUtils.substringAfter(s, "youtube.com");
     }
 
     private static StreamItem collectRelatedStream(Object o) {
