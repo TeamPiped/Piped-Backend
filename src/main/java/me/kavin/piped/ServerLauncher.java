@@ -4,6 +4,7 @@ import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.AUTHORIZATION;
 import static io.activej.http.HttpHeaders.CACHE_CONTROL;
 import static io.activej.http.HttpHeaders.CONTENT_TYPE;
+import static io.activej.http.HttpHeaders.LINK;
 import static io.activej.http.HttpHeaders.LOCATION;
 import static io.activej.http.HttpMethod.GET;
 import static io.activej.http.HttpMethod.POST;
@@ -88,7 +89,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/streams/:videoId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.streamsResponse(request.getPathParameter("videoId")),
-                                "public, s-maxage=21540, max-age=30");
+                                "public, s-maxage=21540, max-age=30", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -96,14 +97,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return getJsonResponse(
                                 ResponseHelper.channelResponse("channel/" + request.getPathParameter("channelId")),
-                                "public, max-age=600");
+                                "public, max-age=600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
                 })).map(GET, "/c/:name", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.channelResponse("c/" + request.getPathParameter("name")),
-                                "public, max-age=600");
+                                "public, max-age=600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -111,21 +112,21 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return getJsonResponse(
                                 ResponseHelper.channelResponse("user/" + request.getPathParameter("name")),
-                                "public, max-age=600");
+                                "public, max-age=600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
                 })).map(GET, "/nextpage/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.channelPageResponse(request.getPathParameter("channelId"),
-                                request.getQueryParameter("nextpage")), "public, max-age=3600");
+                                request.getQueryParameter("nextpage")), "public, max-age=3600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
                 })).map(GET, "/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.playlistResponse(request.getPathParameter("playlistId")),
-                                "public, max-age=600");
+                                "public, max-age=600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -134,15 +135,15 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         return getJsonResponse(
                                 ResponseHelper.playlistPageResponse(request.getPathParameter("playlistId"),
                                         request.getQueryParameter("nextpage")),
-                                "public, max-age=3600");
+                                "public, max-age=3600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
                 })).map(GET, "/rss/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getJsonResponse(
+                        return getRawResponse(
                                 ResponseHelper.playlistRSSResponse(request.getPathParameter("playlistId")),
-                                "public, s-maxage=600");
+                                "application/atom+xml", "public, s-maxage=600");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -165,7 +166,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/search", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.searchResponse(request.getQueryParameter("q"),
-                                request.getQueryParameter("filter")), "public, max-age=600");
+                                request.getQueryParameter("filter")), "public, max-age=600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -174,28 +175,28 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         return getJsonResponse(
                                 ResponseHelper.searchPageResponse(request.getQueryParameter("q"),
                                         request.getQueryParameter("filter"), request.getQueryParameter("nextpage")),
-                                "public, max-age=3600");
+                                "public, max-age=3600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
                 })).map(GET, "/trending", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.trendingResponse(request.getQueryParameter("region")),
-                                "public, max-age=3600");
+                                "public, max-age=3600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
                 })).map(GET, "/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.commentsResponse(request.getPathParameter("videoId")),
-                                "public, max-age=1200");
+                                "public, max-age=1200", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
                 })).map(GET, "/nextpage/comments/:videoId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.commentsPageResponse(request.getPathParameter("videoId"),
-                                request.getQueryParameter("nextpage")), "public, max-age=3600");
+                                request.getQueryParameter("nextpage")), "public, max-age=3600", true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -252,8 +253,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/feed/rss", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getJsonResponse(ResponseHelper.feedResponseRSS(request.getQueryParameter("authToken")),
-                                "public, s-maxage=120");
+                        return getRawResponse(ResponseHelper.feedResponseRSS(request.getQueryParameter("authToken")),
+                                "application/atom+xml", "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -299,12 +300,32 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
     }
 
     private @NotNull HttpResponse getJsonResponse(byte[] body, String cache) {
-        return getJsonResponse(200, body, cache);
+        return getJsonResponse(200, body, cache, false);
+    }
+
+    private @NotNull HttpResponse getJsonResponse(byte[] body, String cache, boolean prefetchProxy) {
+        return getJsonResponse(200, body, cache, prefetchProxy);
     }
 
     private @NotNull HttpResponse getJsonResponse(int code, byte[] body, String cache) {
-        return HttpResponse.ofCode(code).withBody(body).withHeader(CONTENT_TYPE, "application/json")
+        return getJsonResponse(code, body, cache, false);
+    }
+
+    private @NotNull HttpResponse getJsonResponse(int code, byte[] body, String cache, boolean prefetchProxy) {
+        return getRawResponse(code, body, "application/json", cache, prefetchProxy);
+    }
+
+    private @NotNull HttpResponse getRawResponse(byte[] body, String contentType, String cache) {
+        return getRawResponse(200, body, contentType, cache, false);
+    }
+
+    private @NotNull HttpResponse getRawResponse(int code, byte[] body, String contentType, String cache,
+            boolean prefetchProxy) {
+        HttpResponse response = HttpResponse.ofCode(code).withBody(body).withHeader(CONTENT_TYPE, contentType)
                 .withHeader(CACHE_CONTROL, cache);
+        if (prefetchProxy)
+            response = response.withHeader(LINK, String.format("<%s>; rel=preconnect", Constants.PROXY_PART));
+        return response;
     }
 
     private @NotNull HttpResponse getErrorResponse(Exception e, String path) {
