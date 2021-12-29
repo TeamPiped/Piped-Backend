@@ -23,7 +23,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.1'
     implementation 'org.json:json:20211205'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.0.5'
-    implementation 'com.rometools:rome:1.17.0'
+    implementation 'com.rometools:rome:1.18.0'
     implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
     implementation 'org.jsoup:jsoup:1.14.3'
     implementation 'io.activej:activej-common:5.0'
