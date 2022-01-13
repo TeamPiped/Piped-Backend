@@ -146,8 +146,8 @@ public class ResponseHelper {
         final StreamInfo info = futureStream.get();
 
         info.getStreamSegments().forEach(segment -> {
-            chapters.add(
-                    new ChapterSegment(segment.getTitle(), segment.getPreviewUrl(), segment.getStartTimeSeconds()));
+            chapters.add(new ChapterSegment(segment.getTitle(), rewriteURL(segment.getPreviewUrl()),
+                    segment.getStartTimeSeconds()));
         });
 
         info.getSubtitles()
