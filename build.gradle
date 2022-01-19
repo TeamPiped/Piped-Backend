@@ -34,7 +34,7 @@ dependencies {
     implementation 'org.hsqldb:hsqldb:2.6.1'
     implementation 'org.postgresql:postgresql:42.3.1'
     implementation 'org.hibernate:hibernate-core:5.6.4.Final'
-    implementation 'org.hibernate:hibernate-hikaricp:5.6.3.Final'
+    implementation 'org.hibernate:hibernate-hikaricp:5.6.4.Final'
     implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'org.springframework.security:spring-security-crypto:5.6.1'
     implementation 'commons-logging:commons-logging:1.2'
