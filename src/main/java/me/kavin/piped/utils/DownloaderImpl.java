@@ -12,7 +12,9 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.github.benmanes.caffeine.cache.Scheduler;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.schabi.newpipe.extractor.downloader.Downloader;
@@ -34,13 +36,13 @@ public class DownloaderImpl extends Downloader {
     private static long cookie_received;
     private static final Object cookie_lock = new Object();
 
-    final LoadingCache<Request, Response> responseCache = Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES)
-            .maximumSize(1000).build(key -> {
-                return executeRequest(key);
-            });
+    final LoadingCache<Request, Response> responseCache = Caffeine.newBuilder()
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .scheduler(Scheduler.systemScheduler())
+            .maximumSize(1000).build(this::executeRequest);
 
     @Override
-    public Response execute(Request request) throws IOException, ReCaptchaException {
+    public Response execute(@NotNull Request request) {
         return responseCache.get(request);
     }
 
@@ -132,7 +134,7 @@ public class DownloaderImpl extends Downloader {
                                 BodyHandlers.ofString());
 
                         saved_cookie = HttpCookie.parse(URLUtils.silentDecode(StringUtils
-                                .substringAfter(formResponse.headers().firstValue("Location").get(), "google_abuse=")))
+                                        .substringAfter(formResponse.headers().firstValue("Location").get(), "google_abuse=")))
                                 .get(0);
                         cookie_received = System.currentTimeMillis();
 
