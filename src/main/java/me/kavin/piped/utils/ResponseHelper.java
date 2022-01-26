@@ -29,6 +29,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import com.github.benmanes.caffeine.cache.Scheduler;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -104,8 +105,9 @@ import me.kavin.piped.utils.resp.SubscribeStatusResponse;
 public class ResponseHelper {
 
     public static final LoadingCache<String, CommentsInfo> commentsCache = Caffeine.newBuilder()
-            .expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1000)
-            .build(key -> CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + key));
+            .expireAfterWrite(1, TimeUnit.HOURS)
+            .scheduler(Scheduler.systemScheduler())
+            .maximumSize(1000).build(key -> CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + key));
 
     public static final byte[] streamsResponse(String videoId) throws Exception {
 
@@ -414,22 +416,22 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(item -> {
             switch (item.getInfoType()) {
-            case STREAM:
-                items.add(collectRelatedStream(item));
-                break;
-            case CHANNEL:
-                ChannelInfoItem channel = (ChannelInfoItem) item;
-                items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
-                        channel.getStreamCount(), channel.isVerified()));
-                break;
-            case PLAYLIST:
-                PlaylistInfoItem playlist = (PlaylistInfoItem) item;
-                items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
-                break;
-            default:
-                break;
+                case STREAM:
+                    items.add(collectRelatedStream(item));
+                    break;
+                case CHANNEL:
+                    ChannelInfoItem channel = (ChannelInfoItem) item;
+                    items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
+                            channel.getStreamCount(), channel.isVerified()));
+                    break;
+                case PLAYLIST:
+                    PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+                    items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
+                    break;
+                default:
+                    break;
             }
         });
 
@@ -452,22 +454,22 @@ public class ResponseHelper {
 
         pages.getItems().forEach(item -> {
             switch (item.getInfoType()) {
-            case STREAM:
-                items.add(collectRelatedStream(item));
-                break;
-            case CHANNEL:
-                ChannelInfoItem channel = (ChannelInfoItem) item;
-                items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
-                        channel.getStreamCount(), channel.isVerified()));
-                break;
-            case PLAYLIST:
-                PlaylistInfoItem playlist = (PlaylistInfoItem) item;
-                items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                        substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
-                break;
-            default:
-                break;
+                case STREAM:
+                    items.add(collectRelatedStream(item));
+                    break;
+                case CHANNEL:
+                    ChannelInfoItem channel = (ChannelInfoItem) item;
+                    items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
+                            channel.getStreamCount(), channel.isVerified()));
+                    break;
+                case PLAYLIST:
+                    PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+                    items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
+                            substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
+                    break;
+                default:
+                    break;
             }
         });
 
@@ -755,7 +757,7 @@ public class ResponseHelper {
 
             @SuppressWarnings("unchecked")
             List<Object[]> queryResults = s.createNativeQuery(
-                    "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
+                            "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
                     .setParameter("user", user.getId()).addEntity("Video", Video.class)
                     .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
 
@@ -805,7 +807,7 @@ public class ResponseHelper {
 
                 @SuppressWarnings("unchecked")
                 List<Object[]> queryResults = s.createNativeQuery(
-                        "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
+                                "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
                         .setParameter("user", user.getId()).addEntity("Video", Video.class)
                         .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
 
@@ -986,7 +988,7 @@ public class ResponseHelper {
         return new JSONObject(Constants.h2client.send(HttpRequest
                 .newBuilder(URI.create("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId)))
                 .setHeader("User-Agent", Constants.USER_AGENT).build(), BodyHandlers.ofString()).body())
-                        .getJSONObject("data").getJSONObject("videos").optString(videoId);
+                .getJSONObject("data").getJSONObject("videos").optString(videoId);
     }
 
     private static final String getLBRYStreamURL(String lbryId)
@@ -1017,7 +1019,7 @@ public class ResponseHelper {
     }
 
     private static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel,
-            Session s) {
+                                       Session s) {
 
         if (channel == null)
             channel = DatabaseHelper.getChannelFromId(s,
