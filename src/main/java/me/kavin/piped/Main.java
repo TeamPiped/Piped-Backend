@@ -1,23 +1,23 @@
 package me.kavin.piped;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
-
+import io.activej.inject.Injector;
+import me.kavin.piped.consts.Constants;
+import me.kavin.piped.utils.DatabaseSessionFactory;
+import me.kavin.piped.utils.DownloaderImpl;
+import me.kavin.piped.utils.Multithreading;
+import me.kavin.piped.utils.ResponseHelper;
+import me.kavin.piped.utils.obj.db.PubSub;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 
-import io.activej.inject.Injector;
-import me.kavin.piped.utils.DatabaseSessionFactory;
-import me.kavin.piped.utils.DownloaderImpl;
-import me.kavin.piped.utils.Multithreading;
-import me.kavin.piped.utils.ResponseHelper;
-import me.kavin.piped.utils.obj.db.PubSub;
+import java.util.Collections;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -70,7 +70,7 @@ public class Main {
                     tr.begin();
 
                     Query<?> query = s.createQuery("delete from Video where uploaded < :time").setParameter("time",
-                            System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10));
+                            System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION));
 
                     System.out.println(String.format("Cleanup: Removed %o old videos", query.executeUpdate()));
 

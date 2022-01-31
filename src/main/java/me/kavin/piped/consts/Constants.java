@@ -1,5 +1,13 @@
 package me.kavin.piped.consts;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import me.kavin.piped.utils.PageMixin;
+import org.apache.commons.lang3.StringUtils;
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.Page;
+import org.schabi.newpipe.extractor.StreamingService;
+
 import java.io.FileReader;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
@@ -8,16 +16,6 @@ import java.net.http.HttpClient.Builder;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpClient.Version;
 import java.util.Properties;
-
-import org.apache.commons.lang3.StringUtils;
-import org.schabi.newpipe.extractor.NewPipe;
-import org.schabi.newpipe.extractor.Page;
-import org.schabi.newpipe.extractor.StreamingService;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.kavin.piped.utils.PageMixin;
 
 public class Constants {
 
@@ -45,6 +43,8 @@ public class Constants {
 
     public static final boolean DISABLE_REGISTRATION;
 
+    public static final int FEED_RETENTION;
+
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
 
     public static final Object2ObjectOpenHashMap<String, String> hibernateProperties = new Object2ObjectOpenHashMap<>();
@@ -66,6 +66,7 @@ public class Constants {
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.kavin.rocks");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
+            FEED_RETENTION = Integer.parseInt(getProperty(prop, "FEED_RETENTION", "30"));
             System.getenv().forEach((key, value) -> {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
