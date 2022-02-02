@@ -1,23 +1,20 @@
 package me.kavin.piped.utils;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse.BodyHandlers;
-
 import me.kavin.piped.consts.Constants;
+import okhttp3.Request;
+
+import java.io.IOException;
 
 public class RequestUtils {
 
-    public static String sendGet(String url) throws IOException, InterruptedException, URISyntaxException {
+    public static String sendGet(String url) throws IOException {
         return sendGet(url, Constants.USER_AGENT);
     }
 
-    public static String sendGet(String url, String ua) throws IOException, InterruptedException, URISyntaxException {
+    public static String sendGet(String url, String ua) throws IOException {
 
-        HttpRequest request = HttpRequest.newBuilder(new URI(url)).GET().setHeader("User-Agent", ua).build();
+        var request = new Request.Builder().header("User-Agent", ua).url(url).build();
 
-        return Constants.h2client.send(request, BodyHandlers.ofString()).body();
+        return Constants.h2client.newCall(request).execute().body().string();
     }
 }

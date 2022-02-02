@@ -3,6 +3,8 @@ package me.kavin.piped.consts;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
+import okhttp3.OkHttpClient;
+import okhttp3.brotli.BrotliInterceptor;
 import org.apache.commons.lang3.StringUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
@@ -11,10 +13,6 @@ import org.schabi.newpipe.extractor.StreamingService;
 import java.io.FileReader;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Builder;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpClient.Version;
 import java.util.Properties;
 
 public class Constants {
@@ -36,8 +34,8 @@ public class Constants {
 
     public static final String FRONTEND_URL;
 
-    public static final HttpClient h2client;
-    public static final HttpClient h2_no_redir_client;
+    public static final OkHttpClient h2client;
+    public static final OkHttpClient h2_no_redir_client;
 
     public static final boolean COMPROMISED_PASSWORD_CHECK;
 
@@ -76,8 +74,12 @@ public class Constants {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
             });
-            Builder builder = HttpClient.newBuilder().followRedirects(Redirect.NORMAL).version(Version.HTTP_1_1);
-            Builder builder_noredir = HttpClient.newBuilder().followRedirects(Redirect.NEVER).version(Version.HTTP_1_1);
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .addInterceptor(BrotliInterceptor.INSTANCE);
+            OkHttpClient.Builder builder_noredir = new OkHttpClient.Builder()
+                    .followRedirects(false)
+                    .addInterceptor(BrotliInterceptor.INSTANCE);
             if (HTTP_PROXY != null && HTTP_PROXY.contains(":")) {
                 String host = StringUtils.substringBefore(HTTP_PROXY, ":");
                 String port = StringUtils.substringAfter(HTTP_PROXY, ":");

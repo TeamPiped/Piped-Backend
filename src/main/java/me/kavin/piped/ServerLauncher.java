@@ -1,28 +1,8 @@
 package me.kavin.piped;
 
-import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
-import static io.activej.http.HttpHeaders.AUTHORIZATION;
-import static io.activej.http.HttpHeaders.CACHE_CONTROL;
-import static io.activej.http.HttpHeaders.CONTENT_TYPE;
-import static io.activej.http.HttpHeaders.LINK;
-import static io.activej.http.HttpHeaders.LOCATION;
-import static io.activej.http.HttpMethod.GET;
-import static io.activej.http.HttpMethod.POST;
-
-import java.io.ByteArrayInputStream;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Executor;
-
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.hibernate.Session;
-import org.jetbrains.annotations.NotNull;
-import org.xml.sax.InputSource;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
-
 import io.activej.config.Config;
 import io.activej.http.AsyncServlet;
 import io.activej.http.HttpMethod;
@@ -33,15 +13,25 @@ import io.activej.inject.module.AbstractModule;
 import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
 import me.kavin.piped.consts.Constants;
-import me.kavin.piped.utils.CustomServletDecorator;
-import me.kavin.piped.utils.DatabaseSessionFactory;
-import me.kavin.piped.utils.ExceptionHandler;
-import me.kavin.piped.utils.Multithreading;
-import me.kavin.piped.utils.ResponseHelper;
-import me.kavin.piped.utils.SponsorBlockUtils;
+import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.resp.ErrorResponse;
 import me.kavin.piped.utils.resp.LoginRequest;
 import me.kavin.piped.utils.resp.SubscriptionUpdateRequest;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hibernate.Session;
+import org.jetbrains.annotations.NotNull;
+import org.xml.sax.InputSource;
+
+import java.io.ByteArrayInputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.concurrent.Executor;
+
+import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
+import static io.activej.http.HttpHeaders.*;
+import static io.activej.http.HttpMethod.GET;
+import static io.activej.http.HttpMethod.POST;
 
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
@@ -55,9 +45,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
         RoutingServlet router = RoutingServlet.create()
                 .map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200))
-                .map(GET, "/webhooks/pubsub", request -> {
-                    return HttpResponse.ok200().withPlainText(request.getQueryParameter("hub.challenge"));
-                }).map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
+                .map(GET, "/webhooks/pubsub", request -> HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge"))))
+                .map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
                     try {
 
                         SyndFeed feed = new SyndFeedInput().build(
@@ -320,7 +309,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
     }
 
     private @NotNull HttpResponse getRawResponse(int code, byte[] body, String contentType, String cache,
-            boolean prefetchProxy) {
+                                                 boolean prefetchProxy) {
         HttpResponse response = HttpResponse.ofCode(code).withBody(body).withHeader(CONTENT_TYPE, contentType)
                 .withHeader(CACHE_CONTROL, cache);
         if (prefetchProxy)

@@ -1,21 +1,18 @@
 package me.kavin.piped.utils;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpRequest.Builder;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Map;
-
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
 import com.grack.nanojson.JsonWriter;
-
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.SolvedCaptcha;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+
+import java.io.IOException;
+import java.util.Map;
 
 public class CaptchaSolver {
 
@@ -29,9 +26,8 @@ public class CaptchaSolver {
     }
 
     private static int createTask(String url, String sitekey, String data_s)
-            throws JsonParserException, IOException, InterruptedException {
+            throws JsonParserException, IOException {
 
-        Builder builder = HttpRequest.newBuilder(URI.create(Constants.CAPTCHA_BASE_URL + "createTask"));
         JsonObject jObject = new JsonObject();
         jObject.put("clientKey", Constants.CAPTCHA_API_KEY);
         {
@@ -43,17 +39,16 @@ public class CaptchaSolver {
             jObject.put("task", task);
         }
 
-        builder.method("POST", BodyPublishers.ofString(JsonWriter.string(jObject)));
-
-        builder.header("Content-Type", "application/json");
+        var builder = new Request.Builder().url(Constants.CAPTCHA_BASE_URL + "createTask")
+                .post(RequestBody.create(JsonWriter.string(jObject), MediaType.get("application/json")));
 
         JsonObject taskObj = JsonParser.object()
-                .from(Constants.h2client.send(builder.build(), BodyHandlers.ofInputStream()).body());
+                .from(Constants.h2client.newCall(builder.build()).execute().body().byteStream());
 
         return taskObj.getInt("taskId");
     }
 
-    private static final SolvedCaptcha waitForSolve(int taskId)
+    private static SolvedCaptcha waitForSolve(int taskId)
             throws JsonParserException, IOException, InterruptedException {
 
         String body = JsonWriter.string(
@@ -61,15 +56,15 @@ public class CaptchaSolver {
 
         SolvedCaptcha solved = null;
 
-        outer: while (true) {
-            Builder builder = HttpRequest.newBuilder(URI.create(Constants.CAPTCHA_BASE_URL + "getTaskResult"));
-
-            builder.method("POST", BodyPublishers.ofString(body));
+        while (true) {
+            var builder = new Request.Builder()
+                    .url(Constants.CAPTCHA_BASE_URL + "getTaskResult")
+                    .post(RequestBody.create(body, MediaType.get("application/json")));
 
             builder.header("Content-Type", "application/json");
 
             JsonObject captchaObj = JsonParser.object()
-                    .from(Constants.h2client.send(builder.build(), BodyHandlers.ofInputStream()).body());
+                    .from(Constants.h2client.newCall(builder.build()).execute().body().byteStream());
 
             if (captchaObj.getInt("errorId") != 0)
                 break;
@@ -87,7 +82,7 @@ public class CaptchaSolver {
                     });
 
                     solved = new SolvedCaptcha(cookies, captchaResp);
-                    break outer;
+                    break;
                 }
             }
 

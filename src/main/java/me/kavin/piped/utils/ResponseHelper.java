@@ -1,41 +1,28 @@
 package me.kavin.piped.utils;
 
-import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpRequest.Builder;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Scheduler;
+import com.rometools.rome.feed.synd.*;
+import com.rometools.rome.io.FeedException;
+import com.rometools.rome.io.SyndFeedOutput;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import me.kavin.piped.consts.Constants;
+import me.kavin.piped.ipfs.IPFS;
+import me.kavin.piped.utils.obj.*;
+import me.kavin.piped.utils.obj.db.PubSub;
+import me.kavin.piped.utils.obj.db.User;
+import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.search.SearchChannel;
+import me.kavin.piped.utils.obj.search.SearchPlaylist;
+import me.kavin.piped.utils.resp.*;
+import okhttp3.FormBody;
+import okhttp3.Request;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
-import org.json.JSONObject;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
@@ -44,7 +31,6 @@ import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
-import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.kiosk.KioskExtractor;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
 import org.schabi.newpipe.extractor.kiosk.KioskList;
@@ -58,49 +44,19 @@ import org.schabi.newpipe.extractor.stream.StreamType;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.rometools.rome.feed.synd.SyndEntry;
-import com.rometools.rome.feed.synd.SyndEntryImpl;
-import com.rometools.rome.feed.synd.SyndFeed;
-import com.rometools.rome.feed.synd.SyndFeedImpl;
-import com.rometools.rome.feed.synd.SyndPerson;
-import com.rometools.rome.feed.synd.SyndPersonImpl;
-import com.rometools.rome.io.FeedException;
-import com.rometools.rome.io.SyndFeedOutput;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import me.kavin.piped.consts.Constants;
-import me.kavin.piped.ipfs.IPFS;
-import me.kavin.piped.utils.obj.Channel;
-import me.kavin.piped.utils.obj.ChapterSegment;
-import me.kavin.piped.utils.obj.Comment;
-import me.kavin.piped.utils.obj.CommentsPage;
-import me.kavin.piped.utils.obj.FeedItem;
-import me.kavin.piped.utils.obj.PipedStream;
-import me.kavin.piped.utils.obj.Playlist;
-import me.kavin.piped.utils.obj.SearchResults;
-import me.kavin.piped.utils.obj.StreamItem;
-import me.kavin.piped.utils.obj.Streams;
-import me.kavin.piped.utils.obj.StreamsPage;
-import me.kavin.piped.utils.obj.SubscriptionChannel;
-import me.kavin.piped.utils.obj.Subtitle;
-import me.kavin.piped.utils.obj.db.PubSub;
-import me.kavin.piped.utils.obj.db.User;
-import me.kavin.piped.utils.obj.db.Video;
-import me.kavin.piped.utils.obj.search.SearchChannel;
-import me.kavin.piped.utils.obj.search.SearchPlaylist;
-import me.kavin.piped.utils.resp.AcceptedResponse;
-import me.kavin.piped.utils.resp.AlreadyRegisteredResponse;
-import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
-import me.kavin.piped.utils.resp.CompromisedPasswordResponse;
-import me.kavin.piped.utils.resp.DisabledRegistrationResponse;
-import me.kavin.piped.utils.resp.IncorrectCredentialsResponse;
-import me.kavin.piped.utils.resp.InvalidRequestResponse;
-import me.kavin.piped.utils.resp.LoginResponse;
-import me.kavin.piped.utils.resp.SubscribeStatusResponse;
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
+import static me.kavin.piped.utils.URLUtils.rewriteURL;
+import static me.kavin.piped.utils.URLUtils.substringYouTube;
 
 public class ResponseHelper {
 
@@ -122,7 +78,7 @@ public class ResponseHelper {
 
         CompletableFuture<String> futureLbryId = CompletableFuture.supplyAsync(() -> {
             try {
-                return getLBRYId(videoId);
+                return LbryHelper.getLBRYId(videoId);
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             }
@@ -135,7 +91,7 @@ public class ResponseHelper {
 
                 lbryId = futureLbryId.completeOnTimeout(null, 2, TimeUnit.SECONDS).get();
 
-                return getLBRYStreamURL(lbryId);
+                return LbryHelper.getLBRYStreamURL(lbryId);
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             }
@@ -194,15 +150,10 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
-        List<ChapterSegment> segments = new ObjectArrayList<>();
-
-        info.getStreamSegments().forEach(segment -> segments
-                .add(new ChapterSegment(segment.getTitle(), segment.getPreviewUrl(), segment.getStartTimeSeconds())));
-
         long time = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
 
-        if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(10))
+        if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
             updateViews(info.getId(), info.getViewCount(), time, false);
 
         final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
@@ -243,7 +194,7 @@ public class ResponseHelper {
                     long time = item.getUploadDate() != null
                             ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                             : System.currentTimeMillis();
-                    if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(10))
+                    if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
                         updateViews(item.getUrl().substring("https://www.youtube.com/watch?v=".length()),
                                 item.getViewCount(), time, true);
                 }
@@ -269,7 +220,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] channelPageResponse(String channelId, String prevpageStr)
-            throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException {
 
         Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
@@ -293,7 +244,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] trendingResponse(String region)
-            throws ParsingException, ExtractionException, IOException {
+            throws ExtractionException, IOException {
 
         if (region == null)
             return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
@@ -312,7 +263,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] playlistResponse(String playlistId)
-            throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException {
 
         final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
 
@@ -337,7 +288,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] playlistPageResponse(String playlistId, String prevpageStr)
-            throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException {
 
         Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
@@ -361,7 +312,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] playlistRSSResponse(String playlistId)
-            throws IOException, ExtractionException, InterruptedException, FeedException {
+            throws IOException, ExtractionException, FeedException {
 
         final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
 
@@ -392,22 +343,24 @@ public class ResponseHelper {
     }
 
     public static final byte[] suggestionsResponse(String query)
-            throws JsonProcessingException, IOException, ExtractionException {
+            throws IOException, ExtractionException {
 
         return Constants.mapper.writeValueAsBytes(YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
     }
 
     public static final byte[] opensearchSuggestionsResponse(String query)
-            throws JsonProcessingException, IOException, ExtractionException {
+            throws IOException, ExtractionException {
 
-        return Constants.mapper.writeValueAsBytes(
-                Arrays.asList(query, YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query)));
+        return Constants.mapper.writeValueAsBytes(Arrays.asList(
+                query,
+                YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query)
+        ));
 
     }
 
     public static final byte[] searchResponse(String q, String filter)
-            throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException {
 
         final SearchInfo info = SearchInfo.getInfo(YOUTUBE_SERVICE,
                 YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));
@@ -443,7 +396,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] searchPageResponse(String q, String filter, String prevpageStr)
-            throws IOException, ExtractionException, InterruptedException {
+            throws IOException, ExtractionException {
 
         Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
@@ -552,8 +505,8 @@ public class ResponseHelper {
 
     private static final Argon2PasswordEncoder argon2PasswordEncoder = new Argon2PasswordEncoder();
 
-    public static final byte[] registerResponse(String user, String pass) throws IOException, NoSuchAlgorithmException,
-            InvalidKeySpecException, InterruptedException, URISyntaxException {
+    public static final byte[] registerResponse(String user, String pass) throws IOException,
+            InterruptedException, URISyntaxException {
 
         if (Constants.DISABLE_REGISTRATION)
             return Constants.mapper.writeValueAsBytes(new DisabledRegistrationResponse());
@@ -602,7 +555,7 @@ public class ResponseHelper {
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
 
     public static final byte[] loginResponse(String user, String pass)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws IOException {
 
         if (user == null || pass == null)
             return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
@@ -637,7 +590,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] subscribeResponse(String session, String channelId)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws IOException {
 
         Session s = DatabaseSessionFactory.createSession();
 
@@ -684,7 +637,7 @@ public class ResponseHelper {
                             long time = item.getUploadDate() != null
                                     ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                                     : System.currentTimeMillis();
-                            if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(10))
+                            if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
                                 handleNewVideo(item.getUrl(), time, channel, sess);
                         }
                     }
@@ -703,7 +656,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] unsubscribeResponse(String session, String channelId)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws IOException {
 
         Session s = DatabaseSessionFactory.createSession();
 
@@ -725,7 +678,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] isSubscribedResponse(String session, String channelId)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws IOException {
 
         Session s = DatabaseSessionFactory.createSession();
 
@@ -747,7 +700,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] feedResponse(String session)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws IOException {
 
         Session s = DatabaseSessionFactory.createSession();
 
@@ -774,7 +727,7 @@ public class ResponseHelper {
 
             });
 
-            Collections.sort(feedItems, (a, b) -> (int) (b.uploaded - a.uploaded));
+            feedItems.sort((a, b) -> (int) (b.uploaded - a.uploaded));
 
             s.close();
 
@@ -788,7 +741,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] feedResponseRSS(String session)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, FeedException {
+            throws IOException, FeedException {
 
         Session s = DatabaseSessionFactory.createSession();
 
@@ -811,8 +764,7 @@ public class ResponseHelper {
                         .setParameter("user", user.getId()).addEntity("Video", Video.class)
                         .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
 
-                Collections.sort(queryResults,
-                        (a, b) -> (int) (((Video) b[0]).getUploaded() - ((Video) a[0]).getUploaded()));
+                queryResults.sort((a, b) -> (int) (((Video) b[0]).getUploaded() - ((Video) a[0]).getUploaded()));
 
                 final List<SyndEntry> entries = new ObjectArrayList<>();
 
@@ -850,7 +802,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] importResponse(String session, String[] channelIds, boolean override)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws IOException {
 
         Session s = DatabaseSessionFactory.createSession();
 
@@ -884,7 +836,7 @@ public class ResponseHelper {
                         me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(sess, channelId);
 
                         if (channel == null) {
-                            ChannelInfo info = null;
+                            ChannelInfo info;
 
                             try {
                                 info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
@@ -910,7 +862,7 @@ public class ResponseHelper {
                                 long time = item.getUploadDate() != null
                                         ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                                         : System.currentTimeMillis();
-                                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(10))
+                                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
                                     handleNewVideo(item.getUrl(), time, channel, sess);
                             }
 
@@ -939,7 +891,7 @@ public class ResponseHelper {
     }
 
     public static final byte[] subscriptionsResponse(String session)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws IOException {
 
         Session s = DatabaseSessionFactory.createSession();
 
@@ -954,12 +906,10 @@ public class ResponseHelper {
                 List<me.kavin.piped.utils.obj.db.Channel> channels = DatabaseHelper.getChannelFromIds(s,
                         user.getSubscribed());
 
-                channels.forEach(channel -> {
-                    subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
-                            channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()));
-                });
+                channels.forEach(channel -> subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
+                        channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified())));
 
-                Collections.sort(subscriptionItems, (a, b) -> (a.name.compareTo(b.name)));
+                subscriptionItems.sort(Comparator.comparing(o -> o.name));
             }
 
             s.close();
@@ -977,37 +927,11 @@ public class ResponseHelper {
 
         Session s = DatabaseSessionFactory.createSession();
 
-        long registered = ((Long) s.createQuery("select count(*) from User").uniqueResult()).longValue();
+        long registered = (Long) s.createQuery("select count(*) from User").uniqueResult();
 
         s.close();
 
-        return String.format("https://img.shields.io/badge/Registered%%20Users-%s-blue", String.valueOf(registered));
-    }
-
-    private static final String getLBRYId(String videoId) throws IOException, InterruptedException {
-        return new JSONObject(Constants.h2client.send(HttpRequest
-                .newBuilder(URI.create("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId)))
-                .setHeader("User-Agent", Constants.USER_AGENT).build(), BodyHandlers.ofString()).body())
-                .getJSONObject("data").getJSONObject("videos").optString(videoId);
-    }
-
-    private static final String getLBRYStreamURL(String lbryId)
-            throws IOException, InterruptedException, ExecutionException {
-
-        if (lbryId != null && !lbryId.isEmpty())
-            return new JSONObject(
-                    Constants.h2client.send(
-                            HttpRequest.newBuilder(URI.create("https://api.lbry.tv/api/v1/proxy?m=get"))
-                                    .POST(BodyPublishers.ofString(
-                                            String.valueOf(new JSONObject().put("id", System.currentTimeMillis())
-                                                    .put("jsonrpc", "2.0").put("method", "get").put("params",
-                                                            new JSONObject().put("uri", "lbry://" + lbryId)
-                                                                    .put("save_file", true)))))
-                                    .build(),
-                            BodyHandlers.ofString()).body()).getJSONObject("result").getString("streaming_url");
-
-        return null;
-
+        return String.format("https://img.shields.io/badge/Registered%%20Users-%s-blue", registered);
     }
 
     public static void handleNewVideo(String url, long time, me.kavin.piped.utils.obj.db.Channel channel, Session s) {
@@ -1018,8 +942,7 @@ public class ResponseHelper {
         }
     }
 
-    private static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel,
-                                       Session s) {
+    private static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel, Session s) {
 
         if (channel == null)
             channel = DatabaseHelper.getChannelFromId(s,
@@ -1031,7 +954,7 @@ public class ResponseHelper {
         Video video = null;
 
         if (channel != null && (video = DatabaseHelper.getVideoFromId(s, info.getId())) == null
-                && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(10)) {
+                && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
 
             video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
                     Math.max(infoTime, time), info.getThumbnailUrl(), channel);
@@ -1084,29 +1007,22 @@ public class ResponseHelper {
             String callback = Constants.PUBLIC_URL + "/webhooks/pubsub";
             String topic = "https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + channelId;
 
-            Builder builder = HttpRequest.newBuilder(URI.create("https://pubsubhubbub.appspot.com/subscribe"));
+            var builder = new Request.Builder()
+                    .url("https://pubsubhubbub.appspot.com/subscribe");
 
-            Map<String, String> formParams = new Object2ObjectOpenHashMap<>();
-            StringBuilder formBody = new StringBuilder();
+            var formBuilder = new FormBody.Builder();
 
-            builder.header("content-type", "application/x-www-form-urlencoded");
+            formBuilder.add("hub.callback", callback);
+            formBuilder.add("hub.topic", topic);
+            formBuilder.add("hub.verify", "async");
+            formBuilder.add("hub.mode", "subscribe");
+            formBuilder.add("hub.lease_seconds", "432000");
 
-            formParams.put("hub.callback", callback);
-            formParams.put("hub.topic", topic);
-            formParams.put("hub.verify", "async");
-            formParams.put("hub.mode", "subscribe");
-            formParams.put("hub.lease_seconds", "432000");
+            var resp = Constants.h2client
+                    .newCall(builder.post(formBuilder.build())
+                            .build()).execute();
 
-            formParams.forEach((name, value) -> {
-                formBody.append(name + "=" + URLUtils.silentEncode(value) + "&");
-            });
-
-            builder.method("POST",
-                    BodyPublishers.ofString(String.valueOf(formBody.substring(0, formBody.length() - 1))));
-
-            HttpResponse<InputStream> resp = Constants.h2client.send(builder.build(), BodyHandlers.ofInputStream());
-
-            if (resp.statusCode() == 202) {
+            if (resp.code() == 202) {
                 if (pubsub == null)
                     pubsub = new PubSub(channelId, System.currentTimeMillis());
                 else
@@ -1118,14 +1034,9 @@ public class ResponseHelper {
                     s.getTransaction().begin();
                 s.getTransaction().commit();
             } else
-                System.out.println(
-                        "Failed to subscribe: " + resp.statusCode() + "\n" + IOUtils.toString(resp.body(), "UTF-8"));
+                System.out.println("Failed to subscribe: " + resp.code() + "\n" + resp.body().string());
         }
 
-    }
-
-    private static final String substringYouTube(String s) {
-        return StringUtils.isEmpty(s) ? null : StringUtils.substringAfter(s, "youtube.com");
     }
 
     private static StreamItem collectRelatedStream(Object o) {
@@ -1136,36 +1047,5 @@ public class ResponseHelper {
                 item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                 rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
                 item.getViewCount(), item.isUploaderVerified());
-    }
-
-    private static String rewriteURL(final String old) {
-
-        if (old == null || old.isEmpty())
-            return null;
-
-        URL url = null;
-
-        try {
-            url = new URL(old);
-        } catch (MalformedURLException e) {
-            ExceptionHandler.handle(e);
-        }
-
-        final String host = url.getHost();
-
-        String query = url.getQuery();
-
-        boolean hasQuery = query != null;
-
-        String path = url.getPath();
-
-        if (path.contains("=")) {
-            path = StringUtils.substringBefore(path, "=") + "="
-                    + StringUtils.substringAfter(path, "=").replace("-rj", "-rw");
-        }
-
-        return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=")
-                + URLUtils.silentEncode(host);
-
     }
 }
