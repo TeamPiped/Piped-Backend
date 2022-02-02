@@ -1,17 +1,11 @@
 package me.kavin.piped.utils;
 
-import static io.activej.http.HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS;
-import static io.activej.http.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-
+import io.activej.http.*;
+import io.activej.promise.Promisable;
 import org.jetbrains.annotations.NotNull;
 
-import io.activej.http.AsyncServlet;
-import io.activej.http.HttpHeader;
-import io.activej.http.HttpHeaderValue;
-import io.activej.http.HttpHeaders;
-import io.activej.http.HttpRequest;
-import io.activej.http.HttpResponse;
-import io.activej.promise.Promisable;
+import static io.activej.http.HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS;
+import static io.activej.http.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 
 public class CustomServletDecorator implements AsyncServlet {
 

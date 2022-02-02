@@ -7,7 +7,7 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "channels", indexes = { @Index(columnList = "uploader_id", name = "channels_uploader_id_idx") })
+@Table(name = "channels", indexes = {@Index(columnList = "uploader_id", name = "channels_uploader_id_idx")})
 public class Channel {
 
     @Id

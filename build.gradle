@@ -38,6 +38,9 @@ dependencies {
     implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'org.springframework.security:spring-security-crypto:5.6.1'
     implementation 'commons-logging:commons-logging:1.2'
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.9.3"))
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("com.squareup.okhttp3:okhttp-brotli")
 }
 
 shadowJar {
