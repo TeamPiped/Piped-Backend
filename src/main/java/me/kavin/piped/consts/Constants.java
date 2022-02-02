@@ -76,8 +76,8 @@ public class Constants {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
             });
-            Builder builder = HttpClient.newBuilder().followRedirects(Redirect.NORMAL).version(Version.HTTP_2);
-            Builder builder_noredir = HttpClient.newBuilder().followRedirects(Redirect.NEVER).version(Version.HTTP_2);
+            Builder builder = HttpClient.newBuilder().followRedirects(Redirect.NORMAL).version(Version.HTTP_1_1);
+            Builder builder_noredir = HttpClient.newBuilder().followRedirects(Redirect.NEVER).version(Version.HTTP_1_1);
             if (HTTP_PROXY != null && HTTP_PROXY.contains(":")) {
                 String host = StringUtils.substringBefore(HTTP_PROXY, ":");
                 String port = StringUtils.substringAfter(HTTP_PROXY, ":");
