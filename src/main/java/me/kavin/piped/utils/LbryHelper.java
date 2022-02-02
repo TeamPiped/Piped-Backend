@@ -4,6 +4,7 @@ import me.kavin.piped.consts.Constants;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -18,6 +19,10 @@ public class LbryHelper {
 
     public static String getLBRYStreamURL(String lbryId)
             throws IOException {
+
+        if (StringUtils.isEmpty(lbryId))
+            return null;
+
         var request = new Request.Builder()
                 .url("https://api.lbry.tv/api/v1/proxy?m=get")
                 .post(RequestBody.create(String.valueOf(
