@@ -727,7 +727,7 @@ public class ResponseHelper {
 
             });
 
-            feedItems.sort((a, b) -> (int) (b.uploaded - a.uploaded));
+            feedItems.sort(Comparator.comparing(o -> ((FeedItem) o).uploaded).reversed());
 
             s.close();
 
@@ -764,7 +764,7 @@ public class ResponseHelper {
                         .setParameter("user", user.getId()).addEntity("Video", Video.class)
                         .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
 
-                queryResults.sort((a, b) -> (int) (((Video) b[0]).getUploaded() - ((Video) a[0]).getUploaded()));
+                queryResults.sort(Comparator.comparing(o -> ((Video) (((Object[]) o)[0])).getUploaded()).reversed());
 
                 final List<SyndEntry> entries = new ObjectArrayList<>();
 
