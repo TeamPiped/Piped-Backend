@@ -1046,6 +1046,6 @@ public class ResponseHelper {
         return new StreamItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
                 item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                 rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getDuration(),
-                item.getViewCount(), item.isUploaderVerified());
+                item.getViewCount(), item.getUploadDate() != null ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1, item.isUploaderVerified());
     }
 }
