@@ -2,12 +2,12 @@ package me.kavin.piped.utils.obj;
 
 public class StreamItem {
 
-    public String url, title, thumbnail, uploaderName, uploaderUrl, uploaderAvatar, uploadedDate;
+    public String url, title, thumbnail, uploaderName, uploaderUrl, uploaderAvatar, uploadedDate, shortDescription;
     public long duration, views, uploaded;
     public boolean uploaderVerified;
 
     public StreamItem(String url, String title, String thumbnail, String uploaderName, String uploaderUrl,
-                      String uploaderAvatar, String uploadedDate, long duration, long views, long uploaded, boolean uploaderVerified) {
+                      String uploaderAvatar, String uploadedDate, String shortDescription, long duration, long views, long uploaded, boolean uploaderVerified) {
         this.url = url;
         this.title = title;
         this.thumbnail = thumbnail;
@@ -15,6 +15,7 @@ public class StreamItem {
         this.uploaderUrl = uploaderUrl;
         this.uploaderAvatar = uploaderAvatar;
         this.uploadedDate = uploadedDate;
+        this.shortDescription = shortDescription;
         this.duration = duration;
         this.views = views;
         this.uploaded = uploaded;
