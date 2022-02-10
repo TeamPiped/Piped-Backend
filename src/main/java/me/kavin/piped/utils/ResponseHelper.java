@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Scheduler;
+import com.grack.nanojson.JsonObject;
+import com.grack.nanojson.JsonWriter;
 import com.rometools.rome.feed.synd.*;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
@@ -41,6 +43,7 @@ import org.schabi.newpipe.extractor.search.SearchInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
+import org.schabi.newpipe.extractor.utils.JsonUtils;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -48,14 +51,18 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.utils.URLUtils.rewriteURL;
 import static me.kavin.piped.utils.URLUtils.substringYouTube;
+import static org.schabi.newpipe.extractor.NewPipe.getPreferredContentCountry;
+import static org.schabi.newpipe.extractor.NewPipe.getPreferredLocalization;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getJsonPostResponse;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
 
 public class ResponseHelper {
 
@@ -160,6 +167,22 @@ public class ResponseHelper {
 
         return Constants.mapper.writeValueAsBytes(streams);
 
+    }
+
+    public static byte[] resolveClipId(String clipId) throws Exception {
+
+        final byte[] body = JsonWriter.string(prepareDesktopJsonBuilder(
+                        getPreferredLocalization(), getPreferredContentCountry())
+                        .value("url", "https://www.youtube.com/clip/" + clipId)
+                        .done())
+                .getBytes(UTF_8);
+
+        final JsonObject jsonResponse = getJsonPostResponse("navigation/resolve_url",
+                body, getPreferredLocalization());
+
+        final String videoId = JsonUtils.getString(jsonResponse, "endpoint.watchEndpoint.videoId");
+
+        return Constants.mapper.writeValueAsBytes(new VideoResolvedResponse(videoId));
     }
 
     public static byte[] channelResponse(String channelPath) throws Exception {
@@ -336,7 +359,7 @@ public class ResponseHelper {
 
         feed.setEntries(entries);
 
-        return new SyndFeedOutput().outputString(feed).getBytes(StandardCharsets.UTF_8);
+        return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
 
     }
 
@@ -789,7 +812,7 @@ public class ResponseHelper {
 
             s.close();
 
-            return new SyndFeedOutput().outputString(feed).getBytes(StandardCharsets.UTF_8);
+            return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
         }
 
         s.close();

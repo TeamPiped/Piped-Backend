@@ -82,6 +82,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/clips/:clipId", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.resolveClipId(request.getPathParameter("clipId")),
+                                "public, max-age=31536000, immutable");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(GET, "/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(
