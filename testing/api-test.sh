@@ -22,6 +22,9 @@ curl ${CURLOPTS[@]} $HOST/playlists/PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT || exit 1
 PLAYLIST_NEXTPAGE=$(curl -s -o - -f $HOST/playlists/PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT | jq -r .nextpage)
 curl ${CURLOPTS[@]} $HOST/nextpage/playlists/UCsXVk37bltHxD1rDPwtNM8Q -G --data-urlencode "nextpage=$PLAYLIST_NEXTPAGE" || exit 1
 
+# Clips
+curl ${CURLOPTS[@]} $HOST/clips/Ugkx71jS31nwsms_Cc65oi7yXF1mILflhhrO || exit 1
+
 # Streams
 curl ${CURLOPTS[@]} $HOST/streams/BtN-goy9VOY || exit 1
 
