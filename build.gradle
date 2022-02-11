@@ -13,7 +13,7 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.apache.commons:commons-text:1.9'
     implementation 'commons-io:commons-io:2.11.0'
-    implementation 'it.unimi.dsi:fastutil-core:8.5.7'
+    implementation 'it.unimi.dsi:fastutil-core:8.5.8'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:da0c4919d1ac2dee9d5227a5ddb9f26111804914'
