@@ -24,7 +24,6 @@ import org.xml.sax.InputSource;
 
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
@@ -32,6 +31,7 @@ import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
 import static io.activej.http.HttpMethod.GET;
 import static io.activej.http.HttpMethod.POST;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
@@ -44,6 +44,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
     AsyncServlet mainServlet(Executor executor) {
 
         RoutingServlet router = RoutingServlet.create()
+                .map(GET, "/healthcheck", request -> getRawResponse("OK".getBytes(UTF_8), "text/plain", "no-cache"))
                 .map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200))
                 .map(GET, "/webhooks/pubsub", request -> HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge"))))
                 .map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
@@ -70,7 +71,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return getJsonResponse(
                                 SponsorBlockUtils.getSponsors(request.getPathParameter("videoId"),
-                                        request.getQueryParameter("category")).getBytes(StandardCharsets.UTF_8),
+                                        request.getQueryParameter("category")).getBytes(UTF_8),
                                 "public, max-age=3600");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
