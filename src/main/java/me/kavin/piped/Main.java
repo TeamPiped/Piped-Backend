@@ -7,16 +7,16 @@ import me.kavin.piped.utils.DownloaderImpl;
 import me.kavin.piped.utils.Multithreading;
 import me.kavin.piped.utils.ResponseHelper;
 import me.kavin.piped.utils.obj.db.PubSub;
+import me.kavin.piped.utils.obj.db.User;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -33,10 +33,17 @@ public class Main {
                 try {
                     Session s = DatabaseSessionFactory.createSession();
 
-                    List<PubSub> pubSubList = s.createNativeQuery(
-                            "select distinct pubsub.* from pubsub inner join users_subscribed on pubsub.id = users_subscribed.channel where pubsub.subbed_at < :time",
-                            PubSub.class).setParameter("time", System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4))
-                            .getResultList();
+                    CriteriaBuilder cb = s.getCriteriaBuilder();
+                    CriteriaQuery<PubSub> criteria = cb.createQuery(PubSub.class);
+                    var root = criteria.from(PubSub.class);
+                    var userRoot = criteria.from(User.class);
+                    criteria.select(root)
+                            .where(cb.and(
+                                    cb.lessThan(root.get("subbedAt"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4)),
+                                    cb.isMember(root.get("id"), userRoot.<Collection<String>>get("subscribed_ids"))
+                            )).distinct(true);
+
+                    List<PubSub> pubSubList = s.createQuery(criteria).list();
 
                     Collections.shuffle(pubSubList);
 
