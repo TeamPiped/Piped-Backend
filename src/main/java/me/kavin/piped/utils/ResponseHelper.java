@@ -49,6 +49,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
 import java.io.IOException;
 import java.util.*;
@@ -728,26 +729,34 @@ public class ResponseHelper {
 
         if (user != null) {
 
-            @SuppressWarnings("unchecked")
-            List<Object[]> queryResults = s.createNativeQuery(
-                            "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
-                    .setParameter("user", user.getId()).addEntity("Video", Video.class)
-                    .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
+            CriteriaBuilder cb = s.getCriteriaBuilder();
 
-            List<FeedItem> feedItems = new ObjectArrayList<>();
+            // Get all videos from subscribed channels, with channel info
+            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+            criteria.distinct(true);
+            var root = criteria.from(Video.class);
+            var userRoot = criteria.from(User.class);
+            root.fetch("channel", JoinType.LEFT);
 
-            queryResults.forEach(obj -> {
-                Video video = (Video) obj[0];
-                me.kavin.piped.utils.obj.db.Channel channel = (me.kavin.piped.utils.obj.db.Channel) obj[1];
+            criteria.select(root)
+                    .where(cb.and(
+                            cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
+                            cb.equal(userRoot.get("id"), user.getId())
+                    ))
+                    .orderBy(cb.desc(root.get("uploaded")));
 
-                feedItems.add(new FeedItem("/watch?v=" + video.getId(), video.getTitle(),
-                        rewriteURL(video.getThumbnail()), "/channel/" + channel.getUploaderId(), channel.getUploader(),
-                        rewriteURL(channel.getUploaderAvatar()), video.getViews(), video.getDuration(),
+            List<StreamItem> feedItems = new ObjectArrayList<>();
+
+            for (Video video : s.createQuery(criteria).list()) {
+                var channel = video.getChannel();
+
+                feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
+                        rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
+                        rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
                         video.getUploaded(), channel.isVerified()));
+            }
 
-            });
-
-            feedItems.sort(Comparator.<FeedItem>comparingLong(o -> o.uploaded).reversed());
+            feedItems.sort(Comparator.<StreamItem>comparingLong(o -> o.uploaded).reversed());
 
             s.close();
 
@@ -776,39 +785,45 @@ public class ResponseHelper {
             feed.setUri(Constants.FRONTEND_URL + "/feed");
             feed.setPublishedDate(new Date());
 
-            if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
+            CriteriaBuilder cb = s.getCriteriaBuilder();
 
-                @SuppressWarnings("unchecked")
-                List<Object[]> queryResults = s.createNativeQuery(
-                                "select Video.*, Channel.* from videos as Video left join channels as Channel on Video.uploader_id = Channel.uploader_id inner join users_subscribed on users_subscribed.channel = Channel.uploader_id where users_subscribed.subscriber = :user")
-                        .setParameter("user", user.getId()).addEntity("Video", Video.class)
-                        .addEntity("Channel", me.kavin.piped.utils.obj.db.Channel.class).getResultList();
+            // Get all videos from subscribed channels, with channel info
+            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+            criteria.distinct(true);
+            var root = criteria.from(Video.class);
+            var userRoot = criteria.from(User.class);
+            root.fetch("channel", JoinType.LEFT);
 
-                queryResults.sort(Comparator.<Object[]>comparingLong(o -> ((Video) (o)[0]).getUploaded()).reversed());
+            criteria.select(root)
+                    .where(cb.and(
+                            cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
+                            cb.equal(userRoot.get("id"), user.getId())
+                    ))
+                    .orderBy(cb.desc(root.get("uploaded")));
 
-                final List<SyndEntry> entries = new ObjectArrayList<>();
+            List<Video> videos = s.createQuery(criteria).list();
 
-                for (Object[] result : queryResults) {
-                    Video video = (Video) result[0];
-                    me.kavin.piped.utils.obj.db.Channel channel = (me.kavin.piped.utils.obj.db.Channel) result[1];
-                    SyndEntry entry = new SyndEntryImpl();
+            final List<SyndEntry> entries = new ObjectArrayList<>();
 
-                    SyndPerson person = new SyndPersonImpl();
-                    person.setName(channel.getUploader());
-                    person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+            for (Video video : videos) {
+                var channel = video.getChannel();
+                SyndEntry entry = new SyndEntryImpl();
 
-                    entry.setAuthors(Collections.singletonList(person));
+                SyndPerson person = new SyndPersonImpl();
+                person.setName(channel.getUploader());
+                person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
 
-                    entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                    entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                    entry.setTitle(video.getTitle());
-                    entry.setPublishedDate(new Date(video.getUploaded()));
-                    entries.add(entry);
-                }
+                entry.setAuthors(Collections.singletonList(person));
 
-                feed.setEntries(entries);
-
+                entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                entry.setTitle(video.getTitle());
+                entry.setPublishedDate(new Date(video.getUploaded()));
+                entries.add(entry);
             }
+
+            feed.setEntries(entries);
+
 
             s.close();
 
