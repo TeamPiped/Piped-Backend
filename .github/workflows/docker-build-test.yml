@@ -21,7 +21,11 @@ jobs:
       - name: Create Version File
         run: echo $(git log -1 --date=short --pretty=format:%cd)-$(git rev-parse --short HEAD) > VERSION
       - name: Build Locally
-        run: docker build . -t 1337kavin/piped:latest
+        uses: docker/build-push-action@v2.9.0
+        with:
+          context: .
+          load: true
+          tags: 1337kavin/piped:latest
       - name: Start Docker-Compose services
         run: docker-compose -f ${{ matrix.docker-compose-file }} up -d && sleep 5
       - name: Run tests
