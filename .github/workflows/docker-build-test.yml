@@ -18,8 +18,8 @@ jobs:
           - testing/docker-compose.yugabytedb.yml
     steps:
       - uses: actions/checkout@v2.4.0
-        with:
-          fetch-depth: 0
+      - name: Create Version File
+        run: echo $(git log -1 --date=short --pretty=format:%cd)-$(git rev-parse --short HEAD) > VERSION
       - name: Build Locally
         run: docker build . -t 1337kavin/piped:latest
       - name: Start Docker-Compose services

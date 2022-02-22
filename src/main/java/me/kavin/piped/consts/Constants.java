@@ -5,11 +5,13 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
 import okhttp3.OkHttpClient;
 import okhttp3.brotli.BrotliInterceptor;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 
+import java.io.File;
 import java.io.FileReader;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
@@ -42,6 +44,8 @@ public class Constants {
     public static final boolean DISABLE_REGISTRATION;
 
     public static final int FEED_RETENTION;
+
+    public static final String VERSION;
 
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
 
@@ -89,6 +93,9 @@ public class Constants {
             }
             h2client = builder.build();
             h2_no_redir_client = builder_noredir.build();
+            VERSION = new File("VERSION").exists() ?
+                    IOUtils.toString(new FileReader("VERSION")) :
+                    "unknown";
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

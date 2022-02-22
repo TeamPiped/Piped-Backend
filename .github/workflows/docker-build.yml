@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.4.0
-        with:
-          fetch-depth: 0
+      - name: Create Version File
+        run: echo $(git log -1 --date=short --pretty=format:%cd)-$(git rev-parse --short HEAD) > VERSION
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1.2.0
         with:
@@ -40,8 +40,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.4.0
-        with:
-          fetch-depth: 0
+      - name: Create Version File
+        run: echo $(git log -1 --date=short --pretty=format:%cd)-$(git rev-parse --short HEAD) > VERSION
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1.2.0
         with:
@@ -64,3 +64,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: 1337kavin/piped:latest,1337kavin/piped:openj9
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
