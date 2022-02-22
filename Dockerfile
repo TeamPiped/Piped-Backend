@@ -4,7 +4,8 @@ WORKDIR /app/
 
 COPY . /app/
 
-RUN chmod +x ./gradlew && ./gradlew shadowJar
+RUN --mount=type=cache,target=/root/.gradle/caches/ \
+ ./gradlew shadowJar
 
 FROM eclipse-temurin:11-jre
 
