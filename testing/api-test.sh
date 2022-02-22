@@ -3,6 +3,9 @@
 CURLOPTS=(-i -s -S -o /dev/null -f -w "%{http_code}\tTime:\t%{time_starttransfer}\t%{url_effective}\n")
 HOST=127.0.0.1:8080
 
+# Version Test
+curl ${CURLOPTS[@]} $HOST/version || exit 1
+
 # Trending Page
 curl ${CURLOPTS[@]} $HOST/trending?region=US || exit 1
 

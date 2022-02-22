@@ -45,6 +45,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
         RoutingServlet router = RoutingServlet.create()
                 .map(GET, "/healthcheck", request -> getRawResponse("OK".getBytes(UTF_8), "text/plain", "no-cache"))
+                .map(GET, "/version", AsyncServlet.ofBlocking(executor, request -> getRawResponse(Constants.VERSION.getBytes(UTF_8), "text/plain", "no-cache")))
                 .map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200))
                 .map(GET, "/webhooks/pubsub", request -> HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge"))))
                 .map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {

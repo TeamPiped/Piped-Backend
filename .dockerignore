@@ -8,3 +8,4 @@ LICENSE
 *.md
 config.properties
 data/
+testing/
