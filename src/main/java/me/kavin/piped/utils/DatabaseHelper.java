@@ -1,18 +1,16 @@
 package me.kavin.piped.utils;
 
-import java.util.List;
+import me.kavin.piped.utils.obj.db.Channel;
+import me.kavin.piped.utils.obj.db.PubSub;
+import me.kavin.piped.utils.obj.db.User;
+import me.kavin.piped.utils.obj.db.Video;
+import org.hibernate.Session;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
-
-import org.hibernate.Session;
-
-import me.kavin.piped.utils.obj.db.Channel;
-import me.kavin.piped.utils.obj.db.PubSub;
-import me.kavin.piped.utils.obj.db.User;
-import me.kavin.piped.utils.obj.db.Video;
+import java.util.List;
 
 public class DatabaseHelper {
 
@@ -29,7 +27,7 @@ public class DatabaseHelper {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<User> cr = cb.createQuery(User.class);
         Root<User> root = cr.from(User.class);
-        root.fetch("subscribed_ids", JoinType.LEFT);
+        root.fetch("subscribed_ids", JoinType.INNER);
         cr.select(root).where(root.get("sessionId").in(session));
 
         return s.createQuery(cr).uniqueResult();
@@ -57,7 +55,7 @@ public class DatabaseHelper {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Video> cr = cb.createQuery(Video.class);
         Root<Video> root = cr.from(Video.class);
-        root.fetch("channel", JoinType.LEFT);
+        root.fetch("channel", JoinType.INNER);
         cr.select(root).where(root.get("channel").get("uploader_id").in(id));
 
         return s.createQuery(cr).getResultList();

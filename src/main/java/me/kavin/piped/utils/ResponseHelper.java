@@ -736,7 +736,7 @@ public class ResponseHelper {
             criteria.distinct(true);
             var root = criteria.from(Video.class);
             var userRoot = criteria.from(User.class);
-            root.fetch("channel", JoinType.LEFT);
+            root.fetch("channel", JoinType.INNER);
 
             criteria.select(root)
                     .where(cb.and(
@@ -792,7 +792,7 @@ public class ResponseHelper {
             criteria.distinct(true);
             var root = criteria.from(Video.class);
             var userRoot = criteria.from(User.class);
-            root.fetch("channel", JoinType.LEFT);
+            root.fetch("channel", JoinType.INNER);
 
             criteria.select(root)
                     .where(cb.and(
