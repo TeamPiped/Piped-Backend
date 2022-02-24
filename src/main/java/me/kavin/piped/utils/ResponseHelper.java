@@ -930,22 +930,28 @@ public class ResponseHelper {
 
         Session s = DatabaseSessionFactory.createSession();
 
-        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+        User user = DatabaseHelper.getUserFromSession(s, session);
 
         if (user != null) {
 
             List<SubscriptionChannel> subscriptionItems = new ObjectArrayList<>();
 
-            if (user.getSubscribed() != null && !user.getSubscribed().isEmpty()) {
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
+            var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+            var userRoot = query.from(User.class);
+            query.select(root);
+            query.where(cb.and(
+                    cb.isMember(root.get("uploader_id"), userRoot.<Collection<String>>get("subscribed_ids")),
+                    cb.equal(userRoot.get("id"), user.getId())
+            ));
 
-                List<me.kavin.piped.utils.obj.db.Channel> channels = DatabaseHelper.getChannelFromIds(s,
-                        user.getSubscribed());
+            var channels = s.createQuery(query).list();
 
-                channels.forEach(channel -> subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
-                        channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified())));
+            channels.forEach(channel -> subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
+                    channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified())));
 
-                subscriptionItems.sort(Comparator.comparing(o -> o.name));
-            }
+            subscriptionItems.sort(Comparator.comparing(o -> o.name));
 
             s.close();
 
