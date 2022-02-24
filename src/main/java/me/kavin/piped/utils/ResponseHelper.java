@@ -703,21 +703,19 @@ public class ResponseHelper {
 
         Session s = DatabaseSessionFactory.createSession();
 
-        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
-
-        if (user != null) {
-            if (user.getSubscribed().contains(channelId)) {
-                s.close();
-                return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(true));
-            }
-            s.close();
-            return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(false));
-        }
+        var cb = s.getCriteriaBuilder();
+        var query = cb.createQuery(Long.class);
+        var root = query.from(User.class);
+        query.select(cb.count(root))
+                .where(cb.and(
+                        cb.equal(root.get("sessionId"), session),
+                        cb.isMember(channelId, root.get("subscribed_ids"))
+                ));
+        var subscribed = s.createQuery(query).getSingleResult() > 0;
 
         s.close();
 
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
-
+        return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(subscribed));
     }
 
     public static byte[] feedResponse(String session)
