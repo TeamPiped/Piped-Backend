@@ -628,7 +628,7 @@ public class ResponseHelper {
 
                 Multithreading.runAsync(() -> {
                     Session sess = DatabaseSessionFactory.createSession();
-                    me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(sess, channelId);
+                    var channel = DatabaseHelper.getChannelFromId(sess, channelId);
 
                     if (channel == null) {
                         ChannelInfo info = null;
@@ -866,7 +866,7 @@ public class ResponseHelper {
 
                         Session sess = DatabaseSessionFactory.createSession();
 
-                        me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(sess, channelId);
+                        var channel = DatabaseHelper.getChannelFromId(sess, channelId);
 
                         if (channel == null) {
                             ChannelInfo info;
