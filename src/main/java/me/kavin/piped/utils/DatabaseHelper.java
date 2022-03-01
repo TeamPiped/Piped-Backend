@@ -26,7 +26,7 @@ public class DatabaseHelper {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<User> cr = cb.createQuery(User.class);
         Root<User> root = cr.from(User.class);
-        root.fetch("subscribed_ids", JoinType.INNER);
+        root.fetch("subscribed_ids", JoinType.LEFT);
         cr.select(root).where(cb.equal(root.get("sessionId"), session));
 
         return s.createQuery(cr).uniqueResult();
