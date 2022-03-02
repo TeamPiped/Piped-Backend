@@ -17,7 +17,7 @@ jobs:
           - testing/docker-compose.cockroachdb.yml
           - testing/docker-compose.yugabytedb.yml
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
       - name: Create Version File
         run: echo $(git log -1 --date=short --pretty=format:%cd)-$(git rev-parse --short HEAD) > VERSION
       - name: Build Locally
