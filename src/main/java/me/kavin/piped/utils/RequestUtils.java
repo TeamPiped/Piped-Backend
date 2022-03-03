@@ -14,7 +14,10 @@ public class RequestUtils {
     public static String sendGet(String url, String ua) throws IOException {
 
         var request = new Request.Builder().header("User-Agent", ua).url(url).build();
+        var response = Constants.h2client.newCall(request).execute();
+        var responseString = response.body().string();
+        response.close();
 
-        return Constants.h2client.newCall(request).execute().body().string();
+        return responseString;
     }
 }

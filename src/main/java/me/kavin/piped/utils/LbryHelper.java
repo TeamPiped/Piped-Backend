@@ -26,19 +26,23 @@ public class LbryHelper {
         var request = new Request.Builder()
                 .url("https://api.lbry.tv/api/v1/proxy?m=get")
                 .post(RequestBody.create(String.valueOf(
-                        new JSONObject().put("id", System.currentTimeMillis())
-                                .put("jsonrpc", "2.0")
-                                .put("method", "get")
-                                .put("params",
-                                        new JSONObject()
-                                                .put("uri", "lbry://" + lbryId)
-                                                .put("save_file", true)))
+                                new JSONObject().put("id", System.currentTimeMillis())
+                                        .put("jsonrpc", "2.0")
+                                        .put("method", "get")
+                                        .put("params",
+                                                new JSONObject()
+                                                        .put("uri", "lbry://" + lbryId)
+                                                        .put("save_file", true)))
                         , MediaType.get("application/json")))
                 .build();
 
-        return new JSONObject(
-                Constants.h2client.newCall(request).execute().body().string()
-        ).getJSONObject("result").getString("streaming_url");
+        var resp = Constants.h2client.newCall(request).execute();
+
+        var json = new JSONObject(resp.body().string());
+
+        resp.close();
+
+        return json.getJSONObject("result").getString("streaming_url");
 
     }
 }
