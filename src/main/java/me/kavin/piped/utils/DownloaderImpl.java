@@ -58,9 +58,9 @@ public class DownloaderImpl extends Downloader {
 
         request.headers().forEach((name, values) -> values.forEach(value -> builder.header(name, value)));
 
-        var response = Constants.h2client.newCall(builder.build()).execute();
+        var resp = Constants.h2client.newCall(builder.build()).execute();
 
-        if (response.code() == 429) {
+        if (resp.code() == 429) {
 
             synchronized (cookie_lock) {
 
@@ -68,14 +68,14 @@ public class DownloaderImpl extends Downloader {
                         || (System.currentTimeMillis() - cookie_received > TimeUnit.MINUTES.toMillis(30)))
                     saved_cookie = null;
 
-                String redir_url = String.valueOf(response.request().url());
+                String redir_url = String.valueOf(resp.request().url());
 
                 if (saved_cookie == null && redir_url.startsWith("https://www.google.com/sorry")) {
 
                     var formBuilder = new FormBody.Builder();
                     String sitekey = null, data_s = null;
 
-                    for (Element el : Jsoup.parse(response.body().string()).selectFirst("form").children()) {
+                    for (Element el : Jsoup.parse(resp.body().string()).selectFirst("form").children()) {
                         String name;
                         if (!(name = el.tagName()).equals("script")) {
                             if (name.equals("input"))
@@ -118,7 +118,11 @@ public class DownloaderImpl extends Downloader {
 
         }
 
-        return new Response(response.code(), response.message(), response.headers().toMultimap(), response.body().string(),
-                String.valueOf(response.request().url()));
+        var response = new Response(resp.code(), resp.message(), resp.headers().toMultimap(), resp.body().string(),
+                String.valueOf(resp.request().url()));
+
+        resp.close();
+
+        return response;
     }
 }

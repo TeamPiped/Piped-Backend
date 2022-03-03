@@ -41,9 +41,12 @@ public class CaptchaSolver {
 
         var builder = new Request.Builder().url(Constants.CAPTCHA_BASE_URL + "createTask")
                 .post(RequestBody.create(JsonWriter.string(jObject), MediaType.get("application/json")));
+        var resp = Constants.h2client.newCall(builder.build()).execute();
 
         JsonObject taskObj = JsonParser.object()
-                .from(Constants.h2client.newCall(builder.build()).execute().body().byteStream());
+                .from(resp.body().byteStream());
+
+        resp.close();
 
         return taskObj.getInt("taskId");
     }
@@ -62,9 +65,13 @@ public class CaptchaSolver {
                     .post(RequestBody.create(body, MediaType.get("application/json")));
 
             builder.header("Content-Type", "application/json");
+            var resp = Constants.h2client.newCall(builder.build()).execute();
+
 
             JsonObject captchaObj = JsonParser.object()
-                    .from(Constants.h2client.newCall(builder.build()).execute().body().byteStream());
+                    .from(resp.body().byteStream());
+
+            resp.close();
 
             if (captchaObj.getInt("errorId") != 0)
                 break;

@@ -1095,6 +1095,8 @@ public class ResponseHelper {
                 s.getTransaction().commit();
             } else
                 System.out.println("Failed to subscribe: " + resp.code() + "\n" + Objects.requireNonNull(resp.body()).string());
+
+            resp.close();
         }
 
     }
