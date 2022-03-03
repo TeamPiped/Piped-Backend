@@ -1,9 +1,6 @@
 package me.kavin.piped.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.github.benmanes.caffeine.cache.Scheduler;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
 import com.rometools.rome.feed.synd.*;
@@ -66,11 +63,6 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
 
 public class ResponseHelper {
-
-    public static final LoadingCache<String, CommentsInfo> commentsCache = Caffeine.newBuilder()
-            .expireAfterWrite(1, TimeUnit.HOURS)
-            .scheduler(Scheduler.systemScheduler())
-            .maximumSize(1000).build(key -> CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + key));
 
     public static byte[] streamsResponse(String videoId) throws Exception {
 
@@ -457,7 +449,7 @@ public class ResponseHelper {
 
     public static byte[] commentsResponse(String videoId) throws Exception {
 
-        CommentsInfo info = commentsCache.get(videoId);
+        CommentsInfo info = CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
 
         List<Comment> comments = new ObjectArrayList<>();
 
@@ -492,9 +484,7 @@ public class ResponseHelper {
 
         Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
 
-        CommentsInfo init = commentsCache.get(videoId);
-
-        InfoItemsPage<CommentsInfoItem> info = CommentsInfo.getMoreItems(init, prevpage);
+        InfoItemsPage<CommentsInfoItem> info = CommentsInfo.getMoreItems(YOUTUBE_SERVICE, "https://www.youtube.com/watch?v=" + videoId, prevpage);
 
         List<Comment> comments = new ObjectArrayList<>();
 
@@ -519,7 +509,7 @@ public class ResponseHelper {
             nextpage = Constants.mapper.writeValueAsString(page);
         }
 
-        CommentsPage commentsItem = new CommentsPage(comments, nextpage, init.isCommentsDisabled());
+        CommentsPage commentsItem = new CommentsPage(comments, nextpage, false);
 
         return Constants.mapper.writeValueAsBytes(commentsItem);
 
