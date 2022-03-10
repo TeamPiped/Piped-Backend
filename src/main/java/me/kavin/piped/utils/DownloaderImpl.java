@@ -30,7 +30,7 @@ public class DownloaderImpl extends Downloader {
     final LoadingCache<Request, Response> responseCache = Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
             .scheduler(Scheduler.systemScheduler())
-            .maximumSize(1000).build(this::executeRequest);
+            .maximumSize(100).build(this::executeRequest);
 
     @Override
     public Response execute(@NotNull Request request) {
