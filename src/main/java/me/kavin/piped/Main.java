@@ -13,6 +13,7 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
+import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -84,6 +85,18 @@ public class Main {
                     tr.commit();
 
                     s.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, TimeUnit.MINUTES.toMillis(60));
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    System.out.println(String.format("ThrottlingCache: %o entries", YoutubeThrottlingDecrypter.getCacheSize()));
+                    YoutubeThrottlingDecrypter.clearCache();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
