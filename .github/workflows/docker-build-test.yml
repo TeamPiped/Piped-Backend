@@ -21,7 +21,7 @@ jobs:
       - name: Create Version File
         run: echo $(git log -1 --date=short --pretty=format:%cd)-$(git rev-parse --short HEAD) > VERSION
       - name: Build Locally
-        uses: docker/build-push-action@v2.9.0
+        uses: docker/build-push-action@v2.10.0
         with:
           context: .
           load: true
