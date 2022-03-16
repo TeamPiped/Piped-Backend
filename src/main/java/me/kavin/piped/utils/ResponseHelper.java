@@ -520,7 +520,7 @@ public class ResponseHelper {
         if (Constants.DISABLE_REGISTRATION)
             return Constants.mapper.writeValueAsBytes(new DisabledRegistrationResponse());
 
-        if (user == null || pass == null)
+        if (StringUtils.isBlank(user) || StringUtils.isBlank(pass))
             return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         user = user.toLowerCase();
