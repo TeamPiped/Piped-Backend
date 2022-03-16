@@ -50,7 +50,6 @@ import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -66,25 +65,25 @@ public class ResponseHelper {
 
     public static byte[] streamsResponse(String videoId) throws Exception {
 
-        CompletableFuture<StreamInfo> futureStream = CompletableFuture.supplyAsync(() -> {
+        final var futureStream = Multithreading.supplyAsync(() -> {
             try {
                 return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
             } catch (Exception e) {
                 ExceptionUtils.rethrow(e);
             }
             return null;
-        }, Multithreading.getCachedExecutor());
+        });
 
-        CompletableFuture<String> futureLbryId = CompletableFuture.supplyAsync(() -> {
+        final var futureLbryId = Multithreading.supplyAsync(() -> {
             try {
                 return LbryHelper.getLBRYId(videoId);
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             }
             return null;
-        }, Multithreading.getCachedExecutor());
+        });
 
-        CompletableFuture<String> futureLBRY = CompletableFuture.supplyAsync(() -> {
+        final var futureLBRY = Multithreading.supplyAsync(() -> {
             try {
                 String lbryId = futureLbryId.completeOnTimeout(null, 2, TimeUnit.SECONDS).get();
 
@@ -93,7 +92,7 @@ public class ResponseHelper {
                 ExceptionHandler.handle(e);
             }
             return null;
-        }, Multithreading.getCachedExecutor());
+        });
 
         final List<Subtitle> subtitles = new ObjectArrayList<>();
         final List<ChapterSegment> chapters = new ObjectArrayList<>();
@@ -187,35 +186,34 @@ public class ResponseHelper {
         info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         Multithreading.runAsync(() -> {
-            Session s = DatabaseSessionFactory.createSession();
+            try (Session s = DatabaseSessionFactory.createSession()) {
 
-            me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s, info.getId());
+                me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s, info.getId());
 
-            if (channel != null) {
-                if (channel.isVerified() != info.isVerified()
-                        || !channel.getUploaderAvatar().equals(info.getAvatarUrl())) {
-                    channel.setVerified(info.isVerified());
-                    channel.setUploaderAvatar(info.getAvatarUrl());
-                    if (!s.getTransaction().isActive())
-                        s.getTransaction().begin();
-                    s.update(channel);
-                    s.getTransaction().commit();
-                }
-                for (StreamInfoItem item : info.getRelatedItems()) {
-                    long time = item.getUploadDate() != null
-                            ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                            : System.currentTimeMillis();
-                    if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                        try {
-                            String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
-                            updateVideo(id, item, time, true);
-                        } catch (Exception e) {
-                            ExceptionHandler.handle(e);
-                        }
+                if (channel != null) {
+                    if (channel.isVerified() != info.isVerified()
+                            || !channel.getUploaderAvatar().equals(info.getAvatarUrl())) {
+                        channel.setVerified(info.isVerified());
+                        channel.setUploaderAvatar(info.getAvatarUrl());
+                        if (!s.getTransaction().isActive())
+                            s.getTransaction().begin();
+                        s.update(channel);
+                        s.getTransaction().commit();
+                    }
+                    for (StreamInfoItem item : info.getRelatedItems()) {
+                        long time = item.getUploadDate() != null
+                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                : System.currentTimeMillis();
+                        if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                            try {
+                                String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
+                                updateVideo(id, item, time, true);
+                            } catch (Exception e) {
+                                ExceptionHandler.handle(e);
+                            }
+                    }
                 }
             }
-
-            s.close();
         });
 
         String nextpage = null;
@@ -527,40 +525,38 @@ public class ResponseHelper {
 
         user = user.toLowerCase();
 
-        Session s = DatabaseSessionFactory.createSession();
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<User> cr = cb.createQuery(User.class);
-        Root<User> root = cr.from(User.class);
-        cr.select(root).where(root.get("username").in(user));
-        boolean registered = s.createQuery(cr).uniqueResult() != null;
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<User> cr = cb.createQuery(User.class);
+            Root<User> root = cr.from(User.class);
+            cr.select(root).where(cb.equal(root.get("username"), user));
+            boolean registered = s.createQuery(cr).uniqueResult() != null;
 
-        if (registered) {
-            s.close();
-            return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
+            if (registered) {
+                return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
+            }
+
+            if (Constants.COMPROMISED_PASSWORD_CHECK) {
+                String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
+                String prefix = sha1Hash.substring(0, 5);
+                String suffix = sha1Hash.substring(5);
+                String[] entries = RequestUtils
+                        .sendGet("https://api.pwnedpasswords.com/range/" + prefix, "github.com/TeamPiped/Piped-Backend")
+                        .split("\n");
+                for (String entry : entries)
+                    if (StringUtils.substringBefore(entry, ":").equals(suffix))
+                        return Constants.mapper.writeValueAsBytes(new CompromisedPasswordResponse());
+            }
+
+            User newuser = new User(user, argon2PasswordEncoder.encode(pass), Collections.emptyList());
+
+            s.save(newuser);
+            s.getTransaction().begin();
+            s.getTransaction().commit();
+
+
+            return Constants.mapper.writeValueAsBytes(new LoginResponse(newuser.getSessionId()));
         }
-
-        if (Constants.COMPROMISED_PASSWORD_CHECK) {
-            String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
-            String prefix = sha1Hash.substring(0, 5);
-            String suffix = sha1Hash.substring(5);
-            String[] entries = RequestUtils
-                    .sendGet("https://api.pwnedpasswords.com/range/" + prefix, "github.com/TeamPiped/Piped-Backend")
-                    .split("\n");
-            for (String entry : entries)
-                if (StringUtils.substringBefore(entry, ":").equals(suffix))
-                    return Constants.mapper.writeValueAsBytes(new CompromisedPasswordResponse());
-        }
-
-        User newuser = new User(user, argon2PasswordEncoder.encode(pass), Collections.emptyList());
-
-        s.save(newuser);
-        s.getTransaction().begin();
-        s.getTransaction().commit();
-
-        s.close();
-
-        return Constants.mapper.writeValueAsBytes(new LoginResponse(newuser.getSessionId()));
-
     }
 
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
@@ -573,394 +569,352 @@ public class ResponseHelper {
 
         user = user.toLowerCase();
 
-        Session s = DatabaseSessionFactory.createSession();
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<User> cr = cb.createQuery(User.class);
-        Root<User> root = cr.from(User.class);
-        cr.select(root).where(root.get("username").in(user));
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<User> cr = cb.createQuery(User.class);
+            Root<User> root = cr.from(User.class);
+            cr.select(root).where(root.get("username").in(user));
 
-        User dbuser = s.createQuery(cr).uniqueResult();
+            User dbuser = s.createQuery(cr).uniqueResult();
 
-        if (dbuser != null) {
-            String hash = dbuser.getPassword();
-            if (hash.startsWith("$argon2")) {
-                if (argon2PasswordEncoder.matches(pass, hash)) {
-                    s.close();
+            if (dbuser != null) {
+                String hash = dbuser.getPassword();
+                if (hash.startsWith("$argon2")) {
+                    if (argon2PasswordEncoder.matches(pass, hash)) {
+                        return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+                    }
+                } else if (bcryptPasswordEncoder.matches(pass, hash)) {
                     return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
                 }
-            } else if (bcryptPasswordEncoder.matches(pass, hash)) {
-                s.close();
-                return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
             }
+
+            return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
         }
-
-        s.close();
-
-        return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
-
     }
 
     public static byte[] subscribeResponse(String session, String channelId)
             throws IOException {
 
-        Session s = DatabaseSessionFactory.createSession();
+        try (Session s = DatabaseSessionFactory.createSession()) {
 
-        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+            User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
 
-        if (user != null) {
-            if (!user.getSubscribed().contains(channelId)) {
+            if (user != null) {
+                if (!user.getSubscribed().contains(channelId)) {
 
-                s.getTransaction().begin();
-                s.createNativeQuery("insert into users_subscribed (subscriber, channel) values (?,?)")
-                        .setParameter(1, user.getId()).setParameter(2, channelId).executeUpdate();
-                s.getTransaction().commit();
-                s.close();
+                    s.getTransaction().begin();
+                    s.createNativeQuery("insert into users_subscribed (subscriber, channel) values (?,?)")
+                            .setParameter(1, user.getId()).setParameter(2, channelId).executeUpdate();
+                    s.getTransaction().commit();
 
-                Multithreading.runAsync(() -> {
-                    Session sess = DatabaseSessionFactory.createSession();
-                    var channel = DatabaseHelper.getChannelFromId(sess, channelId);
+                    Multithreading.runAsync(() -> {
+                        try (Session sess = DatabaseSessionFactory.createSession()) {
+                            var channel = DatabaseHelper.getChannelFromId(sess, channelId);
 
-                    if (channel == null) {
-                        ChannelInfo info = null;
+                            if (channel == null) {
+                                ChannelInfo info = null;
 
-                        try {
-                            info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
-                        } catch (IOException | ExtractionException e) {
-                            ExceptionUtils.rethrow(e);
-                        }
+                                try {
+                                    info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+                                } catch (IOException | ExtractionException e) {
+                                    ExceptionUtils.rethrow(e);
+                                }
 
-                        channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
-                                info.getAvatarUrl(), info.isVerified());
-                        sess.save(channel);
-                        sess.beginTransaction().commit();
+                                channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
+                                        info.getAvatarUrl(), info.isVerified());
+                                sess.save(channel);
+                                sess.beginTransaction().commit();
 
-                        Multithreading.runAsync(() -> {
-                            try {
-                                Session sessSub = DatabaseSessionFactory.createSession();
-                                subscribePubSub(channelId, sessSub);
-                                sessSub.close();
-                            } catch (Exception e) {
-                                ExceptionHandler.handle(e);
+                                Multithreading.runAsync(() -> {
+                                    try (Session sessSub = DatabaseSessionFactory.createSession()) {
+                                        subscribePubSub(channelId, sessSub);
+                                    } catch (Exception e) {
+                                        ExceptionHandler.handle(e);
+                                    }
+                                });
+
+                                for (StreamInfoItem item : info.getRelatedItems()) {
+                                    long time = item.getUploadDate() != null
+                                            ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                            : System.currentTimeMillis();
+                                    if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                                        handleNewVideo(item.getUrl(), time, channel, sess);
+                                }
                             }
-                        });
-
-                        for (StreamInfoItem item : info.getRelatedItems()) {
-                            long time = item.getUploadDate() != null
-                                    ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                    : System.currentTimeMillis();
-                            if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                                handleNewVideo(item.getUrl(), time, channel, sess);
                         }
-                    }
+                    });
+                }
 
-                    sess.close();
-                });
+                return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
             }
 
-            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
         }
-
-        s.close();
-
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
     }
 
     public static byte[] unsubscribeResponse(String session, String channelId)
             throws IOException {
 
-        Session s = DatabaseSessionFactory.createSession();
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            User user = DatabaseHelper.getUserFromSession(s, session);
 
-        User user = DatabaseHelper.getUserFromSession(s, session);
-
-        if (user != null) {
-            s.getTransaction().begin();
-            s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
-                    .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
-            s.getTransaction().commit();
-            s.close();
-            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
-        }
-
-        s.close();
-
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
-
-    }
-
-    public static byte[] isSubscribedResponse(String session, String channelId)
-            throws IOException {
-
-        Session s = DatabaseSessionFactory.createSession();
-
-        var cb = s.getCriteriaBuilder();
-        var query = cb.createQuery(Long.class);
-        var root = query.from(User.class);
-        query.select(cb.count(root))
-                .where(cb.and(
-                        cb.equal(root.get("sessionId"), session),
-                        cb.isMember(channelId, root.get("subscribed_ids"))
-                ));
-        var subscribed = s.createQuery(query).getSingleResult() > 0;
-
-        s.close();
-
-        return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(subscribed));
-    }
-
-    public static byte[] feedResponse(String session)
-            throws IOException {
-
-        Session s = DatabaseSessionFactory.createSession();
-
-        User user = DatabaseHelper.getUserFromSession(s, session);
-
-        if (user != null) {
-
-            CriteriaBuilder cb = s.getCriteriaBuilder();
-
-            // Get all videos from subscribed channels, with channel info
-            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-            criteria.distinct(true);
-            var root = criteria.from(Video.class);
-            var userRoot = criteria.from(User.class);
-            root.fetch("channel", JoinType.INNER);
-
-            criteria.select(root)
-                    .where(cb.and(
-                            cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
-                            cb.equal(userRoot.get("id"), user.getId())
-                    ))
-                    .orderBy(cb.desc(root.get("uploaded")));
-
-            List<StreamItem> feedItems = new ObjectArrayList<>();
-
-            for (Video video : s.createQuery(criteria).list()) {
-                var channel = video.getChannel();
-
-                feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
-                        rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
-                        rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
-                        video.getUploaded(), channel.isVerified()));
+            if (user != null) {
+                s.getTransaction().begin();
+                s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
+                        .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
+                s.getTransaction().commit();
+                return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
             }
-
-            feedItems.sort(Comparator.<StreamItem>comparingLong(o -> o.uploaded).reversed());
-
-            s.close();
-
-            return Constants.mapper.writeValueAsBytes(feedItems);
         }
-
-        s.close();
 
         return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
     }
 
-    public static byte[] feedResponseRSS(String session)
-            throws IOException, FeedException {
-
-        Session s = DatabaseSessionFactory.createSession();
-
-        User user = DatabaseHelper.getUserFromSession(s, session);
-
-        if (user != null) {
-
-            SyndFeed feed = new SyndFeedImpl();
-            feed.setFeedType("atom_1.0");
-            feed.setTitle("Piped - Feed");
-            feed.setDescription(String.format("Piped's RSS subscription feed for %s.", user.getUsername()));
-            feed.setUri(Constants.FRONTEND_URL + "/feed");
-            feed.setPublishedDate(new Date());
-
-            CriteriaBuilder cb = s.getCriteriaBuilder();
-
-            // Get all videos from subscribed channels, with channel info
-            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-            criteria.distinct(true);
-            var root = criteria.from(Video.class);
-            var userRoot = criteria.from(User.class);
-            root.fetch("channel", JoinType.INNER);
-
-            criteria.select(root)
+    public static byte[] isSubscribedResponse(String session, String channelId) throws IOException {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var cb = s.getCriteriaBuilder();
+            var query = cb.createQuery(Long.class);
+            var root = query.from(User.class);
+            query.select(cb.count(root))
                     .where(cb.and(
-                            cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
-                            cb.equal(userRoot.get("id"), user.getId())
-                    ))
-                    .orderBy(cb.desc(root.get("uploaded")));
+                            cb.equal(root.get("sessionId"), session),
+                            cb.isMember(channelId, root.get("subscribed_ids"))
+                    ));
+            var subscribed = s.createQuery(query).getSingleResult() > 0;
 
-            List<Video> videos = s.createQuery(criteria).list();
-
-            final List<SyndEntry> entries = new ObjectArrayList<>();
-
-            for (Video video : videos) {
-                var channel = video.getChannel();
-                SyndEntry entry = new SyndEntryImpl();
-
-                SyndPerson person = new SyndPersonImpl();
-                person.setName(channel.getUploader());
-                person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
-
-                entry.setAuthors(Collections.singletonList(person));
-
-                entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                entry.setTitle(video.getTitle());
-                entry.setPublishedDate(new Date(video.getUploaded()));
-                entries.add(entry);
-            }
-
-            feed.setEntries(entries);
-
-
-            s.close();
-
-            return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
+            return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(subscribed));
         }
-
-        s.close();
-
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
-
     }
 
-    public static byte[] importResponse(String session, String[] channelIds, boolean override)
-            throws IOException {
+    public static byte[] feedResponse(String session) throws IOException {
+        try (Session s = DatabaseSessionFactory.createSession()) {
 
-        Session s = DatabaseSessionFactory.createSession();
+            User user = DatabaseHelper.getUserFromSession(s, session);
 
-        User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+            if (user != null) {
 
-        if (user != null) {
+                CriteriaBuilder cb = s.getCriteriaBuilder();
 
-            Multithreading.runAsync(() -> {
-                if (override)
-                    user.setSubscribed(Arrays.asList(channelIds));
-                else
-                    for (String channelId : channelIds)
-                        if (!user.getSubscribed().contains(channelId))
-                            user.getSubscribed().add(channelId);
+                // Get all videos from subscribed channels, with channel info
+                CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+                criteria.distinct(true);
+                var root = criteria.from(Video.class);
+                var userRoot = criteria.from(User.class);
+                root.fetch("channel", JoinType.INNER);
 
-                if (channelIds.length > 0) {
-                    s.update(user);
-                    s.beginTransaction().commit();
+                criteria.select(root)
+                        .where(cb.and(
+                                cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
+                                cb.equal(userRoot.get("id"), user.getId())
+                        ))
+                        .orderBy(cb.desc(root.get("uploaded")));
+
+                List<StreamItem> feedItems = new ObjectArrayList<>();
+
+                for (Video video : s.createQuery(criteria).list()) {
+                    var channel = video.getChannel();
+
+                    feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
+                            rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
+                            rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
+                            video.getUploaded(), channel.isVerified()));
                 }
 
-                s.close();
-            });
+                feedItems.sort(Comparator.<StreamItem>comparingLong(o -> o.uploaded).reversed());
 
-            for (String channelId : channelIds) {
-
-                Multithreading.runAsyncLimited(() -> {
-                    try {
-
-                        Session sess = DatabaseSessionFactory.createSession();
-
-                        var channel = DatabaseHelper.getChannelFromId(sess, channelId);
-
-                        if (channel == null) {
-                            ChannelInfo info;
-
-                            try {
-                                info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
-                            } catch (Exception e) {
-                                return;
-                            }
-
-                            channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
-                                    info.getAvatarUrl(), info.isVerified());
-                            sess.save(channel);
-
-                            Multithreading.runAsync(() -> {
-                                try {
-                                    Session sessSub = DatabaseSessionFactory.createSession();
-                                    subscribePubSub(channelId, sessSub);
-                                    sessSub.close();
-                                } catch (Exception e) {
-                                    ExceptionHandler.handle(e);
-                                }
-                            });
-
-                            for (StreamInfoItem item : info.getRelatedItems()) {
-                                long time = item.getUploadDate() != null
-                                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                        : System.currentTimeMillis();
-                                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                                    handleNewVideo(item.getUrl(), time, channel, sess);
-                            }
-
-                            if (!sess.getTransaction().isActive())
-                                sess.getTransaction().begin();
-                            sess.getTransaction().commit();
-                        }
-
-                        sess.close();
-
-                    } catch (Exception e) {
-                        ExceptionHandler.handle(e);
-                    }
-
-                });
-
+                return Constants.mapper.writeValueAsBytes(feedItems);
             }
 
-            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
         }
+    }
 
-        s.close();
+    public static byte[] feedResponseRSS(String session) throws IOException, FeedException {
 
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        try (Session s = DatabaseSessionFactory.createSession()) {
 
+            User user = DatabaseHelper.getUserFromSession(s, session);
+
+            if (user != null) {
+
+                SyndFeed feed = new SyndFeedImpl();
+                feed.setFeedType("atom_1.0");
+                feed.setTitle("Piped - Feed");
+                feed.setDescription(String.format("Piped's RSS subscription feed for %s.", user.getUsername()));
+                feed.setUri(Constants.FRONTEND_URL + "/feed");
+                feed.setPublishedDate(new Date());
+
+                CriteriaBuilder cb = s.getCriteriaBuilder();
+
+                // Get all videos from subscribed channels, with channel info
+                CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+                criteria.distinct(true);
+                var root = criteria.from(Video.class);
+                var userRoot = criteria.from(User.class);
+                root.fetch("channel", JoinType.INNER);
+
+                criteria.select(root)
+                        .where(cb.and(
+                                cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
+                                cb.equal(userRoot.get("id"), user.getId())
+                        ))
+                        .orderBy(cb.desc(root.get("uploaded")));
+
+                List<Video> videos = s.createQuery(criteria).list();
+
+                final List<SyndEntry> entries = new ObjectArrayList<>();
+
+                for (Video video : videos) {
+                    var channel = video.getChannel();
+                    SyndEntry entry = new SyndEntryImpl();
+
+                    SyndPerson person = new SyndPersonImpl();
+                    person.setName(channel.getUploader());
+                    person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+
+                    entry.setAuthors(Collections.singletonList(person));
+
+                    entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                    entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                    entry.setTitle(video.getTitle());
+                    entry.setPublishedDate(new Date(video.getUploaded()));
+                    entries.add(entry);
+                }
+
+                feed.setEntries(entries);
+
+                return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
+            }
+
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        }
+    }
+
+    public static byte[] importResponse(String session, String[] channelIds, boolean override) throws IOException {
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+
+            User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+
+            if (user != null) {
+
+                Multithreading.runAsync(() -> {
+                    if (override)
+                        user.setSubscribed(Arrays.asList(channelIds));
+                    else
+                        for (String channelId : channelIds)
+                            if (!user.getSubscribed().contains(channelId))
+                                user.getSubscribed().add(channelId);
+
+                    if (channelIds.length > 0) {
+                        s.update(user);
+                        s.beginTransaction().commit();
+                    }
+                });
+
+                for (String channelId : channelIds) {
+
+                    Multithreading.runAsyncLimited(() -> {
+                        try (Session sess = DatabaseSessionFactory.createSession()) {
+
+                            var channel = DatabaseHelper.getChannelFromId(sess, channelId);
+
+                            if (channel == null) {
+                                ChannelInfo info;
+
+                                try {
+                                    info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+                                } catch (Exception e) {
+                                    return;
+                                }
+
+                                channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
+                                        info.getAvatarUrl(), info.isVerified());
+                                sess.save(channel);
+
+                                Multithreading.runAsync(() -> {
+                                    try (Session sessSub = DatabaseSessionFactory.createSession()) {
+                                        subscribePubSub(channelId, sessSub);
+                                    } catch (Exception e) {
+                                        ExceptionHandler.handle(e);
+                                    }
+                                });
+
+                                for (StreamInfoItem item : info.getRelatedItems()) {
+                                    long time = item.getUploadDate() != null
+                                            ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                            : System.currentTimeMillis();
+                                    if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                                        handleNewVideo(item.getUrl(), time, channel, sess);
+                                }
+
+                                if (!sess.getTransaction().isActive())
+                                    sess.getTransaction().begin();
+                                sess.getTransaction().commit();
+                            }
+
+                        } catch (Exception e) {
+                            ExceptionHandler.handle(e);
+                        }
+
+                    });
+
+                }
+
+                return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+            }
+
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        }
     }
 
     public static byte[] subscriptionsResponse(String session)
             throws IOException {
 
-        Session s = DatabaseSessionFactory.createSession();
+        try (Session s = DatabaseSessionFactory.createSession()) {
 
-        User user = DatabaseHelper.getUserFromSession(s, session);
+            User user = DatabaseHelper.getUserFromSession(s, session);
 
-        if (user != null) {
+            if (user != null) {
 
-            List<SubscriptionChannel> subscriptionItems = new ObjectArrayList<>();
+                List<SubscriptionChannel> subscriptionItems = new ObjectArrayList<>();
 
-            CriteriaBuilder cb = s.getCriteriaBuilder();
-            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
-            var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
-            var userRoot = query.from(User.class);
-            query.select(root);
-            query.where(cb.and(
-                    cb.isMember(root.get("uploader_id"), userRoot.<Collection<String>>get("subscribed_ids")),
-                    cb.equal(userRoot.get("id"), user.getId())
-            ));
+                CriteriaBuilder cb = s.getCriteriaBuilder();
+                var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
+                var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+                var userRoot = query.from(User.class);
+                query.select(root);
+                query.where(cb.and(
+                        cb.isMember(root.get("uploader_id"), userRoot.<Collection<String>>get("subscribed_ids")),
+                        cb.equal(userRoot.get("id"), user.getId())
+                ));
 
-            var channels = s.createQuery(query).list();
+                var channels = s.createQuery(query).list();
 
-            channels.forEach(channel -> subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
-                    channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified())));
+                channels.forEach(channel -> subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
+                        channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified())));
 
-            subscriptionItems.sort(Comparator.comparing(o -> o.name));
+                subscriptionItems.sort(Comparator.comparing(o -> o.name));
 
-            s.close();
+                return Constants.mapper.writeValueAsBytes(subscriptionItems);
+            }
 
-            return Constants.mapper.writeValueAsBytes(subscriptionItems);
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
         }
-
-        s.close();
-
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
     }
 
     public static String registeredBadgeRedirect() {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            long registered = (Long) s.createQuery("select count(*) from User").uniqueResult();
 
-        Session s = DatabaseSessionFactory.createSession();
-
-        long registered = (Long) s.createQuery("select count(*) from User").uniqueResult();
-
-        s.close();
-
-        return String.format("https://img.shields.io/badge/Registered%%20Users-%s-blue", registered);
+            return String.format("https://img.shields.io/badge/Registered%%20Users-%s-blue", registered);
+        }
     }
 
     public static void handleNewVideo(String url, long time, me.kavin.piped.utils.obj.db.Channel channel, Session s) {

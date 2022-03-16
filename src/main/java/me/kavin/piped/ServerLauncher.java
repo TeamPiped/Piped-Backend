@@ -55,12 +55,12 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                 new InputSource(new ByteArrayInputStream(request.loadBody().getResult().asArray())));
 
                         Multithreading.runAsync(() -> {
-                            Session s = DatabaseSessionFactory.createSession();
-                            feed.getEntries().forEach(entry -> {
-                                ResponseHelper.handleNewVideo(entry.getLinks().get(0).getHref(),
-                                        entry.getPublishedDate().getTime(), null, s);
-                            });
-                            s.close();
+                            try (Session s = DatabaseSessionFactory.createSession()) {
+                                for (var entry : feed.getEntries()) {
+                                    ResponseHelper.handleNewVideo(entry.getLinks().get(0).getHref(),
+                                            entry.getPublishedDate().getTime(), null, s);
+                                }
+                            }
                         });
 
                         return HttpResponse.ofCode(204);

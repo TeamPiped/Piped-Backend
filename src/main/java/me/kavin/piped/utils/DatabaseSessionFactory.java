@@ -1,14 +1,13 @@
 package me.kavin.piped.utils;
 
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
-
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
 
 public class DatabaseSessionFactory {
 
