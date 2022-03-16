@@ -31,8 +31,7 @@ public class Main {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    Session s = DatabaseSessionFactory.createSession();
+                try (Session s = DatabaseSessionFactory.createSession()) {
 
                     CriteriaBuilder cb = s.getCriteriaBuilder();
                     CriteriaQuery<PubSub> criteria = cb.createQuery(PubSub.class);
@@ -51,16 +50,13 @@ public class Main {
                     for (PubSub pubsub : pubSubList)
                         if (pubsub != null)
                             Multithreading.runAsyncLimitedPubSub(() -> {
-                                Session sess = DatabaseSessionFactory.createSession();
-                                try {
+                                try (Session sess = DatabaseSessionFactory.createSession()) {
                                     ResponseHelper.subscribePubSub(pubsub.getId(), sess);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
-                                sess.close();
                             });
 
-                    s.close();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -70,8 +66,7 @@ public class Main {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    Session s = DatabaseSessionFactory.createSession();
+                try (Session s = DatabaseSessionFactory.createSession()) {
 
                     Transaction tr = s.getTransaction();
 
@@ -84,7 +79,6 @@ public class Main {
 
                     tr.commit();
 
-                    s.close();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

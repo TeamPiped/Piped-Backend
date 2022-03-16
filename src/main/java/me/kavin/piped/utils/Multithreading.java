@@ -1,7 +1,9 @@
 package me.kavin.piped.utils;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 public class Multithreading {
 
@@ -25,5 +27,9 @@ public class Multithreading {
 
     public static ExecutorService getCachedExecutor() {
         return es;
+    }
+
+    public static <U> CompletableFuture<U> supplyAsync(Supplier<U> supplier) {
+        return CompletableFuture.supplyAsync(supplier, es);
     }
 }
