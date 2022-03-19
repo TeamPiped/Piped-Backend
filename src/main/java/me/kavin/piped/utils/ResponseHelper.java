@@ -597,7 +597,7 @@ public class ResponseHelper {
 
         try (Session s = DatabaseSessionFactory.createSession()) {
 
-            User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+            User user = DatabaseHelper.getUserFromSessionWithSubscribed(session);
 
             if (user != null) {
                 if (!user.getSubscribed().contains(channelId)) {
@@ -657,16 +657,17 @@ public class ResponseHelper {
     public static byte[] unsubscribeResponse(String session, String channelId)
             throws IOException {
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            User user = DatabaseHelper.getUserFromSession(s, session);
+        User user = DatabaseHelper.getUserFromSession(session);
 
-            if (user != null) {
+        if (user != null) {
+            try (Session s = DatabaseSessionFactory.createSession()) {
                 s.getTransaction().begin();
                 s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
                         .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
                 s.getTransaction().commit();
                 return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
             }
+
         }
 
         return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
@@ -690,11 +691,11 @@ public class ResponseHelper {
     }
 
     public static byte[] feedResponse(String session) throws IOException {
-        try (Session s = DatabaseSessionFactory.createSession()) {
 
-            User user = DatabaseHelper.getUserFromSession(s, session);
+        User user = DatabaseHelper.getUserFromSession(session);
 
-            if (user != null) {
+        if (user != null) {
+            try (Session s = DatabaseSessionFactory.createSession()) {
 
                 CriteriaBuilder cb = s.getCriteriaBuilder();
 
@@ -727,19 +728,18 @@ public class ResponseHelper {
 
                 return Constants.mapper.writeValueAsBytes(feedItems);
             }
-
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
-
         }
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static byte[] feedResponseRSS(String session) throws IOException, FeedException {
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        User user = DatabaseHelper.getUserFromSession(session);
 
-            User user = DatabaseHelper.getUserFromSession(s, session);
+        if (user != null) {
 
-            if (user != null) {
+            try (Session s = DatabaseSessionFactory.createSession()) {
 
                 SyndFeed feed = new SyndFeedImpl();
                 feed.setFeedType("atom_1.0");
@@ -789,20 +789,20 @@ public class ResponseHelper {
 
                 return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
             }
-
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
         }
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static byte[] importResponse(String session, String[] channelIds, boolean override) throws IOException {
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
 
-            User user = DatabaseHelper.getUserFromSessionWithSubscribed(s, session);
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(session);
 
-            if (user != null) {
+        if (user != null) {
 
-                Multithreading.runAsync(() -> {
+            Multithreading.runAsync(() -> {
+                try (Session sess = DatabaseSessionFactory.createSession()) {
                     if (override)
                         user.setSubscribed(Arrays.asList(channelIds));
                     else
@@ -811,75 +811,74 @@ public class ResponseHelper {
                                 user.getSubscribed().add(channelId);
 
                     if (channelIds.length > 0) {
-                        s.update(user);
-                        s.beginTransaction().commit();
+                        sess.update(user);
+                        sess.beginTransaction().commit();
                     }
-                });
+                }
+            });
 
-                for (String channelId : channelIds) {
+            for (String channelId : channelIds) {
 
-                    Multithreading.runAsyncLimited(() -> {
-                        try (Session sess = DatabaseSessionFactory.createSession()) {
+                Multithreading.runAsyncLimited(() -> {
+                    try (Session sess = DatabaseSessionFactory.createSession()) {
 
-                            var channel = DatabaseHelper.getChannelFromId(sess, channelId);
+                        var channel = DatabaseHelper.getChannelFromId(sess, channelId);
 
-                            if (channel == null) {
-                                ChannelInfo info;
+                        if (channel == null) {
+                            ChannelInfo info;
 
-                                try {
-                                    info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
-                                } catch (Exception e) {
-                                    return;
-                                }
-
-                                channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
-                                        info.getAvatarUrl(), info.isVerified());
-                                sess.save(channel);
-
-                                Multithreading.runAsync(() -> {
-                                    try (Session sessSub = DatabaseSessionFactory.createSession()) {
-                                        subscribePubSub(channelId, sessSub);
-                                    } catch (Exception e) {
-                                        ExceptionHandler.handle(e);
-                                    }
-                                });
-
-                                for (StreamInfoItem item : info.getRelatedItems()) {
-                                    long time = item.getUploadDate() != null
-                                            ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                            : System.currentTimeMillis();
-                                    if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                                        handleNewVideo(item.getUrl(), time, channel, sess);
-                                }
-
-                                if (!sess.getTransaction().isActive())
-                                    sess.getTransaction().begin();
-                                sess.getTransaction().commit();
+                            try {
+                                info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+                            } catch (Exception e) {
+                                return;
                             }
 
-                        } catch (Exception e) {
-                            ExceptionHandler.handle(e);
+                            channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
+                                    info.getAvatarUrl(), info.isVerified());
+                            sess.save(channel);
+
+                            Multithreading.runAsync(() -> {
+                                try (Session sessSub = DatabaseSessionFactory.createSession()) {
+                                    subscribePubSub(channelId, sessSub);
+                                } catch (Exception e) {
+                                    ExceptionHandler.handle(e);
+                                }
+                            });
+
+                            for (StreamInfoItem item : info.getRelatedItems()) {
+                                long time = item.getUploadDate() != null
+                                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                        : System.currentTimeMillis();
+                                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                                    handleNewVideo(item.getUrl(), time, channel, sess);
+                            }
+
+                            if (!sess.getTransaction().isActive())
+                                sess.getTransaction().begin();
+                            sess.getTransaction().commit();
                         }
 
-                    });
+                    } catch (Exception e) {
+                        ExceptionHandler.handle(e);
+                    }
 
-                }
+                });
 
-                return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
             }
 
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
         }
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static byte[] subscriptionsResponse(String session)
             throws IOException {
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        User user = DatabaseHelper.getUserFromSession(session);
 
-            User user = DatabaseHelper.getUserFromSession(s, session);
-
-            if (user != null) {
+        if (user != null) {
+            try (Session s = DatabaseSessionFactory.createSession()) {
 
                 List<SubscriptionChannel> subscriptionItems = new ObjectArrayList<>();
 
@@ -902,10 +901,9 @@ public class ResponseHelper {
 
                 return Constants.mapper.writeValueAsBytes(subscriptionItems);
             }
-
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
-
         }
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
     }
 
