@@ -13,23 +13,27 @@ import javax.persistence.criteria.Root;
 
 public class DatabaseHelper {
 
-    public static final User getUserFromSession(Session s, String session) {
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<User> cr = cb.createQuery(User.class);
-        Root<User> root = cr.from(User.class);
-        cr.select(root).where(cb.equal(root.get("sessionId"), session));
+    public static final User getUserFromSession(String session) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<User> cr = cb.createQuery(User.class);
+            Root<User> root = cr.from(User.class);
+            cr.select(root).where(cb.equal(root.get("sessionId"), session));
 
-        return s.createQuery(cr).uniqueResult();
+            return s.createQuery(cr).uniqueResult();
+        }
     }
 
-    public static final User getUserFromSessionWithSubscribed(Session s, String session) {
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<User> cr = cb.createQuery(User.class);
-        Root<User> root = cr.from(User.class);
-        root.fetch("subscribed_ids", JoinType.LEFT);
-        cr.select(root).where(cb.equal(root.get("sessionId"), session));
+    public static final User getUserFromSessionWithSubscribed(String session) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<User> cr = cb.createQuery(User.class);
+            Root<User> root = cr.from(User.class);
+            root.fetch("subscribed_ids", JoinType.LEFT);
+            cr.select(root).where(cb.equal(root.get("sessionId"), session));
 
-        return s.createQuery(cr).uniqueResult();
+            return s.createQuery(cr).uniqueResult();
+        }
     }
 
     public static final Channel getChannelFromId(Session s, String id) {
