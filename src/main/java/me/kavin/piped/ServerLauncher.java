@@ -44,7 +44,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
     AsyncServlet mainServlet(Executor executor) {
 
         RoutingServlet router = RoutingServlet.create()
-                .map(GET, "/healthcheck", request -> getRawResponse("OK".getBytes(UTF_8), "text/plain", "no-store"))
+                .map(GET, "/healthcheck", AsyncServlet.ofBlocking(executor, request -> {
+                    try (Session ignored = DatabaseSessionFactory.createSession()) {
+                        return getRawResponse("OK".getBytes(UTF_8), "text/plain", "no-store");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                }))
                 .map(GET, "/version", AsyncServlet.ofBlocking(executor, request -> getRawResponse(Constants.VERSION.getBytes(UTF_8), "text/plain", "no-store")))
                 .map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200))
                 .map(GET, "/webhooks/pubsub", request -> HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge"))))
