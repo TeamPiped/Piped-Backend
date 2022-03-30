@@ -85,7 +85,7 @@ public class ResponseHelper {
 
         final var futureLBRY = Multithreading.supplyAsync(() -> {
             try {
-                String lbryId = futureLbryId.completeOnTimeout(null, 2, TimeUnit.SECONDS).get();
+                String lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
 
                 return LbryHelper.getLBRYStreamURL(lbryId);
             } catch (Exception e) {
@@ -113,7 +113,7 @@ public class ResponseHelper {
         String lbryURL = null;
 
         try {
-            lbryURL = futureLBRY.completeOnTimeout(null, 3, TimeUnit.SECONDS).get();
+            lbryURL = futureLBRY.get(3, TimeUnit.SECONDS);
         } catch (Exception e) {
             // ignored
         }
@@ -153,9 +153,9 @@ public class ResponseHelper {
         final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
-                info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.isUploaderVerified(),
+                info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteURL(info.getHlsUrl()),
-                rewriteURL(info.getDashMpdUrl()), futureLbryId.get(), chapters);
+                rewriteURL(info.getDashMpdUrl()), futureLbryId.get(2, TimeUnit.SECONDS), chapters);
 
         return Constants.mapper.writeValueAsBytes(streams);
 
