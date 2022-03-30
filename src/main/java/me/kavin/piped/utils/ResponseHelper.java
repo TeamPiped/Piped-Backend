@@ -142,7 +142,10 @@ public class ResponseHelper {
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
+        info.getRelatedItems().forEach(o -> {
+            if (o instanceof StreamInfoItem)
+                relatedStreams.add(collectRelatedStream(o));
+        });
 
         long time = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
