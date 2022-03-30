@@ -1,8 +1,8 @@
 package me.kavin.piped.utils.obj;
 
-import java.util.List;
-
 import me.kavin.piped.consts.Constants;
+
+import java.util.List;
 
 public class Streams {
 
@@ -11,7 +11,7 @@ public class Streams {
 
     public boolean uploaderVerified;
 
-    public long duration, views, likes, dislikes;
+    public long duration, views, likes, dislikes, uploaderSubscriberCount;
 
     public List<PipedStream> audioStreams, videoStreams;
 
@@ -26,10 +26,10 @@ public class Streams {
     public List<ChapterSegment> chapters;
 
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
-            String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes,
-            boolean uploaderVerified, List<PipedStream> audioStreams, List<PipedStream> videoStreams,
-            List<StreamItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
-            String lbryId, List<ChapterSegment> chapters) {
+                   String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes, long uploaderSubscriberCount,
+                   boolean uploaderVerified, List<PipedStream> audioStreams, List<PipedStream> videoStreams,
+                   List<StreamItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
+                   String lbryId, List<ChapterSegment> chapters) {
         this.title = title;
         this.description = description;
         this.uploadDate = uploadDate;
@@ -41,6 +41,7 @@ public class Streams {
         this.views = views;
         this.likes = likes;
         this.dislikes = dislikes;
+        this.uploaderSubscriberCount = uploaderSubscriberCount;
         this.uploaderVerified = uploaderVerified;
         this.audioStreams = audioStreams;
         this.videoStreams = videoStreams;
