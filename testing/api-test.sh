@@ -98,3 +98,6 @@ PLAYLIST_ID=$(curl -s -o - -f $HOST/user/playlists -H "Authorization: $AUTH_TOKE
 
 # Playlist Test
 curl ${CURLOPTS[@]} $HOST/playlists/$PLAYLIST_ID || exit 1
+
+# Add to Playlist Test
+curl ${CURLOPTS[@]} $HOST/user/playlists/add -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg videoId "BtN-goy9VOY" --arg playlistId $PLAYLIST_ID '{"videoId": $videoId, "playlistId": $playlistId}') || exit 1

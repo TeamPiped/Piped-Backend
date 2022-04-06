@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.obj.*;
+import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
@@ -300,7 +301,11 @@ public class ResponseHelper {
             cq.select(root);
             cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var query = s.createQuery(cq);
-            var pl = query.getSingleResult();
+            var pl = query.uniqueResult();
+
+            if (pl == null)
+                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                        .put("error", "Playlist not found"));
 
             final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -999,6 +1004,71 @@ public class ResponseHelper {
             }
 
             return Constants.mapper.writeValueAsBytes(playlists);
+        }
+    }
+
+    public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
+
+        if (StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        var user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var cb = s.getCriteriaBuilder();
+            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+            var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            root.fetch("videos", JoinType.LEFT);
+            root.fetch("owner", JoinType.LEFT);
+            query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
+            var playlist = s.createQuery(query).uniqueResult();
+
+            if (playlist == null)
+                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                        .put("error", "Playlist not found"));
+
+            if (playlist.getOwner().getId() != user.getId())
+                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                        .put("error", "You are not the owner this playlist"));
+
+            var video = DatabaseHelper.getPlaylistVideoFromId(s, videoId);
+
+            if (video == null) {
+                StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+
+                String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
+
+                var channel = DatabaseHelper.getChannelFromId(s, channelId);
+
+                if (channel == null) {
+                    ChannelInfo channelInfo = ChannelInfo.getInfo(info.getUploaderUrl());
+
+                    channel = new me.kavin.piped.utils.obj.db.Channel(channelId, channelInfo.getName(),
+                            channelInfo.getAvatarUrl(), channelInfo.isVerified());
+                    s.save(channel);
+
+                    if (!s.getTransaction().isActive())
+                        s.getTransaction().begin();
+                }
+
+                video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+
+                s.save(video);
+
+                if (!s.getTransaction().isActive())
+                    s.getTransaction().begin();
+            }
+
+            playlist.getVideos().add(video);
+
+            if (!s.getTransaction().isActive())
+                s.getTransaction().begin();
+            s.getTransaction().commit();
+
+            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
         }
     }
 

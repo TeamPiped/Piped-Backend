@@ -1,27 +1,20 @@
 package me.kavin.piped.utils.obj.db;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
-@Table(name = "playlist_videos", indexes = { @Index(columnList = "id", name = "playlist_videos_id_idx"),
-        @Index(columnList = "uploader_id", name = "playlist_videos_uploader_id_idx") })
+@Table(name = "playlist_videos", indexes = {@Index(columnList = "id", name = "playlist_videos_id_idx"),
+        @Index(columnList = "uploader_id", name = "playlist_videos_uploader_id_idx")})
 public class PlaylistVideo {
 
     public PlaylistVideo() {
     }
 
-    public PlaylistVideo(String id, String title, long duration, String thumbnail, Channel channel) {
+    public PlaylistVideo(String id, String title, String thumbnail, long duration, Channel channel) {
         this.id = id;
         this.title = title;
-        this.duration = duration;
         this.thumbnail = thumbnail;
+        this.duration = duration;
         this.channel = channel;
     }
 
