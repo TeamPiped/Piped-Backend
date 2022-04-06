@@ -101,3 +101,6 @@ curl ${CURLOPTS[@]} $HOST/playlists/$PLAYLIST_ID || exit 1
 
 # Add to Playlist Test
 curl ${CURLOPTS[@]} $HOST/user/playlists/add -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg videoId "BtN-goy9VOY" --arg playlistId $PLAYLIST_ID '{"videoId": $videoId, "playlistId": $playlistId}') || exit 1
+
+# Remove from Playlist Test
+curl ${CURLOPTS[@]} $HOST/user/playlists/remove -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg index "0" --arg playlistId $PLAYLIST_ID '{"index": $index, "playlistId": $playlistId}') || exit 1

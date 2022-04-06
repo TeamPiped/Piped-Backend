@@ -43,8 +43,8 @@ public class Playlist {
     private User owner;
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @OneToMany(targetEntity = PlaylistVideo.class)
     @Column(name = "videos")
+    @OrderColumn(name = "videos_order")
     private List<PlaylistVideo> videos;
 
     public long getId() {
