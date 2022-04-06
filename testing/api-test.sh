@@ -84,3 +84,17 @@ sleep 2
 
 # Check Feed
 curl ${CURLOPTS[@]} $HOST/feed -G --data-urlencode "authToken=$AUTH_TOKEN" || exit 1
+
+PLAYLIST_NAME=$(openssl rand -hex 6)
+
+# Create a Playlist
+curl ${CURLOPTS[@]} $HOST/user/playlists/create -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg name "$PLAYLIST_NAME" '{"name": $name}') || exit 1
+
+# See created playlists
+curl ${CURLOPTS[@]} $HOST/user/playlists -H "Authorization: $AUTH_TOKEN" || exit 1
+
+# Get Playlist ID
+PLAYLIST_ID=$(curl -s -o - -f $HOST/user/playlists -H "Authorization: $AUTH_TOKEN" | jq -r ".[0].id") || exit 1
+
+# Playlist Test
+curl ${CURLOPTS[@]} $HOST/playlists/$PLAYLIST_ID || exit 1

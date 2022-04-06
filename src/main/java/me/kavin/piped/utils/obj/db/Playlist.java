@@ -38,7 +38,8 @@ public class Playlist {
     @Column(name = "thumbnail", length = 300)
     private String thumbnail;
 
-    @Column(name = "owner", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner")
     private User owner;
 
     @ElementCollection(fetch = FetchType.LAZY)

@@ -965,9 +965,12 @@ public class ResponseHelper {
             s.save(playlist);
             s.getTransaction().begin();
             s.getTransaction().commit();
-        }
 
-        return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+            ObjectNode response = Constants.mapper.createObjectNode();
+            response.put("playlistId", String.valueOf(playlist.getPlaylistId()));
+
+            return Constants.mapper.writeValueAsBytes(response);
+        }
     }
 
     public static byte[] playlistsResponse(String session) throws IOException {
