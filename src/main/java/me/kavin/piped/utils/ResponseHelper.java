@@ -391,9 +391,9 @@ public class ResponseHelper {
             var cb = s.getCriteriaBuilder();
             var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos")
+            root.fetch("videos", JoinType.LEFT)
                     .fetch("channel", JoinType.LEFT);
-            root.fetch("owner", JoinType.LEFT);
+            root.fetch("owner", JoinType.INNER);
             cq.select(root);
             cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var query = s.createQuery(cq);
