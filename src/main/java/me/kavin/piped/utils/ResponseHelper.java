@@ -310,7 +310,9 @@ public class ResponseHelper {
 
             final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
-            for (var video : pl.getVideos()) {
+            var videos = pl.getVideos();
+
+            for (var video : videos) {
                 var channel = video.getChannel();
                 relatedStreams.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(), rewriteURL(video.getThumbnail()), channel.getUploader(),
                         "/channel/" + channel.getUploaderId(), rewriteURL(channel.getUploaderAvatar()), null, null,
@@ -318,7 +320,7 @@ public class ResponseHelper {
             }
 
             final Playlist playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), null, null, pl.getOwner().getUsername(),
-                    null, null, -1, relatedStreams);
+                    null, null, videos.size(), relatedStreams);
 
             return Constants.mapper.writeValueAsBytes(playlist);
         }
