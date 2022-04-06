@@ -1,6 +1,7 @@
 package me.kavin.piped.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
 import com.rometools.rome.feed.synd.*;
@@ -278,7 +279,46 @@ public class ResponseHelper {
         return Constants.mapper.writeValueAsBytes(relatedStreams);
     }
 
-    public static byte[] playlistResponse(String playlistId)
+    public static byte[] playlistResponse(String playlistId) throws ExtractionException, IOException {
+
+        if (StringUtils.isBlank(playlistId))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        if (playlistId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+            return playlistPipedResponse(playlistId);
+
+        return playlistYouTubeResponse(playlistId);
+    }
+
+    private static byte[] playlistPipedResponse(String playlistId) throws IOException {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var cb = s.getCriteriaBuilder();
+            var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+            var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            root.fetch("videos", JoinType.LEFT);
+            root.fetch("owner", JoinType.LEFT);
+            cq.select(root);
+            cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
+            var query = s.createQuery(cq);
+            var pl = query.getSingleResult();
+
+            final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+
+            for (var video : pl.getVideos()) {
+                var channel = video.getChannel();
+                relatedStreams.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(), rewriteURL(video.getThumbnail()), channel.getUploader(),
+                        "/channel/" + channel.getUploaderId(), rewriteURL(channel.getUploaderAvatar()), null, null,
+                        video.getDuration(), -1, -1, channel.isVerified()));
+            }
+
+            final Playlist playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), null, null, pl.getOwner().getUsername(),
+                    null, null, -1, relatedStreams);
+
+            return Constants.mapper.writeValueAsBytes(playlist);
+        }
+    }
+
+    private static byte[] playlistYouTubeResponse(String playlistId)
             throws IOException, ExtractionException {
 
         final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
@@ -908,6 +948,55 @@ public class ResponseHelper {
 
         return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
+    }
+
+    public static byte[] createPlaylist(String session, String name) throws IOException {
+
+        if (StringUtils.isBlank(name))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        User user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var playlist = new me.kavin.piped.utils.obj.db.Playlist(name, user, "https://i.ytimg.com/");
+            s.save(playlist);
+            s.getTransaction().begin();
+            s.getTransaction().commit();
+        }
+
+        return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+    }
+
+    public static byte[] playlistsResponse(String session) throws IOException {
+
+        User user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var cb = s.getCriteriaBuilder();
+            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+            var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            query.select(root);
+            query.where(cb.equal(root.get("owner"), user));
+
+            var playlists = new ObjectArrayList<>();
+
+            for (var playlist : s.createQuery(query).list()) {
+                ObjectNode node = Constants.mapper.createObjectNode();
+                node.put("id", String.valueOf(playlist.getPlaylistId()));
+                node.put("name", playlist.getName());
+                node.put("shortDescription", playlist.getShortDescription());
+                node.put("thumbnail", rewriteURL(playlist.getThumbnail()));
+                playlists.add(node);
+            }
+
+            return Constants.mapper.writeValueAsBytes(playlists);
+        }
     }
 
     public static String registeredBadgeRedirect() {

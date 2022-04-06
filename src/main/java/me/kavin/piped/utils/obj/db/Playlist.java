@@ -1,48 +1,45 @@
 package me.kavin.piped.utils.obj.db;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+
+import javax.persistence.*;
 import java.util.List;
 import java.util.UUID;
 
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-
 @Entity
-@Table(name = "playlists", indexes = { @Index(columnList = "playlist_id", name = "playlists_playlist_id_idx") })
+@Table(name = "playlists", indexes = {@Index(columnList = "playlist_id", name = "playlists_playlist_id_idx")})
 public class Playlist {
 
     public Playlist() {
     }
 
-    public Playlist(String name, List<PlaylistVideo> videos, String thumbnail) {
+    public Playlist(String name, User owner, String thumbnail) {
         this.name = name;
-        this.videos = videos;
+        this.owner = owner;
+        this.videos = new ObjectArrayList<>();
         this.thumbnail = thumbnail;
+        this.playlist_id = UUID.randomUUID();
     }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "playlist_id")
+    @Column(name = "playlist_id", unique = true, nullable = false)
+    @GeneratedValue(generator = "UUID", strategy = GenerationType.IDENTITY)
     private UUID playlist_id;
 
     @Column(name = "name", length = 100)
     private String name;
 
-    @Column(name = "thumbnail", length = 255)
+    @Column(name = "short_description", length = 100)
+    private String short_description;
+
+    @Column(name = "thumbnail", length = 300)
     private String thumbnail;
 
-    @Column(name = "owner")
-    private long owner;
+    @Column(name = "owner", nullable = false)
+    private User owner;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @OneToMany(targetEntity = PlaylistVideo.class)
@@ -77,6 +74,14 @@ public class Playlist {
         this.videos = videos;
     }
 
+    public String getShortDescription() {
+        return short_description;
+    }
+
+    public void setShortDescription(String short_description) {
+        this.short_description = short_description;
+    }
+
     public String getThumbnail() {
         return thumbnail;
     }
@@ -85,11 +90,11 @@ public class Playlist {
         this.thumbnail = thumbnail;
     }
 
-    public long getOwner() {
+    public User getOwner() {
         return owner;
     }
 
-    public void setOwner(long owner) {
+    public void setOwner(User owner) {
         this.owner = owner;
     }
 }
