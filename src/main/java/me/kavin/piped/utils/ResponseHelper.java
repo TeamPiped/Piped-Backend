@@ -296,9 +296,9 @@ public class ResponseHelper {
             var cb = s.getCriteriaBuilder();
             var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos")
+            root.fetch("videos", JoinType.LEFT)
                     .fetch("channel", JoinType.LEFT);
-            root.fetch("owner", JoinType.LEFT);
+            root.fetch("owner", JoinType.INNER);
             cq.select(root);
             cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var query = s.createQuery(cq);
@@ -1028,6 +1028,36 @@ public class ResponseHelper {
 
             return Constants.mapper.writeValueAsBytes(response);
         }
+    }
+
+    public static byte[] deletePlaylistResponse(String session, String playlistId) throws IOException {
+
+        if (StringUtils.isBlank(playlistId))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        User user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
+
+            if (playlist == null)
+                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                        .put("error", "Playlist not found"));
+
+            if (playlist.getOwner().getId() != user.getId())
+                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                        .put("error", "You do not own this playlist"));
+
+            s.delete(playlist);
+
+            s.getTransaction().begin();
+            s.getTransaction().commit();
+        }
+
+        return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
     }
 
     public static byte[] playlistsResponse(String session) throws IOException {

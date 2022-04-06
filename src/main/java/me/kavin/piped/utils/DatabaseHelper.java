@@ -7,6 +7,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
+import java.util.UUID;
 
 public class DatabaseHelper {
 
@@ -56,6 +57,15 @@ public class DatabaseHelper {
         CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
         Root<PlaylistVideo> root = cr.from(PlaylistVideo.class);
         cr.select(root).where(cb.equal(root.get("id"), id));
+
+        return s.createQuery(cr).uniqueResult();
+    }
+
+    public static Playlist getPlaylistFromId(Session s, String id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<Playlist> cr = cb.createQuery(Playlist.class);
+        Root<Playlist> root = cr.from(Playlist.class);
+        cr.select(root).where(cb.equal(root.get("playlist_id"), UUID.fromString(id)));
 
         return s.createQuery(cr).uniqueResult();
     }
