@@ -1144,6 +1144,9 @@ public class ResponseHelper {
                     s.getTransaction().begin();
             }
 
+            if (playlist.getVideos().isEmpty())
+                playlist.setThumbnail(video.getThumbnail());
+
             playlist.getVideos().add(video);
 
             if (!s.getTransaction().isActive())
