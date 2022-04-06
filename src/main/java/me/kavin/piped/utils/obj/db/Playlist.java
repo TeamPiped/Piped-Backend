@@ -42,8 +42,9 @@ public class Playlist {
     @JoinColumn(name = "owner")
     private User owner;
 
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ManyToMany
     @Column(name = "videos")
+    @CollectionTable(name = "playlists_videos_ids")
     @OrderColumn(name = "videos_order")
     private List<PlaylistVideo> videos;
 
