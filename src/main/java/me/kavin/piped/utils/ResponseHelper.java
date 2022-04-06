@@ -373,7 +373,58 @@ public class ResponseHelper {
 
     }
 
-    public static byte[] playlistRSSResponse(String playlistId)
+    public static byte[] playlistRSSResponse(String playlistId) throws ExtractionException, IOException, FeedException {
+
+        if (StringUtils.isBlank(playlistId))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        if (playlistId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+            return playlistPipedRSSResponse(playlistId);
+
+        return playlistYouTubeRSSResponse(playlistId);
+    }
+
+    private static byte[] playlistPipedRSSResponse(String playlistId)
+            throws FeedException {
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var cb = s.getCriteriaBuilder();
+            var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+            var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            root.fetch("videos")
+                    .fetch("channel", JoinType.LEFT);
+            root.fetch("owner", JoinType.LEFT);
+            cq.select(root);
+            cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
+            var query = s.createQuery(cq);
+            var pl = query.uniqueResult();
+
+            final List<SyndEntry> entries = new ObjectArrayList<>();
+
+            SyndFeed feed = new SyndFeedImpl();
+            feed.setFeedType("rss_2.0");
+            feed.setTitle(pl.getName());
+            feed.setAuthor(pl.getOwner().getUsername());
+            feed.setDescription(String.format("%s - Piped", pl.getName()));
+            feed.setLink(Constants.FRONTEND_URL + "/playlist?list=" + pl.getPlaylistId());
+            feed.setPublishedDate(new Date());
+
+            for (var video : pl.getVideos()) {
+                SyndEntry entry = new SyndEntryImpl();
+                entry.setAuthor(video.getChannel().getUploader());
+                entry.setLink(Constants.FRONTEND_URL + "/video?id=" + video.getId());
+                entry.setUri(Constants.FRONTEND_URL + "/video?id=" + video.getId());
+                entry.setTitle(video.getTitle());
+                entries.add(entry);
+            }
+
+            feed.setEntries(entries);
+
+            return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
+        }
+    }
+
+    private static byte[] playlistYouTubeRSSResponse(String playlistId)
             throws IOException, ExtractionException, FeedException {
 
         final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
