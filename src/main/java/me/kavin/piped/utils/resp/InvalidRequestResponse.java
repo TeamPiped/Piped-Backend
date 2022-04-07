@@ -2,6 +2,6 @@ package me.kavin.piped.utils.resp;
 
 public class InvalidRequestResponse {
 
-    public String message = "Invalid request sent.";
+    public String error = "Invalid request sent.";
 
 }
