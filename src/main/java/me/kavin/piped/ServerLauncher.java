@@ -283,7 +283,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/playlists/create", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var name = Constants.mapper.readTree(request.loadBody().getResult().asArray()).get("name").asText();
+                        var name = Constants.mapper.readTree(request.loadBody().getResult().asArray()).get("name").textValue();
                         return getJsonResponse(ResponseHelper.createPlaylist(request.getHeader(AUTHORIZATION), name), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -297,8 +297,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(POST, "/user/playlists/add", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
-                        var playlistId = json.get("playlistId").asText();
-                        var videoId = json.get("videoId").asText();
+                        var playlistId = json.get("playlistId").textValue();
+                        var videoId = json.get("videoId").textValue();
                         return getJsonResponse(ResponseHelper.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoId), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -306,8 +306,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(POST, "/user/playlists/remove", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
-                        var playlistId = json.get("playlistId").asText();
-                        var index = json.get("index").asInt();
+                        var playlistId = json.get("playlistId").textValue();
+                        var index = json.get("index").intValue();
                         return getJsonResponse(ResponseHelper.removeFromPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, index), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -315,7 +315,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(POST, "/user/playlists/delete", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
-                        var playlistId = json.get("playlistId").asText();
+                        var playlistId = json.get("playlistId").textValue();
                         return getJsonResponse(ResponseHelper.deletePlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
