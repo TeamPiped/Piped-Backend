@@ -1,19 +1,17 @@
 package me.kavin.piped.utils;
 
-import me.kavin.piped.utils.obj.db.Channel;
-import me.kavin.piped.utils.obj.db.PubSub;
-import me.kavin.piped.utils.obj.db.User;
-import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.db.*;
 import org.hibernate.Session;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
+import java.util.UUID;
 
 public class DatabaseHelper {
 
-    public static final User getUserFromSession(String session) {
+    public static User getUserFromSession(String session) {
         try (Session s = DatabaseSessionFactory.createSession()) {
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<User> cr = cb.createQuery(User.class);
@@ -24,7 +22,7 @@ public class DatabaseHelper {
         }
     }
 
-    public static final User getUserFromSessionWithSubscribed(String session) {
+    public static User getUserFromSessionWithSubscribed(String session) {
         try (Session s = DatabaseSessionFactory.createSession()) {
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<User> cr = cb.createQuery(User.class);
@@ -36,7 +34,7 @@ public class DatabaseHelper {
         }
     }
 
-    public static final Channel getChannelFromId(Session s, String id) {
+    public static Channel getChannelFromId(Session s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Channel> cr = cb.createQuery(Channel.class);
         Root<Channel> root = cr.from(Channel.class);
@@ -45,7 +43,7 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
-    public static final Video getVideoFromId(Session s, String id) {
+    public static Video getVideoFromId(Session s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Video> cr = cb.createQuery(Video.class);
         Root<Video> root = cr.from(Video.class);
@@ -54,7 +52,25 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
-    public static final PubSub getPubSubFromId(Session s, String id) {
+    public static PlaylistVideo getPlaylistVideoFromId(Session s, String id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
+        Root<PlaylistVideo> root = cr.from(PlaylistVideo.class);
+        cr.select(root).where(cb.equal(root.get("id"), id));
+
+        return s.createQuery(cr).uniqueResult();
+    }
+
+    public static Playlist getPlaylistFromId(Session s, String id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<Playlist> cr = cb.createQuery(Playlist.class);
+        Root<Playlist> root = cr.from(Playlist.class);
+        cr.select(root).where(cb.equal(root.get("playlist_id"), UUID.fromString(id)));
+
+        return s.createQuery(cr).uniqueResult();
+    }
+
+    public static PubSub getPubSubFromId(Session s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PubSub> cr = cb.createQuery(PubSub.class);
         Root<PubSub> root = cr.from(PubSub.class);

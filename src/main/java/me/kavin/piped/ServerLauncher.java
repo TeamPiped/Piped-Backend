@@ -17,6 +17,7 @@ import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.resp.ErrorResponse;
 import me.kavin.piped.utils.resp.LoginRequest;
 import me.kavin.piped.utils.resp.SubscriptionUpdateRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
@@ -129,8 +130,10 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getJsonResponse(ResponseHelper.playlistResponse(request.getPathParameter("playlistId")),
-                                "public, max-age=600", true);
+                        var playlistId = request.getPathParameter("playlistId");
+                        var cache = StringUtils.isBlank(playlistId) || playlistId.length() != 36 ?
+                                "public, max-age=600" : "private";
+                        return getJsonResponse(ResponseHelper.playlistResponse(playlistId), cache, true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -275,6 +278,45 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return getJsonResponse(ResponseHelper.subscriptionsResponse(request.getHeader(AUTHORIZATION)),
                                 "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/playlists/create", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var name = Constants.mapper.readTree(request.loadBody().getResult().asArray()).get("name").asText();
+                        return getJsonResponse(ResponseHelper.createPlaylist(request.getHeader(AUTHORIZATION), name), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/user/playlists", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.playlistsResponse(request.getHeader(AUTHORIZATION)), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/playlists/add", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").asText();
+                        var videoId = json.get("videoId").asText();
+                        return getJsonResponse(ResponseHelper.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoId), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/playlists/remove", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").asText();
+                        var index = json.get("index").asInt();
+                        return getJsonResponse(ResponseHelper.removeFromPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, index), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/playlists/delete", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").asText();
+                        return getJsonResponse(ResponseHelper.deletePlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

@@ -2,6 +2,8 @@ package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
+import me.kavin.piped.utils.obj.db.Playlist;
+import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
@@ -21,8 +23,9 @@ public class DatabaseSessionFactory {
         configuration.setProperty("hibernate.temp.use_jdbc_metadata_defaults", "false");
         configuration.configure();
 
-        sessionFactory = configuration.addAnnotatedClass(User.class).addAnnotatedClass(Video.class)
-                .addAnnotatedClass(Channel.class).addAnnotatedClass(PubSub.class).buildSessionFactory();
+        sessionFactory = configuration.addAnnotatedClass(User.class).addAnnotatedClass(Channel.class)
+                .addAnnotatedClass(Video.class).addAnnotatedClass(PubSub.class).addAnnotatedClass(Playlist.class)
+                .addAnnotatedClass(PlaylistVideo.class).buildSessionFactory();
     }
 
     public static final Session createSession() {

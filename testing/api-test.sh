@@ -84,3 +84,26 @@ sleep 2
 
 # Check Feed
 curl ${CURLOPTS[@]} $HOST/feed -G --data-urlencode "authToken=$AUTH_TOKEN" || exit 1
+
+PLAYLIST_NAME=$(openssl rand -hex 6)
+
+# Create a Playlist
+curl ${CURLOPTS[@]} $HOST/user/playlists/create -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg name "$PLAYLIST_NAME" '{"name": $name}') || exit 1
+
+# See created playlists
+curl ${CURLOPTS[@]} $HOST/user/playlists -H "Authorization: $AUTH_TOKEN" || exit 1
+
+# Get Playlist ID
+PLAYLIST_ID=$(curl -s -o - -f $HOST/user/playlists -H "Authorization: $AUTH_TOKEN" | jq -r ".[0].id") || exit 1
+
+# Playlist Test
+curl ${CURLOPTS[@]} $HOST/playlists/$PLAYLIST_ID || exit 1
+
+# Add to Playlist Test
+curl ${CURLOPTS[@]} $HOST/user/playlists/add -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg videoId "BtN-goy9VOY" --arg playlistId $PLAYLIST_ID '{"videoId": $videoId, "playlistId": $playlistId}') || exit 1
+
+# Remove from Playlist Test
+curl ${CURLOPTS[@]} $HOST/user/playlists/remove -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg index "0" --arg playlistId $PLAYLIST_ID '{"index": $index, "playlistId": $playlistId}') || exit 1
+
+# Delete Playlist Test
+curl ${CURLOPTS[@]} $HOST/user/playlists/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg playlistId $PLAYLIST_ID '{"playlistId": $playlistId}') || exit 1
