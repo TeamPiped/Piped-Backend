@@ -17,6 +17,7 @@ import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.resp.ErrorResponse;
 import me.kavin.piped.utils.resp.LoginRequest;
 import me.kavin.piped.utils.resp.SubscriptionUpdateRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
@@ -129,8 +130,10 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getJsonResponse(ResponseHelper.playlistResponse(request.getPathParameter("playlistId")),
-                                "public, max-age=600", true);
+                        var playlistId = request.getPathParameter("playlistId");
+                        var cache = StringUtils.isBlank(playlistId) || playlistId.length() != 36 ?
+                                "public, max-age=600" : "private";
+                        return getJsonResponse(ResponseHelper.playlistResponse(playlistId), cache, true);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
