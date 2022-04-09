@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "playlists", indexes = {@Index(columnList = "playlist_id", name = "playlists_playlist_id_idx")})
+@Table(name = "playlists", indexes = {@Index(columnList = "playlist_id", name = "playlists_playlist_id_idx"), @Index(columnList = "owner", name = "playlists_owner_idx")})
 public class Playlist {
 
     public Playlist() {
