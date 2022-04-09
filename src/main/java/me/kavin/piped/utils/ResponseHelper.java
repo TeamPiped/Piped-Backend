@@ -155,12 +155,20 @@ public class ResponseHelper {
         if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
             updateVideo(info.getId(), info, time);
 
+        String lbryId;
+
+        try {
+            lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            lbryId = null;
+        }
+
         final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteURL(info.getHlsUrl()),
-                rewriteURL(info.getDashMpdUrl()), futureLbryId.get(2, TimeUnit.SECONDS), chapters);
+                rewriteURL(info.getDashMpdUrl()), lbryId, chapters);
 
         return Constants.mapper.writeValueAsBytes(streams);
 
