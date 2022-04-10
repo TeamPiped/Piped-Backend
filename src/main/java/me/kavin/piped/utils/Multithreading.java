@@ -9,7 +9,7 @@ public class Multithreading {
 
     private static final ExecutorService es = Executors.newCachedThreadPool();
     private static final ExecutorService esLimited = Executors
-            .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            .newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 8);
     private static final ExecutorService esLimitedPubSub = Executors
             .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
