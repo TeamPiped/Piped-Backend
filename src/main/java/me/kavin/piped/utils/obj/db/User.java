@@ -1,24 +1,14 @@
 package me.kavin.piped.utils.obj.db;
 
+import javax.persistence.*;
 import java.io.Serializable;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.JoinColumn;
-import javax.persistence.Table;
-
 @Entity
-@Table(name = "users", indexes = { @Index(columnList = "id", name = "users_id_idx"),
+@Table(name = "users", indexes = {@Index(columnList = "id", name = "users_id_idx"),
         @Index(columnList = "username", name = "username_idx"),
-        @Index(columnList = "session_id", name = "users_session_id_idx") })
+        @Index(columnList = "session_id", name = "users_session_id_idx")})
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -40,14 +30,14 @@ public class User implements Serializable {
     @ElementCollection
     @CollectionTable(name = "users_subscribed", joinColumns = @JoinColumn(name = "subscriber"), indexes = {
             @Index(columnList = "subscriber", name = "users_subscribed_subscriber_idx"),
-            @Index(columnList = "channel", name = "users_subscribed_channel_idx") })
+            @Index(columnList = "channel", name = "users_subscribed_channel_idx")})
     @Column(name = "channel", length = 30)
-    private List<String> subscribed_ids;
+    private Set<String> subscribed_ids;
 
     public User() {
     }
 
-    public User(String username, String password, List<String> subscribed_ids) {
+    public User(String username, String password, Set<String> subscribed_ids) {
         this.username = username;
         this.password = password;
         this.subscribed_ids = subscribed_ids;
@@ -86,11 +76,11 @@ public class User implements Serializable {
         this.password = password;
     }
 
-    public List<String> getSubscribed() {
+    public Set<String> getSubscribed() {
         return subscribed_ids;
     }
 
-    public void setSubscribed(List<String> subscribed_ids) {
+    public void setSubscribed(Set<String> subscribed_ids) {
         this.subscribed_ids = subscribed_ids;
     }
 }

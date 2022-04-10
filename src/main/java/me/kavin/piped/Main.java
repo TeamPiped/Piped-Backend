@@ -49,13 +49,7 @@ public class Main {
 
                     for (PubSub pubsub : pubSubList)
                         if (pubsub != null)
-                            Multithreading.runAsyncLimitedPubSub(() -> {
-                                try (Session sess = DatabaseSessionFactory.createSession()) {
-                                    ResponseHelper.subscribePubSub(pubsub.getId(), sess);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            });
+                            Multithreading.runAsyncLimitedPubSub(() -> ResponseHelper.subscribePubSub(pubsub.getId()));
 
                 } catch (Exception e) {
                     e.printStackTrace();

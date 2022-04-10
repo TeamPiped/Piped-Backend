@@ -658,7 +658,7 @@ public class ResponseHelper {
                         return Constants.mapper.writeValueAsBytes(new CompromisedPasswordResponse());
             }
 
-            User newuser = new User(user, argon2PasswordEncoder.encode(pass), Collections.emptyList());
+            User newuser = new User(user, argon2PasswordEncoder.encode(pass), Set.of());
 
             s.save(newuser);
             s.getTransaction().begin();
@@ -712,44 +712,16 @@ public class ResponseHelper {
             if (user != null) {
                 if (!user.getSubscribed().contains(channelId)) {
 
+                    user.getSubscribed().add(channelId);
+                    s.update(user);
                     s.getTransaction().begin();
-                    s.createNativeQuery("insert into users_subscribed (subscriber, channel) values (?,?)")
-                            .setParameter(1, user.getId()).setParameter(2, channelId).executeUpdate();
                     s.getTransaction().commit();
 
                     Multithreading.runAsync(() -> {
-                        try (Session sess = DatabaseSessionFactory.createSession()) {
-                            var channel = DatabaseHelper.getChannelFromId(sess, channelId);
-
+                        try (Session s2 = DatabaseSessionFactory.createSession()) {
+                            var channel = DatabaseHelper.getChannelFromId(s2, channelId);
                             if (channel == null) {
-                                ChannelInfo info = null;
-
-                                try {
-                                    info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
-                                } catch (IOException | ExtractionException e) {
-                                    ExceptionUtils.rethrow(e);
-                                }
-
-                                channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
-                                        info.getAvatarUrl(), info.isVerified());
-                                sess.save(channel);
-                                sess.beginTransaction().commit();
-
-                                Multithreading.runAsync(() -> {
-                                    try (Session sessSub = DatabaseSessionFactory.createSession()) {
-                                        subscribePubSub(channelId, sessSub);
-                                    } catch (Exception e) {
-                                        ExceptionHandler.handle(e);
-                                    }
-                                });
-
-                                for (StreamInfoItem item : info.getRelatedItems()) {
-                                    long time = item.getUploadDate() != null
-                                            ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                            : System.currentTimeMillis();
-                                    if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                                        handleNewVideo(item.getUrl(), time, channel, sess);
-                                }
+                                Multithreading.runAsync(() -> saveChannel(channelId));
                             }
                         }
                     });
@@ -913,68 +885,33 @@ public class ResponseHelper {
 
             Multithreading.runAsync(() -> {
                 try (Session sess = DatabaseSessionFactory.createSession()) {
-                    if (override)
-                        user.setSubscribed(Arrays.asList(channelIds));
-                    else
+                    if (override) {
+                        user.setSubscribed(Set.of(channelIds));
+                    } else {
                         for (String channelId : channelIds)
-                            if (!user.getSubscribed().contains(channelId))
-                                user.getSubscribed().add(channelId);
+                            user.getSubscribed().add(channelId);
+                    }
 
                     if (channelIds.length > 0) {
+                        sess.getTransaction().begin();
                         sess.update(user);
-                        sess.beginTransaction().commit();
+                        sess.getTransaction().commit();
                     }
                 }
             });
 
-            for (String channelId : channelIds) {
-
-                Multithreading.runAsyncLimited(() -> {
-                    try (Session sess = DatabaseSessionFactory.createSession()) {
-
-                        var channel = DatabaseHelper.getChannelFromId(sess, channelId);
-
-                        if (channel == null) {
-                            ChannelInfo info;
-
-                            try {
-                                info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
-                            } catch (Exception e) {
-                                return;
-                            }
-
-                            channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
-                                    info.getAvatarUrl(), info.isVerified());
-                            sess.save(channel);
-
-                            Multithreading.runAsync(() -> {
-                                try (Session sessSub = DatabaseSessionFactory.createSession()) {
-                                    subscribePubSub(channelId, sessSub);
-                                } catch (Exception e) {
-                                    ExceptionHandler.handle(e);
-                                }
-                            });
-
-                            for (StreamInfoItem item : info.getRelatedItems()) {
-                                long time = item.getUploadDate() != null
-                                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                        : System.currentTimeMillis();
-                                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                                    handleNewVideo(item.getUrl(), time, channel, sess);
-                            }
-
-                            if (!sess.getTransaction().isActive())
-                                sess.getTransaction().begin();
-                            sess.getTransaction().commit();
-                        }
-
-                    } catch (Exception e) {
-                        ExceptionHandler.handle(e);
+            Multithreading.runAsync(() -> {
+                try (Session s = DatabaseSessionFactory.createSession()) {
+                    var channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
+                    outer:
+                    for (String channelId : channelIds) {
+                        for (var channel : channels)
+                            if (channel.getUploaderId().equals(channelId))
+                                continue outer;
+                        Multithreading.runAsyncLimited(() -> saveChannel(channelId));
                     }
-
-                });
-
-            }
+                }
+            });
 
             return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
         }
@@ -1308,7 +1245,43 @@ public class ResponseHelper {
         }
     }
 
-    public static void subscribePubSub(String channelId, Session s) throws IOException {
+    private static void saveChannel(String channelId) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+
+            ChannelInfo info = null;
+
+            try {
+                info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+            } catch (IOException | ExtractionException e) {
+                ExceptionUtils.rethrow(e);
+            }
+
+            var channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
+                    info.getAvatarUrl(), info.isVerified());
+            s.save(channel);
+            s.beginTransaction().commit();
+
+            Multithreading.runAsync(() -> subscribePubSub(channelId));
+
+            for (StreamInfoItem item : info.getRelatedItems()) {
+                long time = item.getUploadDate() != null
+                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                        : System.currentTimeMillis();
+                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                    handleNewVideo(item.getUrl(), time, channel, s);
+            }
+        }
+    }
+
+    public static void subscribePubSub(String channelId) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            subscribePubSub(channelId, s);
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
+        }
+    }
+
+    private static void subscribePubSub(String channelId, Session s) throws IOException {
 
         PubSub pubsub = DatabaseHelper.getPubSubFromId(s, channelId);
 

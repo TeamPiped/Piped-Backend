@@ -1,18 +1,21 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.utils.obj.db.*;
+import org.hibernate.FlushMode;
 import org.hibernate.Session;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
+import java.util.List;
 import java.util.UUID;
 
 public class DatabaseHelper {
 
     public static User getUserFromSession(String session) {
         try (Session s = DatabaseSessionFactory.createSession()) {
+            s.setHibernateFlushMode(FlushMode.MANUAL);
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<User> cr = cb.createQuery(User.class);
             Root<User> root = cr.from(User.class);
@@ -24,6 +27,7 @@ public class DatabaseHelper {
 
     public static User getUserFromSessionWithSubscribed(String session) {
         try (Session s = DatabaseSessionFactory.createSession()) {
+            s.setHibernateFlushMode(FlushMode.MANUAL);
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<User> cr = cb.createQuery(User.class);
             Root<User> root = cr.from(User.class);
@@ -41,6 +45,15 @@ public class DatabaseHelper {
         cr.select(root).where(cb.equal(root.get("uploader_id"), id));
 
         return s.createQuery(cr).uniqueResult();
+    }
+
+    public static List<Channel> getChannelsFromIds(Session s, List<String> id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<Channel> cr = cb.createQuery(Channel.class);
+        Root<Channel> root = cr.from(Channel.class);
+        cr.select(root).where(root.get("uploader_id").in(id));
+
+        return s.createQuery(cr).list();
     }
 
     public static Video getVideoFromId(Session s, String id) {
