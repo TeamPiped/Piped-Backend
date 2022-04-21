@@ -107,3 +107,8 @@ curl ${CURLOPTS[@]} $HOST/user/playlists/remove -X POST -H "Content-Type: applic
 
 # Delete Playlist Test
 curl ${CURLOPTS[@]} $HOST/user/playlists/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg playlistId $PLAYLIST_ID '{"playlistId": $playlistId}') || exit 1
+
+DELETE_REQ=$(jq -n --compact-output --arg password "$PASS" '{"password": $password}')
+
+# Delete User Test
+curl ${CURLOPTS[@]} $HOST/user/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $DELETE_REQ || exit 1

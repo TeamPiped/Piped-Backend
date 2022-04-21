@@ -14,6 +14,7 @@ import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.resp.DeleteUserRequest;
 import me.kavin.piped.utils.resp.ErrorResponse;
 import me.kavin.piped.utils.resp.LoginRequest;
 import me.kavin.piped.utils.resp.SubscriptionUpdateRequest;
@@ -324,6 +325,15 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return HttpResponse.ofCode(302).withHeader(LOCATION, ResponseHelper.registeredBadgeRedirect())
                                 .withHeader(CACHE_CONTROL, "public, max-age=30");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/delete", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        DeleteUserRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(), 
+                            DeleteUserRequest.class);
+                        return getJsonResponse(ResponseHelper.deleteUserResponse(request.getHeader(AUTHORIZATION), body.password),
+                                "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
