@@ -47,6 +47,7 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
@@ -625,6 +626,42 @@ public class ResponseHelper {
 
     private static final Argon2PasswordEncoder argon2PasswordEncoder = new Argon2PasswordEncoder();
 
+    public static byte[] deleteUserResponse(String session, String pass) throws IOException {
+
+        if (StringUtils.isBlank(pass))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            User user = DatabaseHelper.getUserFromSession(session);
+
+            if (user != null) {
+                String hash = user.getPassword();
+                boolean passMatch =
+                    (hash.startsWith("$argon2") && argon2PasswordEncoder.matches(pass, hash)) || bcryptPasswordEncoder.matches(pass, hash);
+
+                if (!passMatch)
+                    return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+
+                CriteriaBuilder cb = s.getCriteriaBuilder();
+                CriteriaDelete<User> cd = cb.createCriteriaDelete(User.class);
+                Root<User> root = cd.from(User.class);
+                cd.where(cb.equal(root.get("session_id"), session));
+                
+                try {
+                    s.getTransaction().begin();
+                    s.createQuery(cd).executeUpdate();
+                    s.getTransaction().commit();
+                } catch (Exception e) {
+                    return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
+                }
+            
+                return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
+            }
+        }
+        
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+    }
+
     public static byte[] registerResponse(String user, String pass) throws IOException {
 
         if (Constants.DISABLE_REGISTRATION)
@@ -642,9 +679,8 @@ public class ResponseHelper {
             cr.select(root).where(cb.equal(root.get("username"), user));
             boolean registered = s.createQuery(cr).uniqueResult() != null;
 
-            if (registered) {
+            if (registered)
                 return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
-            }
 
             if (Constants.COMPROMISED_PASSWORD_CHECK) {
                 String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
