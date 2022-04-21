@@ -47,7 +47,6 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
@@ -633,7 +632,7 @@ public class ResponseHelper {
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             User user = DatabaseHelper.getUserFromSession(session);
-
+            
             if (user != null) {
                 String hash = user.getPassword();
                 boolean passMatch =
@@ -641,24 +640,26 @@ public class ResponseHelper {
 
                 if (!passMatch)
                     return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
-
-                CriteriaBuilder cb = s.getCriteriaBuilder();
-                CriteriaDelete<User> cd = cb.createCriteriaDelete(User.class);
-                Root<User> root = cd.from(User.class);
-                cd.where(cb.equal(root.get("session_id"), session));
                 
                 try {
                     s.getTransaction().begin();
-                    s.createQuery(cd).executeUpdate();
+
+                    s.createNativeQuery("delete from users_subscribed where subscriber = :id")
+                            .setParameter("id", user.getId()).executeUpdate();
+                    s.createNativeQuery("delete from playlists where owner = :ownerId")
+                            .setParameter("ownerId", user.getId()).executeUpdate();
+                    s.createNativeQuery("delete from users where id = :id")
+                            .setParameter("id", user.getId()).executeUpdate();
+                    
                     s.getTransaction().commit();
+                    
+                    return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
                 } catch (Exception e) {
                     return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
                 }
-            
-                return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
             }
         }
-        
+
         return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
