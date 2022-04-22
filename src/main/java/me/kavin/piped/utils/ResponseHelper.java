@@ -650,17 +650,17 @@ public class ResponseHelper {
                     plQuery.select(plRoot).where(plCriteria.equal(plRoot.get("owner"), user.getId()));
                     List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
                     
-                    for (me.kavin.piped.utils.obj.db.Playlist pl : playlists) {
+                    Iterator<me.kavin.piped.utils.obj.db.Playlist> plIter = playlists.iterator();
+
+                    while (plIter.hasNext()) {
+                        me.kavin.piped.utils.obj.db.Playlist pl = plIter.next();
                         Iterator<PlaylistVideo> pvIter = pl.getVideos().iterator();
 
                         while (pvIter.hasNext())
                             s.delete(pvIter.next());
+                        
+                        s.delete(pl);
                     }
-
-                    Iterator<me.kavin.piped.utils.obj.db.Playlist> iter = playlists.iterator();
-
-                    while (iter.hasNext())
-                        s.delete(iter.next());
 
                     s.delete(user);
 
@@ -790,7 +790,7 @@ public class ResponseHelper {
     public static byte[] unsubscribeResponse(String session, String channelId)
             throws IOException {
 
-        User user = DatabaseHelper.getUserFromSession(session);
+        User user = DatabaseHelper.getUserFromSessionWithSubscribed(session);
 
         if (user != null) {
             try (Session s = DatabaseSessionFactory.createSession()) {
