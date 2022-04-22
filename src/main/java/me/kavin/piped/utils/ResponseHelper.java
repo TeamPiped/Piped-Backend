@@ -642,17 +642,31 @@ public class ResponseHelper {
                     return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
                 
                 try {
-                    s.getTransaction().begin();
+                    CriteriaBuilder plCriteria = s.getCriteriaBuilder();
+                    CriteriaQuery<me.kavin.piped.utils.obj.db.Playlist> plQuery =
+                        plCriteria.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+                    Root<me.kavin.piped.utils.obj.db.Playlist> plRoot =
+                        plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
+                    plQuery.select(plRoot).where(plCriteria.equal(plRoot.get("owner"), user.getId()));
+                    List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
+                    
+                    for (me.kavin.piped.utils.obj.db.Playlist pl : playlists) {
+                        Iterator<PlaylistVideo> pvIter = pl.getVideos().iterator();
 
-                    s.createNativeQuery("delete from users_subscribed where subscriber = :id")
-                            .setParameter("id", user.getId()).executeUpdate();
-                    s.createNativeQuery("delete from playlists where owner = :ownerId")
-                            .setParameter("ownerId", user.getId()).executeUpdate();
-                    s.createNativeQuery("delete from users where id = :id")
-                            .setParameter("id", user.getId()).executeUpdate();
-                    
+                        while (pvIter.hasNext())
+                            s.delete(pvIter.next());
+                    }
+
+                    Iterator<me.kavin.piped.utils.obj.db.Playlist> iter = playlists.iterator();
+
+                    while (iter.hasNext())
+                        s.delete(iter.next());
+
+                    s.delete(user);
+
+                    s.getTransaction().begin();
                     s.getTransaction().commit();
-                    
+
                     return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
                 } catch (Exception e) {
                     return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
