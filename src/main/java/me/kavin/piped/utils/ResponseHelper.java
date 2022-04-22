@@ -794,10 +794,14 @@ public class ResponseHelper {
 
         if (user != null) {
             try (Session s = DatabaseSessionFactory.createSession()) {
-                s.getTransaction().begin();
-                s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
-                        .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
-                s.getTransaction().commit();
+                if (user.getSubscribed().contains(channelId)) {
+
+                    user.getSubscribed().removeIf(sub -> sub.equals(channelId));
+                    s.update(user);
+                    s.getTransaction().begin();
+                    s.getTransaction().commit();
+                }
+
                 return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
             }
 
