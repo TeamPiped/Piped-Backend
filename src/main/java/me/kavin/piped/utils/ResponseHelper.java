@@ -651,6 +651,7 @@ public class ResponseHelper {
                     plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
                 plQuery.select(plRoot).where(plCriteria.equal(plRoot.get("owner"), user.getId()));
                 List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
+                
                 Iterator<me.kavin.piped.utils.obj.db.Playlist> iter = playlists.iterator();
 
                 while (iter.hasNext())
@@ -660,11 +661,12 @@ public class ResponseHelper {
 
                 s.getTransaction().begin();
                 s.getTransaction().commit();
+            
+                Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
             } catch (Exception e) {
                 return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
             }
             
-            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
             return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
         }
     }
@@ -950,6 +952,7 @@ public class ResponseHelper {
             Multithreading.runAsync(() -> {
                 try (Session s = DatabaseSessionFactory.createSession()) {
                     var channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
+                    
                     outer:
                     for (String channelId : channelIds) {
                         for (var channel : channels)
@@ -1213,7 +1216,9 @@ public class ResponseHelper {
         try (Session s = DatabaseSessionFactory.createSession()) {
             CriteriaQuery<me.kavin.piped.utils.obj.db.Playlist> plQuery =
                 s.getCriteriaBuilder().createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
-            plQuery.select(plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class));
+            Root<me.kavin.piped.utils.obj.db.Playlist> plRoot = plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            //plRoot.fetch("videos", JoinType.INNER);
+            plQuery.select(plRoot);
             List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
 
             CriteriaQuery<PlaylistVideo> pvQuery = s.getCriteriaBuilder().createQuery(PlaylistVideo.class);
@@ -1222,25 +1227,23 @@ public class ResponseHelper {
 
             Iterator<PlaylistVideo> pvIter = playlistVideos.iterator();
 
+            outer:
             while (pvIter.hasNext()) {
                 PlaylistVideo pv = pvIter.next();
-                boolean exists = false;
 
                 for (me.kavin.piped.utils.obj.db.Playlist pl : playlists) {
-                    exists = false;
-
                     for (PlaylistVideo plpv : pl.getVideos()) {
                         if (plpv.getId().equals(pv.getId())) {
-                            exists = true;
-                            break;
+                            continue outer;
                         }
                     }
-
-                    if (exists) break;
                 }
 
-                if (!exists) s.delete(pv);
+                s.delete(pv);
             }
+
+            s.getTransaction().begin();
+            s.getTransaction().commit();
         }
     }
 
