@@ -632,49 +632,41 @@ public class ResponseHelper {
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             User user = DatabaseHelper.getUserFromSession(session);
+
+            if (user == null)
+                return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
             
-            if (user != null) {
-                String hash = user.getPassword();
-                boolean passMatch =
-                    (hash.startsWith("$argon2") && argon2PasswordEncoder.matches(pass, hash)) || bcryptPasswordEncoder.matches(pass, hash);
+            String hash = user.getPassword();
+            boolean passMatch =
+                (hash.startsWith("$argon2") && argon2PasswordEncoder.matches(pass, hash)) || bcryptPasswordEncoder.matches(pass, hash);
 
-                if (!passMatch)
-                    return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
-                
-                try {
-                    CriteriaBuilder plCriteria = s.getCriteriaBuilder();
-                    CriteriaQuery<me.kavin.piped.utils.obj.db.Playlist> plQuery =
-                        plCriteria.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
-                    Root<me.kavin.piped.utils.obj.db.Playlist> plRoot =
-                        plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
-                    plQuery.select(plRoot).where(plCriteria.equal(plRoot.get("owner"), user.getId()));
-                    List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
-                    
-                    Iterator<me.kavin.piped.utils.obj.db.Playlist> plIter = playlists.iterator();
+            if (!passMatch)
+                return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+            
+            try {
+                CriteriaBuilder plCriteria = s.getCriteriaBuilder();
+                CriteriaQuery<me.kavin.piped.utils.obj.db.Playlist> plQuery =
+                    plCriteria.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+                Root<me.kavin.piped.utils.obj.db.Playlist> plRoot =
+                    plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
+                plQuery.select(plRoot).where(plCriteria.equal(plRoot.get("owner"), user.getId()));
+                List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
+                Iterator<me.kavin.piped.utils.obj.db.Playlist> iter = playlists.iterator();
 
-                    while (plIter.hasNext()) {
-                        me.kavin.piped.utils.obj.db.Playlist pl = plIter.next();
-                        Iterator<PlaylistVideo> pvIter = pl.getVideos().iterator();
+                while (iter.hasNext())
+                    s.delete(iter.next());
 
-                        while (pvIter.hasNext())
-                            s.delete(pvIter.next());
-                        
-                        s.delete(pl);
-                    }
+                s.delete(user);
 
-                    s.delete(user);
-
-                    s.getTransaction().begin();
-                    s.getTransaction().commit();
-
-                    return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
-                } catch (Exception e) {
-                    return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
-                }
+                s.getTransaction().begin();
+                s.getTransaction().commit();
+            } catch (Exception e) {
+                return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
             }
+            
+            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
+            return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
         }
-
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static byte[] registerResponse(String user, String pass) throws IOException {
@@ -1057,6 +1049,8 @@ public class ResponseHelper {
 
             s.getTransaction().begin();
             s.getTransaction().commit();
+            
+            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
         }
 
         return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
@@ -1193,6 +1187,8 @@ public class ResponseHelper {
                 s.getTransaction().begin();
             s.getTransaction().commit();
 
+            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
+
             return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
         }
     }
@@ -1210,6 +1206,41 @@ public class ResponseHelper {
             handleNewVideo(StreamInfo.getInfo(url), time, channel, s);
         } catch (Exception e) {
             ExceptionHandler.handle(e);
+        }
+    }
+
+    private static void pruneUnusedPlaylistVideos() {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            CriteriaQuery<me.kavin.piped.utils.obj.db.Playlist> plQuery =
+                s.getCriteriaBuilder().createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+            plQuery.select(plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class));
+            List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
+
+            CriteriaQuery<PlaylistVideo> pvQuery = s.getCriteriaBuilder().createQuery(PlaylistVideo.class);
+            pvQuery.select(pvQuery.from(PlaylistVideo.class));
+            List<PlaylistVideo> playlistVideos = s.createQuery(pvQuery).getResultList();
+
+            Iterator<PlaylistVideo> pvIter = playlistVideos.iterator();
+
+            while (pvIter.hasNext()) {
+                PlaylistVideo pv = pvIter.next();
+                boolean exists = false;
+
+                for (me.kavin.piped.utils.obj.db.Playlist pl : playlists) {
+                    exists = false;
+
+                    for (PlaylistVideo plpv : pl.getVideos()) {
+                        if (plpv.getId().equals(pv.getId())) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    if (exists) break;
+                }
+
+                if (!exists) s.delete(pv);
+            }
         }
     }
 
