@@ -789,8 +789,10 @@ public class ResponseHelper {
         if (user != null) {
             try (Session s = DatabaseSessionFactory.createSession()) {
                 if (user.getSubscribed().contains(channelId)) {
+                    Set<String> subscribed = user.getSubscribed();
+                    subscribed.removeIf(sub -> sub.equals(channelId));
+                    user.setSubscribed(subscribed);
 
-                    user.getSubscribed().removeIf(sub -> sub.equals(channelId));
                     s.update(user);
                     s.getTransaction().begin();
                     s.getTransaction().commit();
