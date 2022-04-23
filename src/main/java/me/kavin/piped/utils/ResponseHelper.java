@@ -1216,9 +1216,7 @@ public class ResponseHelper {
         try (Session s = DatabaseSessionFactory.createSession()) {
             CriteriaQuery<me.kavin.piped.utils.obj.db.Playlist> plQuery =
                 s.getCriteriaBuilder().createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
-            Root<me.kavin.piped.utils.obj.db.Playlist> plRoot = plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            //plRoot.fetch("videos", JoinType.INNER);
-            plQuery.select(plRoot);
+            plQuery.select(plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class));
             List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
 
             CriteriaQuery<PlaylistVideo> pvQuery = s.getCriteriaBuilder().createQuery(PlaylistVideo.class);
@@ -1232,8 +1230,8 @@ public class ResponseHelper {
                 PlaylistVideo pv = pvIter.next();
 
                 for (me.kavin.piped.utils.obj.db.Playlist pl : playlists) {
-                    for (PlaylistVideo plpv : pl.getVideos()) {
-                        if (plpv.getId().equals(pv.getId())) {
+                    for (PlaylistVideo v : pl.getVideos()) {
+                        if (v.getId().equals(pv.getId())) {
                             continue outer;
                         }
                     }
