@@ -1,7 +1,7 @@
 plugins {
-	id "com.github.johnrengelman.shadow" version "7.1.2"
-	id "java"
-	id "eclipse"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "java"
+    id "eclipse"
 }
 
 repositories {
@@ -16,7 +16,7 @@ dependencies {
     implementation 'it.unimi.dsi:fastutil-core:8.5.8'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:cc569414b43fd9c8c8e11673a4b20f6c6146016e'
+    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:9fb93059b2f847beb893ed8768cee49a6fdcac2c'
     implementation 'com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.2'
@@ -48,11 +48,11 @@ shadowJar {
 }
 
 jar {
-  manifest {
-    attributes(
-      'Main-Class': 'me.kavin.piped.Main'
-    )
-  }
+    manifest {
+        attributes(
+                'Main-Class': 'me.kavin.piped.Main'
+        )
+    }
 }
 
 group = 'me.kavin.piped'
