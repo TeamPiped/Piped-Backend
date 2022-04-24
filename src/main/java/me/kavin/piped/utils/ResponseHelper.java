@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.obj.*;
+import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
@@ -953,11 +954,11 @@ public class ResponseHelper {
 
             Multithreading.runAsync(() -> {
                 try (Session s = DatabaseSessionFactory.createSession()) {
-                    var channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
+                    List<Channel> channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
                     
                     outer:
                     for (String channelId : channelIds) {
-                        for (var channel : channels)
+                        for (Channel channel : channels)
                             if (channel.getUploaderId().equals(channelId))
                                 continue outer;
                         Multithreading.runAsyncLimited(() -> saveChannel(channelId));
