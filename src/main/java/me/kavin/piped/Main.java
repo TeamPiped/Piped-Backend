@@ -14,6 +14,7 @@ import org.hibernate.query.Query;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
+import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -25,6 +26,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         NewPipe.init(new DownloaderImpl(), new Localization("en", "US"));
+        YoutubeStreamExtractor.forceFetchIosClient(true);
 
         Injector.useSpecializer();
 
