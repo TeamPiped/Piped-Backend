@@ -34,6 +34,14 @@ public class URLUtils {
     }
 
     public static String rewriteURL(final String old) {
+        return rewriteURL(old, Constants.IMAGE_PROXY_PART);
+    }
+
+    public static String rewriteVideoURL(final String old) {
+        return rewriteURL(old, Constants.PROXY_PART);
+    }
+
+    public static String rewriteURL(final String old, final String proxy) {
 
         if (StringUtils.isEmpty(old)) return null;
 
@@ -57,7 +65,7 @@ public class URLUtils {
             path = StringUtils.substringBefore(path, "=") + "=" + StringUtils.substringAfter(path, "=").replace("-rj", "-rw");
         }
 
-        return Constants.PROXY_PART + path + (hasQuery ? "?" + query + "&host=" : "?host=") + silentEncode(host);
+        return proxy + path + (hasQuery ? "?" + query + "&host=" : "?host=") + silentEncode(host);
 
     }
 }

@@ -56,8 +56,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
-import static me.kavin.piped.utils.URLUtils.substringYouTube;
+import static me.kavin.piped.utils.URLUtils.*;
 import static org.schabi.newpipe.extractor.NewPipe.getPreferredContentCountry;
 import static org.schabi.newpipe.extractor.NewPipe.getPreferredLocalization;
 import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getJsonPostResponse;
@@ -126,17 +125,17 @@ public class ResponseHelper {
         boolean livestream = info.getStreamType() == StreamType.LIVE_STREAM;
 
         if (!livestream) {
-            info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
+            info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteVideoURL(stream.getUrl()),
                     String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType(), true,
                     stream.getBitrate(), stream.getInitStart(), stream.getInitEnd(), stream.getIndexStart(),
                     stream.getIndexEnd(), stream.getCodec(), stream.getWidth(), stream.getHeight(), 30)));
             info.getVideoStreams()
                     .forEach(stream -> videoStreams
-                            .add(new PipedStream(rewriteURL(stream.getUrl()), String.valueOf(stream.getFormat()),
+                            .add(new PipedStream(rewriteVideoURL(stream.getUrl()), String.valueOf(stream.getFormat()),
                                     stream.getResolution(), stream.getFormat().getMimeType(), false)));
 
             info.getAudioStreams()
-                    .forEach(stream -> audioStreams.add(new PipedStream(rewriteURL(stream.getUrl()),
+                    .forEach(stream -> audioStreams.add(new PipedStream(rewriteVideoURL(stream.getUrl()),
                             String.valueOf(stream.getFormat()), stream.getAverageBitrate() + " kbps",
                             stream.getFormat().getMimeType(), false, stream.getBitrate(), stream.getInitStart(),
                             stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec())));
@@ -167,8 +166,8 @@ public class ResponseHelper {
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
-                audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteURL(info.getHlsUrl()),
-                rewriteURL(info.getDashMpdUrl()), lbryId, chapters);
+                audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl()),
+                rewriteVideoURL(info.getDashMpdUrl()), lbryId, chapters);
 
         return Constants.mapper.writeValueAsBytes(streams);
 
