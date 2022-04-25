@@ -26,6 +26,8 @@ public class Constants {
 
     public static final String PROXY_PART;
 
+    public static final String IMAGE_PROXY_PART;
+
     public static final String CAPTCHA_BASE_URL, CAPTCHA_API_KEY;
 
     public static final StreamingService YOUTUBE_SERVICE;
@@ -61,6 +63,7 @@ public class Constants {
             HTTP_WORKERS = getProperty(prop, "HTTP_WORKERS",
                     String.valueOf(Runtime.getRuntime().availableProcessors()));
             PROXY_PART = getProperty(prop, "PROXY_PART");
+            IMAGE_PROXY_PART = getProperty(prop, "IMAGE_PROXY_PART", PROXY_PART);
             CAPTCHA_BASE_URL = getProperty(prop, "CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = getProperty(prop, "CAPTCHA_API_KEY");
             PUBLIC_URL = getProperty(prop, "API_URL");

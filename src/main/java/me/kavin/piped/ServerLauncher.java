@@ -370,7 +370,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
         HttpResponse response = HttpResponse.ofCode(code).withBody(body).withHeader(CONTENT_TYPE, contentType)
                 .withHeader(CACHE_CONTROL, cache);
         if (prefetchProxy)
-            response = response.withHeader(LINK, String.format("<%s>; rel=preconnect", Constants.PROXY_PART));
+            response = response.withHeader(LINK, String.format("<%s>; rel=preconnect", Constants.IMAGE_PROXY_PART));
         return response;
     }
 
