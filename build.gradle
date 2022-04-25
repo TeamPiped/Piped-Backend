@@ -30,7 +30,7 @@ dependencies {
     implementation 'io.activej:activej-http:5.2'
     implementation 'io.activej:activej-boot:5.2'
     implementation 'io.activej:activej-specializer:5.2'
-    implementation 'io.activej:activej-launchers-http:5.1.1'
+    implementation 'io.activej:activej-launchers-http:5.2'
     implementation 'org.hsqldb:hsqldb:2.6.1'
     implementation 'org.postgresql:postgresql:42.3.5'
     implementation 'org.hibernate:hibernate-core:5.6.7.Final'
