@@ -11,7 +11,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.obj.*;
-import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
@@ -48,9 +47,12 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -662,7 +664,7 @@ public class ResponseHelper {
 
                 s.getTransaction().begin();
                 s.getTransaction().commit();
-            
+
                 Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
             } catch (Exception e) {
                 return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
@@ -954,11 +956,11 @@ public class ResponseHelper {
 
             Multithreading.runAsync(() -> {
                 try (Session s = DatabaseSessionFactory.createSession()) {
-                    List<Channel> channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
+                    var channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
                     
                     outer:
                     for (String channelId : channelIds) {
-                        for (Channel channel : channels)
+                        for (var channel : channels)
                             if (channel.getUploaderId().equals(channelId))
                                 continue outer;
                         Multithreading.runAsyncLimited(() -> saveChannel(channelId));
@@ -1216,34 +1218,22 @@ public class ResponseHelper {
     }
 
     private static void pruneUnusedPlaylistVideos() {
+
         try (Session s = DatabaseSessionFactory.createSession()) {
-            CriteriaQuery<me.kavin.piped.utils.obj.db.Playlist> plQuery =
-                s.getCriteriaBuilder().createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
-            plQuery.select(plQuery.from(me.kavin.piped.utils.obj.db.Playlist.class));
-            List<me.kavin.piped.utils.obj.db.Playlist> playlists = s.createQuery(plQuery).getResultList();
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            
+            CriteriaDelete<PlaylistVideo> pvQuery = cb.createCriteriaDelete(PlaylistVideo.class);
+            Root<PlaylistVideo> pvRoot = pvQuery.from(PlaylistVideo.class);
 
-            CriteriaQuery<PlaylistVideo> pvQuery = s.getCriteriaBuilder().createQuery(PlaylistVideo.class);
-            pvQuery.select(pvQuery.from(PlaylistVideo.class));
-            List<PlaylistVideo> playlistVideos = s.createQuery(pvQuery).getResultList();
-
-            Iterator<PlaylistVideo> pvIter = playlistVideos.iterator();
-
-            outer:
-            while (pvIter.hasNext()) {
-                PlaylistVideo pv = pvIter.next();
-
-                for (me.kavin.piped.utils.obj.db.Playlist pl : playlists) {
-                    for (PlaylistVideo v : pl.getVideos()) {
-                        if (v.getId().equals(pv.getId())) {
-                            continue outer;
-                        }
-                    }
-                }
-
-                s.delete(pv);
-            }
+            Subquery<String> subQuery = pvQuery.subquery(String.class);
+            Root<me.kavin.piped.utils.obj.db.Playlist> subRoot =
+                subQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            
+            subQuery.select(subRoot.join("videos").get("id"));
+            pvQuery.where(cb.not(pvRoot.get("id").in(subQuery)));
 
             s.getTransaction().begin();
+            s.createQuery(pvQuery).executeUpdate();
             s.getTransaction().commit();
         }
     }
