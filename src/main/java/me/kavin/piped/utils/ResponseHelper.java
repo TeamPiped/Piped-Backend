@@ -771,18 +771,14 @@ public class ResponseHelper {
     public static byte[] unsubscribeResponse(String session, String channelId)
             throws IOException {
 
-        User user = DatabaseHelper.getUserFromSessionWithSubscribed(session);
+        User user = DatabaseHelper.getUserFromSession(session);
 
         if (user != null) {
             try (Session s = DatabaseSessionFactory.createSession()) {
-                if (user.getSubscribed().contains(channelId)) {
-                    user.getSubscribed().remove(channelId);
-
-                    s.update(user);
-                    s.getTransaction().begin();
-                    s.getTransaction().commit();
-                }
-
+                s.getTransaction().begin();
+                s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
+                        .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
+                s.getTransaction().commit();
                 return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
             }
 
