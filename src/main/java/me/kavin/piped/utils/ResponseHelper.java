@@ -622,8 +622,6 @@ public class ResponseHelper {
 
     }
 
-    private static final Argon2PasswordEncoder argon2PasswordEncoder = new Argon2PasswordEncoder();
-
     public static byte[] registerResponse(String user, String pass) throws IOException {
 
         if (Constants.DISABLE_REGISTRATION)
@@ -641,9 +639,8 @@ public class ResponseHelper {
             cr.select(root).where(cb.equal(root.get("username"), user));
             boolean registered = s.createQuery(cr).uniqueResult() != null;
 
-            if (registered) {
+            if (registered)
                 return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
-            }
 
             if (Constants.COMPROMISED_PASSWORD_CHECK) {
                 String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
@@ -668,7 +665,15 @@ public class ResponseHelper {
         }
     }
 
+    private static final Argon2PasswordEncoder argon2PasswordEncoder = new Argon2PasswordEncoder();
+
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
+
+    private static boolean hashMatch(String hash, String pass) {
+        return hash.startsWith("$argon2") ?
+                argon2PasswordEncoder.matches(pass, hash) :
+                bcryptPasswordEncoder.matches(pass, hash);
+    }
 
     public static byte[] loginResponse(String user, String pass)
             throws IOException {
@@ -688,16 +693,43 @@ public class ResponseHelper {
 
             if (dbuser != null) {
                 String hash = dbuser.getPassword();
-                if (hash.startsWith("$argon2")) {
-                    if (argon2PasswordEncoder.matches(pass, hash)) {
-                        return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
-                    }
-                } else if (bcryptPasswordEncoder.matches(pass, hash)) {
+                if (hashMatch(hash, pass)) {
                     return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
                 }
             }
 
             return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+        }
+    }
+
+    public static byte[] deleteUserResponse(String session, String pass) throws IOException {
+
+        if (StringUtils.isBlank(pass))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            User user = DatabaseHelper.getUserFromSession(session);
+
+            if (user == null)
+                return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+            String hash = user.getPassword();
+
+            if (!hashMatch(hash, pass))
+                return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+
+            try {
+                s.delete(user);
+
+                s.getTransaction().begin();
+                s.getTransaction().commit();
+
+                Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
+            } catch (Exception e) {
+                return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
+            }
+
+            return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
         }
     }
 
@@ -902,6 +934,7 @@ public class ResponseHelper {
             Multithreading.runAsync(() -> {
                 try (Session s = DatabaseSessionFactory.createSession()) {
                     var channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
+
                     outer:
                     for (String channelId : channelIds) {
                         for (var channel : channels)
@@ -1001,6 +1034,8 @@ public class ResponseHelper {
 
             s.getTransaction().begin();
             s.getTransaction().commit();
+
+            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
         }
 
         return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
@@ -1008,21 +1043,16 @@ public class ResponseHelper {
 
     public static byte[] playlistsResponse(String session) throws IOException {
 
-        User user = DatabaseHelper.getUserFromSession(session);
-
-        if (user == null)
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
-
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var cb = s.getCriteriaBuilder();
-            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
-            var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            query.select(root);
-            query.where(cb.equal(root.get("owner"), user));
+
+            User user = DatabaseHelper.getUserFromSession(session, s);
+
+            if (user == null)
+                return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
             var playlists = new ObjectArrayList<>();
 
-            for (var playlist : s.createQuery(query).list()) {
+            for (var playlist : user.getPlaylists()) {
                 ObjectNode node = Constants.mapper.createObjectNode();
                 node.put("id", String.valueOf(playlist.getPlaylistId()));
                 node.put("name", playlist.getName());
@@ -1137,6 +1167,8 @@ public class ResponseHelper {
                 s.getTransaction().begin();
             s.getTransaction().commit();
 
+            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
+
             return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
         }
     }
@@ -1154,6 +1186,27 @@ public class ResponseHelper {
             handleNewVideo(StreamInfo.getInfo(url), time, channel, s);
         } catch (Exception e) {
             ExceptionHandler.handle(e);
+        }
+    }
+
+    private static void pruneUnusedPlaylistVideos() {
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+
+            var pvQuery = cb.createCriteriaDelete(PlaylistVideo.class);
+            var pvRoot = pvQuery.from(PlaylistVideo.class);
+
+            var subQuery = pvQuery.subquery(me.kavin.piped.utils.obj.db.Playlist.class);
+            var subRoot = subQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
+
+            subQuery.select(subRoot.join("videos").get("id"));
+
+            pvQuery.where(cb.not(pvRoot.get("id").in(subQuery)));
+
+            s.getTransaction().begin();
+            s.createQuery(pvQuery).executeUpdate();
+            s.getTransaction().commit();
         }
     }
 
