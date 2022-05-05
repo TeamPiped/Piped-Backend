@@ -34,6 +34,9 @@ public class User implements Serializable {
     @Column(name = "channel", length = 30)
     private Set<String> subscribed_ids;
 
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    private Set<Playlist> playlists;
+
     public User() {
     }
 
@@ -82,5 +85,13 @@ public class User implements Serializable {
 
     public void setSubscribed(Set<String> subscribed_ids) {
         this.subscribed_ids = subscribed_ids;
+    }
+
+    public Set<Playlist> getPlaylists() {
+        return playlists;
+    }
+
+    public void setPlaylists(Set<Playlist> playlists) {
+        this.playlists = playlists;
     }
 }

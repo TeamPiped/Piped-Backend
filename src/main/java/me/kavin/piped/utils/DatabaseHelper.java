@@ -16,13 +16,17 @@ public class DatabaseHelper {
     public static User getUserFromSession(String session) {
         try (Session s = DatabaseSessionFactory.createSession()) {
             s.setHibernateFlushMode(FlushMode.MANUAL);
-            CriteriaBuilder cb = s.getCriteriaBuilder();
-            CriteriaQuery<User> cr = cb.createQuery(User.class);
-            Root<User> root = cr.from(User.class);
-            cr.select(root).where(cb.equal(root.get("sessionId"), session));
-
-            return s.createQuery(cr).uniqueResult();
+            return getUserFromSession(session, s);
         }
+    }
+
+    public static User getUserFromSession(String session, Session s) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<User> cr = cb.createQuery(User.class);
+        Root<User> root = cr.from(User.class);
+        cr.select(root).where(cb.equal(root.get("sessionId"), session));
+
+        return s.createQuery(cr).uniqueResult();
     }
 
     public static User getUserFromSessionWithSubscribed(String session) {
