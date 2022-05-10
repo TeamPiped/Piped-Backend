@@ -837,8 +837,6 @@ public class ResponseHelper {
                             video.getUploaded(), channel.isVerified()));
                 }
 
-                feedItems.sort(Comparator.<StreamItem>comparingLong(o -> o.uploaded).reversed());
-
                 return Constants.mapper.writeValueAsBytes(feedItems);
             }
         }
@@ -877,7 +875,7 @@ public class ResponseHelper {
                         ))
                         .orderBy(cb.desc(root.get("uploaded")));
 
-                List<Video> videos = s.createQuery(criteria).list();
+                List<Video> videos = s.createQuery(criteria).setMaxResults(100).list();
 
                 final List<SyndEntry> entries = new ObjectArrayList<>();
 
