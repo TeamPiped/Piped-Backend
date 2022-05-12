@@ -53,6 +53,7 @@ import javax.persistence.criteria.Root;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
@@ -933,13 +934,13 @@ public class ResponseHelper {
                 try (Session s = DatabaseSessionFactory.createSession()) {
                     var channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
 
-                    outer:
-                    for (String channelId : channelIds) {
-                        for (var channel : channels)
-                            if (channel.getUploaderId().equals(channelId))
-                                continue outer;
-                        Multithreading.runAsyncLimited(() -> saveChannel(channelId));
-                    }
+                    Arrays.stream(channelIds).parallel()
+                            .filter(channelId ->
+                                    channels.stream().parallel()
+                                            .filter(channel -> channel.getUploaderId().equals(channelId))
+                                            .findFirst().isEmpty()
+                            )
+                            .forEach(channelId -> Multithreading.runAsyncLimited(() -> saveChannel(channelId)));
                 }
             });
 
@@ -957,8 +958,6 @@ public class ResponseHelper {
         if (user != null) {
             try (Session s = DatabaseSessionFactory.createSession()) {
 
-                List<SubscriptionChannel> subscriptionItems = new ObjectArrayList<>();
-
                 CriteriaBuilder cb = s.getCriteriaBuilder();
                 var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
                 var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
@@ -971,10 +970,12 @@ public class ResponseHelper {
 
                 var channels = s.createQuery(query).list();
 
-                channels.forEach(channel -> subscriptionItems.add(new SubscriptionChannel("/channel/" + channel.getUploaderId(),
-                        channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified())));
-
-                subscriptionItems.sort(Comparator.comparing(o -> o.name));
+                List<SubscriptionChannel> subscriptionItems = channels
+                        .stream().parallel()
+                        .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader))
+                        .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
+                                channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
+                        .collect(Collectors.toUnmodifiableList());
 
                 return Constants.mapper.writeValueAsBytes(subscriptionItems);
             }

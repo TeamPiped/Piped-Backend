@@ -49,9 +49,11 @@ public class Main {
 
                     Collections.shuffle(pubSubList);
 
-                    for (PubSub pubsub : pubSubList)
-                        if (pubsub != null)
-                            Multithreading.runAsyncLimitedPubSub(() -> ResponseHelper.subscribePubSub(pubsub.getId()));
+                    pubSubList.stream().parallel()
+                            .forEach(pubSub -> {
+                                if (pubSub != null)
+                                    Multithreading.runAsyncLimitedPubSub(() -> ResponseHelper.subscribePubSub(pubSub.getId()));
+                            });
 
                 } catch (Exception e) {
                     e.printStackTrace();
