@@ -25,7 +25,7 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.0'
     implementation 'com.rometools:rome:1.18.0'
     implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
-    implementation 'org.jsoup:jsoup:1.14.3'
+    implementation 'org.jsoup:jsoup:1.15.1'
     implementation 'io.activej:activej-common:5.2'
     implementation 'io.activej:activej-http:5.2'
     implementation 'io.activej:activej-boot:5.2'
