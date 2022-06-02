@@ -9,7 +9,7 @@ on:
   pull_request:
 
 jobs:
-  build-hotspot-test:
+  build-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -34,7 +34,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           tags: 1337kavin/piped:latest
       - name: Start Docker-Compose services
-        run: docker-compose -f ${{ matrix.docker-compose-file }} up -d && sleep 5
+        run: docker-compose -f ${{ matrix.docker-compose-file }} up -d && sleep 20
       - name: Run tests
         run: ./testing/api-test.sh
       - name: Collect services logs

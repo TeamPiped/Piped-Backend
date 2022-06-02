@@ -8,6 +8,7 @@ services:
             - ./config.yugabytedb.properties:/app/config.properties
         depends_on:
             - yb-tserver
+        command: [ "sh", "-c", "sleep 10 && java -jar piped.jar" ]
     yb-master:
         image: yugabytedb/yugabyte:latest
         command:
