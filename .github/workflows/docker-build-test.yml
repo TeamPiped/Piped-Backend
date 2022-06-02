@@ -4,10 +4,12 @@ on:
   push:
     paths-ignore:
       - "**.md"
+    branches:
+      - master
   pull_request:
 
 jobs:
-  build-hotspot-test:
+  build-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -16,6 +18,10 @@ jobs:
           - testing/docker-compose.hsqldb.yml
           - testing/docker-compose.cockroachdb.yml
           - testing/docker-compose.yugabytedb.yml
+        dockerfile:
+          - Dockerfile
+          - Dockerfile.openj9
+          - Dockerfile.graalvm-jvm
     steps:
       - uses: actions/checkout@v3
       - name: Create Version File
@@ -25,8 +31,12 @@ jobs:
         with:
           context: .
           load: true
+          file: ${{ matrix.dockerfile }}
           tags: 1337kavin/piped:latest
       - name: Start Docker-Compose services
-        run: docker-compose -f ${{ matrix.docker-compose-file }} up -d && sleep 5
+        run: docker-compose -f ${{ matrix.docker-compose-file }} up -d && sleep 20
       - name: Run tests
         run: ./testing/api-test.sh
+      - name: Collect services logs
+        if: failure()
+        run: docker-compose -f ${{ matrix.docker-compose-file }} logs

@@ -1,8 +1,8 @@
 .*
 build
 bin
-Dockerfile
-Dockerfile.*
+Dockerfile*
+docker-compose.yml
 *.bat
 LICENSE
 *.md
