@@ -1,8 +1,8 @@
 package me.kavin.piped.utils.obj.db;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import jakarta.persistence.*;
 
-import javax.persistence.*;
 import java.util.List;
 import java.util.UUID;
 
