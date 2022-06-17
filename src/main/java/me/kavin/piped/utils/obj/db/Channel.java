@@ -1,10 +1,6 @@
 package me.kavin.piped.utils.obj.db;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "channels", indexes = {@Index(columnList = "uploader_id", name = "channels_uploader_id_idx")})

@@ -1,11 +1,11 @@
 package me.kavin.piped.utils.obj.db;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "videos", indexes = { @Index(columnList = "id", name = "videos_id_idx"),
+@Table(name = "videos", indexes = {@Index(columnList = "id", name = "videos_id_idx"),
         @Index(columnList = "uploader_id", name = "video_uploader_id_idx"),
-        @Index(columnList = "uploaded", name = "video_uploaded_idx") })
+        @Index(columnList = "uploaded", name = "video_uploaded_idx")})
 public class Video {
 
     @Id

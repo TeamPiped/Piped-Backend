@@ -1,14 +1,10 @@
 package me.kavin.piped.utils.obj.db;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "pubsub", indexes = { @Index(columnList = "id", name = "pubsub_id_idx"),
-        @Index(columnList = "subbed_at", name = "pubsub_subbed_at_idx") })
+@Table(name = "pubsub", indexes = {@Index(columnList = "id", name = "pubsub_id_idx"),
+        @Index(columnList = "subbed_at", name = "pubsub_subbed_at_idx")})
 public class PubSub {
 
     @Id

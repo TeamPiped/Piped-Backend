@@ -81,6 +81,13 @@ public class Constants {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
             });
+
+            // transform hibernate properties for legacy configureations
+            hibernateProperties.replace("hibernate.dialect",
+                    "org.hibernate.dialect.PostgreSQL10Dialect",
+                    "org.hibernate.dialect.PostgreSQLDialect"
+            );
+
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     .followRedirects(true)
                     .addInterceptor(BrotliInterceptor.INSTANCE);

@@ -1,6 +1,8 @@
 package me.kavin.piped;
 
 import io.activej.inject.Injector;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.DatabaseSessionFactory;
 import me.kavin.piped.utils.DownloaderImpl;
@@ -16,8 +18,6 @@ import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 

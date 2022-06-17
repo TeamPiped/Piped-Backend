@@ -1,6 +1,6 @@
 package me.kavin.piped.utils.obj.db;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "playlist_videos", indexes = {@Index(columnList = "id", name = "playlist_videos_id_idx"),
