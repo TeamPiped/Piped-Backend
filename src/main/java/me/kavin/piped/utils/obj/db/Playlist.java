@@ -2,6 +2,7 @@ package me.kavin.piped.utils.obj.db;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Cascade;
 
 import java.util.List;
 import java.util.UUID;
@@ -46,6 +47,7 @@ public class Playlist {
     @Column(name = "videos")
     @CollectionTable(name = "playlists_videos_ids")
     @OrderColumn(name = "videos_order")
+    @Cascade(org.hibernate.annotations.CascadeType.PERSIST)
     private List<PlaylistVideo> videos;
 
     public long getId() {

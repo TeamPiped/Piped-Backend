@@ -24,7 +24,7 @@ public class Video {
     @Column(name = "uploaded")
     private long uploaded;
 
-    @Column(name = "thumbnail", length = 150)
+    @Column(name = "thumbnail", length = 400)
     private String thumbnail;
 
     @ManyToOne(fetch = FetchType.LAZY)

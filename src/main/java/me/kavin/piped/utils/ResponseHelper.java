@@ -7,6 +7,7 @@ import com.grack.nanojson.JsonWriter;
 import com.rometools.rome.feed.synd.*;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
+import static me.kavin.piped.consts.Constants.mapper;
 import static me.kavin.piped.utils.URLUtils.*;
 import static org.schabi.newpipe.extractor.NewPipe.getPreferredContentCountry;
 import static org.schabi.newpipe.extractor.NewPipe.getPreferredLocalization;
@@ -997,7 +999,7 @@ public class ResponseHelper {
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var playlist = new me.kavin.piped.utils.obj.db.Playlist(name, user, "https://i.ytimg.com/");
-            s.save(playlist);
+            s.persist(playlist);
             s.getTransaction().begin();
             s.getTransaction().commit();
 
@@ -1064,6 +1066,84 @@ public class ResponseHelper {
         }
     }
 
+    public static byte[] importPlaylistResponse(String session, String playlistId) throws IOException, ExtractionException {
+
+        if (StringUtils.isBlank(playlistId))
+            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        var user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+        final String url = "https://www.youtube.com/playlist?list=" + playlistId;
+
+        PlaylistInfo info = PlaylistInfo.getInfo(url);
+
+        var playlist = new me.kavin.piped.utils.obj.db.Playlist(info.getName(), user, info.getThumbnailUrl());
+
+        List<StreamInfoItem> videos = new ObjectArrayList<>(info.getRelatedItems());
+
+        Page nextpage = info.getNextPage();
+
+        while (nextpage != null) {
+            var page = PlaylistInfo.getMoreItems(YOUTUBE_SERVICE, url, nextpage);
+            videos.addAll(page.getItems());
+
+            nextpage = page.getNextPage();
+        }
+
+        List<String> channelIds = videos.stream()
+                .map(StreamInfoItem::getUploaderUrl)
+                .map(URLUtils::substringYouTube)
+                .map(s -> s.substring("/channel/".length()))
+                .collect(Collectors.toUnmodifiableSet())
+                .stream()
+                .collect(Collectors.toUnmodifiableList());
+        List<String> videoIds = videos.stream()
+                .map(StreamInfoItem::getUrl)
+                .map(URLUtils::substringYouTube)
+                .map(s -> s.substring("/watch?v=".length()))
+                .collect(Collectors.toUnmodifiableList());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+
+            Map<String, me.kavin.piped.utils.obj.db.Channel> channelMap = new Object2ObjectOpenHashMap<>();
+
+            var channels = DatabaseHelper.getChannelsFromIds(s, channelIds);
+            channelIds.forEach(id -> {
+                var fetched = channels.stream().filter(channel -> channel.getUploaderId().equals(id)).findFirst()
+                        .orElseGet(() -> saveChannel(id));
+                channelMap.put(id, fetched);
+            });
+
+            Map<String, PlaylistVideo> videoMap = new Object2ObjectOpenHashMap<>();
+
+            var playlistVideos = DatabaseHelper.getPlaylistVideosFromIds(s, videoIds);
+            videoIds.forEach(id -> {
+                playlistVideos.stream().filter(video -> video.getId().equals(id)).findFirst()
+                        .ifPresent(playlistVideo -> videoMap.put(id, playlistVideo));
+            });
+
+            videos.forEach(video -> {
+                var channelId = substringYouTube(video.getUploaderUrl()).substring("/channel/".length());
+                var videoId = substringYouTube(video.getUrl()).substring("/watch?v=".length());
+
+                var channel = channelMap.get(channelId);
+
+                playlist.getVideos().add(videoMap.getOrDefault(videoId, new PlaylistVideo(videoId, video.getName(), video.getThumbnailUrl(), video.getDuration(), channel)));
+            });
+
+            var tr = s.beginTransaction();
+            s.persist(playlist);
+            tr.commit();
+        }
+
+        return mapper.writeValueAsBytes(mapper.createObjectNode()
+                .put("playlistId", String.valueOf(playlist.getPlaylistId()))
+        );
+    }
+
     public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
 
         if (StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
@@ -1101,19 +1181,12 @@ public class ResponseHelper {
                 var channel = DatabaseHelper.getChannelFromId(s, channelId);
 
                 if (channel == null) {
-                    ChannelInfo channelInfo = ChannelInfo.getInfo(info.getUploaderUrl());
-
-                    channel = new me.kavin.piped.utils.obj.db.Channel(channelId, channelInfo.getName(),
-                            channelInfo.getAvatarUrl(), channelInfo.isVerified());
-                    s.save(channel);
-
-                    if (!s.getTransaction().isActive())
-                        s.getTransaction().begin();
+                    channel = saveChannel(channelId);
                 }
 
                 video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
 
-                s.save(video);
+                s.persist(video);
 
                 if (!s.getTransaction().isActive())
                     s.getTransaction().begin();
@@ -1296,31 +1369,38 @@ public class ResponseHelper {
         }
     }
 
-    private static void saveChannel(String channelId) {
+    private static me.kavin.piped.utils.obj.db.Channel saveChannel(String channelId) {
         try (Session s = DatabaseSessionFactory.createSession()) {
 
-            ChannelInfo info = null;
+            final ChannelInfo info;
 
             try {
                 info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
             } catch (IOException | ExtractionException e) {
                 ExceptionUtils.rethrow(e);
+                return null;
             }
 
             var channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
                     info.getAvatarUrl(), info.isVerified());
-            s.save(channel);
+            s.persist(channel);
             s.beginTransaction().commit();
 
             Multithreading.runAsync(() -> subscribePubSub(channelId));
 
-            for (StreamInfoItem item : info.getRelatedItems()) {
-                long time = item.getUploadDate() != null
-                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                        : System.currentTimeMillis();
-                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                    handleNewVideo(item.getUrl(), time, channel, s);
-            }
+            Multithreading.runAsync(() -> {
+                try (Session sess = DatabaseSessionFactory.createSession()) {
+                    for (StreamInfoItem item : info.getRelatedItems()) {
+                        long time = item.getUploadDate() != null
+                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                : System.currentTimeMillis();
+                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                            handleNewVideo(item.getUrl(), time, channel, sess);
+                    }
+                }
+            });
+
+            return channel;
         }
     }
 

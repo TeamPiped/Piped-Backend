@@ -28,7 +28,7 @@ public class PlaylistVideo {
     @Column(name = "duration")
     private long duration;
 
-    @Column(name = "thumbnail", length = 150)
+    @Column(name = "thumbnail", length = 400)
     private String thumbnail;
 
     @ManyToOne(fetch = FetchType.LAZY)

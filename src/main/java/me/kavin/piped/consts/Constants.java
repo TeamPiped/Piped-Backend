@@ -82,7 +82,7 @@ public class Constants {
                     hibernateProperties.put(key, value);
             });
 
-            // transform hibernate properties for legacy configureations
+            // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",
                     "org.hibernate.dialect.PostgreSQL10Dialect",
                     "org.hibernate.dialect.PostgreSQLDialect"
