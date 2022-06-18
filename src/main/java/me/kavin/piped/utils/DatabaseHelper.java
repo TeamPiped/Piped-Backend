@@ -87,6 +87,15 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
+    public static List<PlaylistVideo> getPlaylistVideosFromIds(Session s, List<String> id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
+        Root<PlaylistVideo> root = cr.from(PlaylistVideo.class);
+        cr.select(root).where(root.get("id").in(id));
+
+        return s.createQuery(cr).list();
+    }
+
     public static PubSub getPubSubFromId(Session s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PubSub> cr = cb.createQuery(PubSub.class);

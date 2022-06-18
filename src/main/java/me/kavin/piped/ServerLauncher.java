@@ -275,6 +275,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(POST, "/import/playlist", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").textValue();
+                        return getJsonResponse(ResponseHelper.importPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(GET, "/subscriptions", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ResponseHelper.subscriptionsResponse(request.getHeader(AUTHORIZATION)),
@@ -330,8 +338,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/delete", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        DeleteUserRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(), 
-                            DeleteUserRequest.class);
+                        DeleteUserRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                                DeleteUserRequest.class);
                         return getJsonResponse(ResponseHelper.deleteUserResponse(request.getHeader(AUTHORIZATION), body.password),
                                 "private");
                     } catch (Exception e) {
