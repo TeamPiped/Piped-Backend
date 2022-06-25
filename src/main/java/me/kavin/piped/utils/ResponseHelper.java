@@ -1418,7 +1418,7 @@ public class ResponseHelper {
 
         if (pubsub == null || System.currentTimeMillis() - pubsub.getSubbedAt() > TimeUnit.DAYS.toMillis(4)) {
 
-            String callback = Constants.PUBLIC_URL + "/webhooks/pubsub";
+            String callback = Constants.PUBSUB_URL + "/webhooks/pubsub";
             String topic = "https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + channelId;
 
             var builder = new Request.Builder()
