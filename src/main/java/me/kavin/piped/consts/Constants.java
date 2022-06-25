@@ -47,6 +47,8 @@ public class Constants {
 
     public static final int FEED_RETENTION;
 
+    public static final boolean DISABLE_TIMERS;
+
     public static final String VERSION;
 
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
@@ -72,6 +74,7 @@ public class Constants {
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
             FEED_RETENTION = Integer.parseInt(getProperty(prop, "FEED_RETENTION", "30"));
+            DISABLE_TIMERS = Boolean.parseBoolean(getProperty(prop, "DISABLE_TIMERS", "false"));
             System.getenv().forEach((key, value) -> {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);

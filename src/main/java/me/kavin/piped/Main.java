@@ -33,6 +33,23 @@ public class Main {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                try {
+                    System.out.println(String.format("ThrottlingCache: %o entries", YoutubeThrottlingDecrypter.getCacheSize()));
+                    YoutubeThrottlingDecrypter.clearCache();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, TimeUnit.MINUTES.toMillis(60));
+
+        new ServerLauncher().launch(args);
+
+        if (Constants.DISABLE_TIMERS)
+            return;
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
                 try (Session s = DatabaseSessionFactory.createSession()) {
 
                     CriteriaBuilder cb = s.getCriteriaBuilder();
@@ -82,20 +99,6 @@ public class Main {
                 }
             }
         }, 0, TimeUnit.MINUTES.toMillis(60));
-
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    System.out.println(String.format("ThrottlingCache: %o entries", YoutubeThrottlingDecrypter.getCacheSize()));
-                    YoutubeThrottlingDecrypter.clearCache();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 0, TimeUnit.MINUTES.toMillis(60));
-
-        new ServerLauncher().launch(args);
 
     }
 }
