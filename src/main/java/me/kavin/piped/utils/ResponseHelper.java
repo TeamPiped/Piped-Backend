@@ -980,7 +980,7 @@ public class ResponseHelper {
 
                 List<SubscriptionChannel> subscriptionItems = channels
                         .stream().parallel()
-                        .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader))
+                        .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
                         .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
                                 channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
                         .collect(Collectors.toUnmodifiableList());
