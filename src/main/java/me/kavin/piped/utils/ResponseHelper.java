@@ -633,6 +633,12 @@ public class ResponseHelper {
         if (StringUtils.isBlank(user) || StringUtils.isBlank(pass))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
+        if (user.length() > 24)
+            return mapper.writeValueAsBytes(
+                    mapper.createObjectNode()
+                            .put("error", "The username must be less than 24 characters")
+            );
+
         user = user.toLowerCase();
 
         try (Session s = DatabaseSessionFactory.createSession()) {
