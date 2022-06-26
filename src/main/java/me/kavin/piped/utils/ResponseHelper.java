@@ -210,10 +210,9 @@ public class ResponseHelper {
                             || !channel.getUploaderAvatar().equals(info.getAvatarUrl())) {
                         channel.setVerified(info.isVerified());
                         channel.setUploaderAvatar(info.getAvatarUrl());
-                        if (!s.getTransaction().isActive())
-                            s.getTransaction().begin();
-                        s.update(channel);
-                        s.getTransaction().commit();
+                        var tr = s.beginTransaction();
+                        s.merge(channel);
+                        tr.commit();
                     }
                     for (StreamInfoItem item : info.getRelatedItems()) {
                         long time = item.getUploadDate() != null
@@ -665,9 +664,9 @@ public class ResponseHelper {
 
             User newuser = new User(user, argon2PasswordEncoder.encode(pass), Set.of());
 
-            s.save(newuser);
-            s.getTransaction().begin();
-            s.getTransaction().commit();
+            var tr = s.beginTransaction();
+            s.persist(newuser);
+            tr.commit();
 
 
             return mapper.writeValueAsBytes(new LoginResponse(newuser.getSessionId()));
@@ -728,12 +727,11 @@ public class ResponseHelper {
                 return mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
 
             try {
-                s.delete(user);
+                var tr = s.beginTransaction();
+                s.remove(user);
+                tr.commit();
 
-                s.getTransaction().begin();
-                s.getTransaction().commit();
-
-                Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
+                Multithreading.runAsync(ResponseHelper::pruneUnusedPlaylistVideos);
             } catch (Exception e) {
                 return mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
             }
@@ -753,9 +751,10 @@ public class ResponseHelper {
                 if (!user.getSubscribed().contains(channelId)) {
 
                     user.getSubscribed().add(channelId);
-                    s.update(user);
-                    s.getTransaction().begin();
-                    s.getTransaction().commit();
+
+                    var tr = s.beginTransaction();
+                    s.merge(user);
+                    tr.commit();
 
                     Multithreading.runAsync(() -> {
                         try (Session s2 = DatabaseSessionFactory.createSession()) {
@@ -783,10 +782,10 @@ public class ResponseHelper {
 
         if (user != null) {
             try (Session s = DatabaseSessionFactory.createSession()) {
-                s.getTransaction().begin();
+                var tr = s.beginTransaction();
                 s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
                         .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
-                s.getTransaction().commit();
+                tr.commit();
                 return mapper.writeValueAsBytes(new AcceptedResponse());
             }
 
@@ -823,7 +822,6 @@ public class ResponseHelper {
 
                 // Get all videos from subscribed channels, with channel info
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-                criteria.distinct(true);
                 var root = criteria.from(Video.class);
                 var userRoot = criteria.from(User.class);
                 root.fetch("channel", JoinType.INNER);
@@ -872,7 +870,6 @@ public class ResponseHelper {
 
                 // Get all videos from subscribed channels, with channel info
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-                criteria.distinct(true);
                 var root = criteria.from(Video.class);
                 var userRoot = criteria.from(User.class);
                 root.fetch("channel", JoinType.INNER);
@@ -931,9 +928,9 @@ public class ResponseHelper {
                     }
 
                     if (channelIds.length > 0) {
-                        sess.getTransaction().begin();
-                        sess.update(user);
-                        sess.getTransaction().commit();
+                        var tr = sess.beginTransaction();
+                        sess.merge(user);
+                        tr.commit();
                     }
                 }
             });
@@ -1005,9 +1002,10 @@ public class ResponseHelper {
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var playlist = new me.kavin.piped.utils.obj.db.Playlist(name, user, "https://i.ytimg.com/");
+
+            var tr = s.beginTransaction();
             s.persist(playlist);
-            s.getTransaction().begin();
-            s.getTransaction().commit();
+            tr.commit();
 
             ObjectNode response = mapper.createObjectNode();
             response.put("playlistId", String.valueOf(playlist.getPlaylistId()));
@@ -1037,10 +1035,9 @@ public class ResponseHelper {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You do not own this playlist"));
 
-            s.delete(playlist);
-
-            s.getTransaction().begin();
-            s.getTransaction().commit();
+            var tr = s.beginTransaction();
+            s.remove(playlist);
+            tr.commit();
 
             Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
         }
@@ -1192,10 +1189,10 @@ public class ResponseHelper {
 
                 video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
 
+                var tr = s.beginTransaction();
                 s.persist(video);
+                tr.commit();
 
-                if (!s.getTransaction().isActive())
-                    s.getTransaction().begin();
             }
 
             if (playlist.getVideos().isEmpty())
@@ -1203,9 +1200,9 @@ public class ResponseHelper {
 
             playlist.getVideos().add(video);
 
-            if (!s.getTransaction().isActive())
-                s.getTransaction().begin();
-            s.getTransaction().commit();
+            var tr = s.beginTransaction();
+            s.merge(playlist);
+            tr.commit();
 
             return mapper.writeValueAsBytes(new AcceptedResponse());
         }
@@ -1239,11 +1236,9 @@ public class ResponseHelper {
 
             playlist.getVideos().remove(index);
 
-            s.update(playlist);
-
-            if (!s.getTransaction().isActive())
-                s.getTransaction().begin();
-            s.getTransaction().commit();
+            var tr = s.beginTransaction();
+            s.merge(playlist);
+            tr.commit();
 
             Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
 
@@ -1282,9 +1277,9 @@ public class ResponseHelper {
 
             pvQuery.where(cb.not(pvRoot.get("id").in(subQuery)));
 
-            s.getTransaction().begin();
+            var tr = s.beginTransaction();
             s.createQuery(pvQuery).executeUpdate();
-            s.getTransaction().commit();
+            tr.commit();
         }
     }
 
@@ -1305,11 +1300,10 @@ public class ResponseHelper {
             video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
                     Math.max(infoTime, time), info.getThumbnailUrl(), channel);
 
-            s.save(video);
+            var tr = s.beginTransaction();
+            s.persist(video);
+            tr.commit();
 
-            if (!s.getTransaction().isActive())
-                s.getTransaction().begin();
-            s.getTransaction().commit();
         } else if (video != null) {
             updateVideo(info.getId(), info, time);
         }
@@ -1369,13 +1363,17 @@ public class ResponseHelper {
         }
 
         if (changed) {
-            s.update(video);
-            if (!s.getTransaction().isActive()) s.getTransaction().begin();
-            s.getTransaction().commit();
+            var tr = s.beginTransaction();
+            s.merge(video);
+            tr.commit();
         }
     }
 
     private static me.kavin.piped.utils.obj.db.Channel saveChannel(String channelId) {
+
+        if (!channelId.matches("[A-Za-z\\d_-]+"))
+            return null;
+
         try (Session s = DatabaseSessionFactory.createSession()) {
 
             final ChannelInfo info;
@@ -1443,16 +1441,19 @@ public class ResponseHelper {
                             .build()).execute();
 
             if (resp.code() == 202) {
-                if (pubsub == null)
+
+                var tr = s.beginTransaction();
+
+                if (pubsub == null) {
                     pubsub = new PubSub(channelId, System.currentTimeMillis());
-                else
+                    s.persist(pubsub);
+                } else {
                     pubsub.setSubbedAt(System.currentTimeMillis());
+                    s.merge(pubsub);
+                }
 
-                s.saveOrUpdate(pubsub);
+                tr.commit();
 
-                if (!s.getTransaction().isActive())
-                    s.getTransaction().begin();
-                s.getTransaction().commit();
             } else
                 System.out.println("Failed to subscribe: " + resp.code() + "\n" + Objects.requireNonNull(resp.body()).string());
 

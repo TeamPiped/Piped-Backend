@@ -83,9 +83,7 @@ public class Main {
             public void run() {
                 try (Session s = DatabaseSessionFactory.createSession()) {
 
-                    Transaction tr = s.getTransaction();
-
-                    tr.begin();
+                    Transaction tr = s.beginTransaction();
 
                     Query<?> query = s.createQuery("delete from Video where uploaded < :time").setParameter("time",
                             System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION));
