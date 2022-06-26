@@ -172,7 +172,7 @@ public class ResponseHelper {
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl()),
                 rewriteVideoURL(info.getDashMpdUrl()), lbryId, chapters);
 
-        return Constants.mapper.writeValueAsBytes(streams);
+        return mapper.writeValueAsBytes(streams);
 
     }
 
@@ -189,7 +189,7 @@ public class ResponseHelper {
 
         final String videoId = JsonUtils.getString(jsonResponse, "endpoint.watchEndpoint.videoId");
 
-        return Constants.mapper.writeValueAsBytes(new VideoResolvedResponse(videoId));
+        return mapper.writeValueAsBytes(new VideoResolvedResponse(videoId));
     }
 
     public static byte[] channelResponse(String channelPath) throws Exception {
@@ -234,7 +234,7 @@ public class ResponseHelper {
         String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = Constants.mapper.writeValueAsString(page);
+            nextpage = mapper.writeValueAsString(page);
         }
 
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
@@ -243,14 +243,14 @@ public class ResponseHelper {
 
         IPFS.publishData(channel);
 
-        return Constants.mapper.writeValueAsBytes(channel);
+        return mapper.writeValueAsBytes(channel);
 
     }
 
     public static byte[] channelPageResponse(String channelId, String prevpageStr)
             throws IOException, ExtractionException {
 
-        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
+        Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
         InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://youtube.com/channel/" + channelId, prevpage);
@@ -262,12 +262,12 @@ public class ResponseHelper {
         String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = Constants.mapper.writeValueAsString(page);
+            nextpage = mapper.writeValueAsString(page);
         }
 
         final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
-        return Constants.mapper.writeValueAsBytes(streamspage);
+        return mapper.writeValueAsBytes(streamspage);
 
     }
 
@@ -275,7 +275,7 @@ public class ResponseHelper {
             throws ExtractionException, IOException {
 
         if (region == null)
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
@@ -287,13 +287,13 @@ public class ResponseHelper {
 
         info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
-        return Constants.mapper.writeValueAsBytes(relatedStreams);
+        return mapper.writeValueAsBytes(relatedStreams);
     }
 
     public static byte[] playlistResponse(String playlistId) throws ExtractionException, IOException {
 
         if (StringUtils.isBlank(playlistId))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         if (playlistId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
             return playlistPipedResponse(playlistId);
@@ -315,7 +315,7 @@ public class ResponseHelper {
             var pl = query.uniqueResult();
 
             if (pl == null)
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
             final List<StreamItem> relatedStreams = new ObjectArrayList<>();
@@ -332,7 +332,7 @@ public class ResponseHelper {
             final Playlist playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), null, null, pl.getOwner().getUsername(),
                     null, null, videos.size(), relatedStreams);
 
-            return Constants.mapper.writeValueAsBytes(playlist);
+            return mapper.writeValueAsBytes(playlist);
         }
     }
 
@@ -348,7 +348,7 @@ public class ResponseHelper {
         String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = Constants.mapper.writeValueAsString(page);
+            nextpage = mapper.writeValueAsString(page);
         }
 
         final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
@@ -357,14 +357,14 @@ public class ResponseHelper {
                 substringYouTube(info.getUploaderUrl()), rewriteURL(info.getUploaderAvatarUrl()),
                 (int) info.getStreamCount(), relatedStreams);
 
-        return Constants.mapper.writeValueAsBytes(playlist);
+        return mapper.writeValueAsBytes(playlist);
 
     }
 
     public static byte[] playlistPageResponse(String playlistId, String prevpageStr)
             throws IOException, ExtractionException {
 
-        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
+        Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
         InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://www.youtube.com/playlist?list=" + playlistId, prevpage);
@@ -376,19 +376,19 @@ public class ResponseHelper {
         String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = Constants.mapper.writeValueAsString(page);
+            nextpage = mapper.writeValueAsString(page);
         }
 
         final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
 
-        return Constants.mapper.writeValueAsBytes(streamspage);
+        return mapper.writeValueAsBytes(streamspage);
 
     }
 
     public static byte[] playlistRSSResponse(String playlistId) throws ExtractionException, IOException, FeedException {
 
         if (StringUtils.isBlank(playlistId))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         if (playlistId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
             return playlistPipedRSSResponse(playlistId);
@@ -469,14 +469,14 @@ public class ResponseHelper {
     public static byte[] suggestionsResponse(String query)
             throws IOException, ExtractionException {
 
-        return Constants.mapper.writeValueAsBytes(YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
+        return mapper.writeValueAsBytes(YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
     }
 
     public static byte[] opensearchSuggestionsResponse(String query)
             throws IOException, ExtractionException {
 
-        return Constants.mapper.writeValueAsBytes(Arrays.asList(
+        return mapper.writeValueAsBytes(Arrays.asList(
                 query,
                 YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query)
         ));
@@ -514,15 +514,15 @@ public class ResponseHelper {
 
         Page nextpage = info.getNextPage();
 
-        return Constants.mapper.writeValueAsBytes(new SearchResults(items,
-                Constants.mapper.writeValueAsString(nextpage), info.getSearchSuggestion(), info.isCorrectedSearch()));
+        return mapper.writeValueAsBytes(new SearchResults(items,
+                mapper.writeValueAsString(nextpage), info.getSearchSuggestion(), info.isCorrectedSearch()));
 
     }
 
     public static byte[] searchPageResponse(String q, String filter, String prevpageStr)
             throws IOException, ExtractionException {
 
-        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
+        Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
         InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(YOUTUBE_SERVICE,
                 YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null), prevpage);
@@ -552,8 +552,8 @@ public class ResponseHelper {
 
         Page nextpage = pages.getNextPage();
 
-        return Constants.mapper
-                .writeValueAsBytes(new SearchResults(items, Constants.mapper.writeValueAsString(nextpage)));
+        return mapper
+                .writeValueAsBytes(new SearchResults(items, mapper.writeValueAsString(nextpage)));
 
     }
 
@@ -567,7 +567,7 @@ public class ResponseHelper {
             try {
                 String repliespage = null;
                 if (comment.getReplies() != null)
-                    repliespage = Constants.mapper.writeValueAsString(comment.getReplies());
+                    repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                         comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
@@ -581,18 +581,18 @@ public class ResponseHelper {
         String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = Constants.mapper.writeValueAsString(page);
+            nextpage = mapper.writeValueAsString(page);
         }
 
         CommentsPage commentsItem = new CommentsPage(comments, nextpage, info.isCommentsDisabled());
 
-        return Constants.mapper.writeValueAsBytes(commentsItem);
+        return mapper.writeValueAsBytes(commentsItem);
 
     }
 
     public static byte[] commentsPageResponse(String videoId, String prevpageStr) throws Exception {
 
-        Page prevpage = Constants.mapper.readValue(prevpageStr, Page.class);
+        Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
         InfoItemsPage<CommentsInfoItem> info = CommentsInfo.getMoreItems(YOUTUBE_SERVICE, "https://www.youtube.com/watch?v=" + videoId, prevpage);
 
@@ -602,7 +602,7 @@ public class ResponseHelper {
             try {
                 String repliespage = null;
                 if (comment.getReplies() != null)
-                    repliespage = Constants.mapper.writeValueAsString(comment.getReplies());
+                    repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                         comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
@@ -616,22 +616,22 @@ public class ResponseHelper {
         String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
-            nextpage = Constants.mapper.writeValueAsString(page);
+            nextpage = mapper.writeValueAsString(page);
         }
 
         CommentsPage commentsItem = new CommentsPage(comments, nextpage, false);
 
-        return Constants.mapper.writeValueAsBytes(commentsItem);
+        return mapper.writeValueAsBytes(commentsItem);
 
     }
 
     public static byte[] registerResponse(String user, String pass) throws IOException {
 
         if (Constants.DISABLE_REGISTRATION)
-            return Constants.mapper.writeValueAsBytes(new DisabledRegistrationResponse());
+            return mapper.writeValueAsBytes(new DisabledRegistrationResponse());
 
         if (StringUtils.isBlank(user) || StringUtils.isBlank(pass))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         user = user.toLowerCase();
 
@@ -643,7 +643,7 @@ public class ResponseHelper {
             boolean registered = s.createQuery(cr).uniqueResult() != null;
 
             if (registered)
-                return Constants.mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
+                return mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
 
             if (Constants.COMPROMISED_PASSWORD_CHECK) {
                 String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
@@ -654,7 +654,7 @@ public class ResponseHelper {
                         .split("\n");
                 for (String entry : entries)
                     if (StringUtils.substringBefore(entry, ":").equals(suffix))
-                        return Constants.mapper.writeValueAsBytes(new CompromisedPasswordResponse());
+                        return mapper.writeValueAsBytes(new CompromisedPasswordResponse());
             }
 
             User newuser = new User(user, argon2PasswordEncoder.encode(pass), Set.of());
@@ -664,7 +664,7 @@ public class ResponseHelper {
             s.getTransaction().commit();
 
 
-            return Constants.mapper.writeValueAsBytes(new LoginResponse(newuser.getSessionId()));
+            return mapper.writeValueAsBytes(new LoginResponse(newuser.getSessionId()));
         }
     }
 
@@ -682,7 +682,7 @@ public class ResponseHelper {
             throws IOException {
 
         if (user == null || pass == null)
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         user = user.toLowerCase();
 
@@ -697,29 +697,29 @@ public class ResponseHelper {
             if (dbuser != null) {
                 String hash = dbuser.getPassword();
                 if (hashMatch(hash, pass)) {
-                    return Constants.mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
+                    return mapper.writeValueAsBytes(new LoginResponse(dbuser.getSessionId()));
                 }
             }
 
-            return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+            return mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
         }
     }
 
     public static byte[] deleteUserResponse(String session, String pass) throws IOException {
 
         if (StringUtils.isBlank(pass))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             User user = DatabaseHelper.getUserFromSession(session);
 
             if (user == null)
-                return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+                return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
             String hash = user.getPassword();
 
             if (!hashMatch(hash, pass))
-                return Constants.mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+                return mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
 
             try {
                 s.delete(user);
@@ -729,10 +729,10 @@ public class ResponseHelper {
 
                 Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
             } catch (Exception e) {
-                return Constants.mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
+                return mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
             }
 
-            return Constants.mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
+            return mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
         }
     }
 
@@ -761,11 +761,11 @@ public class ResponseHelper {
                     });
                 }
 
-                return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+                return mapper.writeValueAsBytes(new AcceptedResponse());
             }
 
 
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
         }
 
     }
@@ -781,12 +781,12 @@ public class ResponseHelper {
                 s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
                         .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
                 s.getTransaction().commit();
-                return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+                return mapper.writeValueAsBytes(new AcceptedResponse());
             }
 
         }
 
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
     }
 
@@ -802,7 +802,7 @@ public class ResponseHelper {
                     ));
             var subscribed = s.createQuery(query).getSingleResult() > 0;
 
-            return Constants.mapper.writeValueAsBytes(new SubscribeStatusResponse(subscribed));
+            return mapper.writeValueAsBytes(new SubscribeStatusResponse(subscribed));
         }
     }
 
@@ -840,11 +840,11 @@ public class ResponseHelper {
                             video.getUploaded(), channel.isVerified()));
                 }
 
-                return Constants.mapper.writeValueAsBytes(feedItems);
+                return mapper.writeValueAsBytes(feedItems);
             }
         }
 
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static byte[] feedResponseRSS(String session) throws IOException, FeedException {
@@ -905,7 +905,7 @@ public class ResponseHelper {
             }
         }
 
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static byte[] importResponse(String session, String[] channelIds, boolean override) throws IOException {
@@ -946,10 +946,10 @@ public class ResponseHelper {
                 }
             });
 
-            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+            return mapper.writeValueAsBytes(new AcceptedResponse());
         }
 
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
     }
 
     public static byte[] subscriptionsResponse(String session)
@@ -979,23 +979,23 @@ public class ResponseHelper {
                                 channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
                         .collect(Collectors.toUnmodifiableList());
 
-                return Constants.mapper.writeValueAsBytes(subscriptionItems);
+                return mapper.writeValueAsBytes(subscriptionItems);
             }
         }
 
-        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
     }
 
     public static byte[] createPlaylist(String session, String name) throws IOException {
 
         if (StringUtils.isBlank(name))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var playlist = new me.kavin.piped.utils.obj.db.Playlist(name, user, "https://i.ytimg.com/");
@@ -1003,32 +1003,32 @@ public class ResponseHelper {
             s.getTransaction().begin();
             s.getTransaction().commit();
 
-            ObjectNode response = Constants.mapper.createObjectNode();
+            ObjectNode response = mapper.createObjectNode();
             response.put("playlistId", String.valueOf(playlist.getPlaylistId()));
 
-            return Constants.mapper.writeValueAsBytes(response);
+            return mapper.writeValueAsBytes(response);
         }
     }
 
     public static byte[] deletePlaylistResponse(String session, String playlistId) throws IOException {
 
         if (StringUtils.isBlank(playlistId))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
 
             if (playlist == null)
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
             if (playlist.getOwner().getId() != user.getId())
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You do not own this playlist"));
 
             s.delete(playlist);
@@ -1039,7 +1039,7 @@ public class ResponseHelper {
             Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
         }
 
-        return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+        return mapper.writeValueAsBytes(new AcceptedResponse());
     }
 
     public static byte[] playlistsResponse(String session) throws IOException {
@@ -1049,12 +1049,12 @@ public class ResponseHelper {
             User user = DatabaseHelper.getUserFromSession(session, s);
 
             if (user == null)
-                return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+                return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
             var playlists = new ObjectArrayList<>();
 
             for (var playlist : user.getPlaylists()) {
-                ObjectNode node = Constants.mapper.createObjectNode();
+                ObjectNode node = mapper.createObjectNode();
                 node.put("id", String.valueOf(playlist.getPlaylistId()));
                 node.put("name", playlist.getName());
                 node.put("shortDescription", playlist.getShortDescription());
@@ -1062,19 +1062,19 @@ public class ResponseHelper {
                 playlists.add(node);
             }
 
-            return Constants.mapper.writeValueAsBytes(playlists);
+            return mapper.writeValueAsBytes(playlists);
         }
     }
 
     public static byte[] importPlaylistResponse(String session, String playlistId) throws IOException, ExtractionException {
 
         if (StringUtils.isBlank(playlistId))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         var user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
         final String url = "https://www.youtube.com/playlist?list=" + playlistId;
 
@@ -1147,12 +1147,12 @@ public class ResponseHelper {
     public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
 
         if (StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         var user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var cb = s.getCriteriaBuilder();
@@ -1164,11 +1164,11 @@ public class ResponseHelper {
             var playlist = s.createQuery(query).uniqueResult();
 
             if (playlist == null)
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
             if (playlist.getOwner().getId() != user.getId())
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
             var video = DatabaseHelper.getPlaylistVideoFromId(s, videoId);
@@ -1201,14 +1201,14 @@ public class ResponseHelper {
                 s.getTransaction().begin();
             s.getTransaction().commit();
 
-            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+            return mapper.writeValueAsBytes(new AcceptedResponse());
         }
     }
 
     public static byte[] removeFromPlaylistResponse(String session, String playlistId, int index) throws IOException {
 
         if (StringUtils.isBlank(playlistId))
-            return Constants.mapper.writeValueAsBytes(new InvalidRequestResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var cb = s.getCriteriaBuilder();
@@ -1220,15 +1220,15 @@ public class ResponseHelper {
             var playlist = s.createQuery(query).uniqueResult();
 
             if (playlist == null)
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
             if (playlist.getOwner().getId() != DatabaseHelper.getUserFromSession(session).getId())
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
             if (index < 0 || index >= playlist.getVideos().size())
-                return Constants.mapper.writeValueAsBytes(Constants.mapper.createObjectNode()
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Video Index out of bounds"));
 
             playlist.getVideos().remove(index);
@@ -1241,7 +1241,7 @@ public class ResponseHelper {
 
             Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
 
-            return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+            return mapper.writeValueAsBytes(new AcceptedResponse());
         }
     }
 
