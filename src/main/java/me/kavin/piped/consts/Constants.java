@@ -51,6 +51,10 @@ public class Constants {
 
     public static final boolean DISABLE_TIMERS;
 
+    public static final String RYD_PROXY_URL;
+
+    public static final boolean DISABLE_RYD;
+
     public static final String VERSION;
 
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
@@ -78,6 +82,8 @@ public class Constants {
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
             FEED_RETENTION = Integer.parseInt(getProperty(prop, "FEED_RETENTION", "30"));
             DISABLE_TIMERS = Boolean.parseBoolean(getProperty(prop, "DISABLE_TIMERS", "false"));
+            RYD_PROXY_URL = getProperty(prop, "RYD_PROXY_URL", "https://ryd-proxy.kavin.rocks");
+            DISABLE_RYD = Boolean.parseBoolean(getProperty(prop, "DISABLE_RYD", "false"));
             System.getenv().forEach((key, value) -> {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
