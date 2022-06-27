@@ -98,6 +98,15 @@ public class ResponseHelper {
             return null;
         });
 
+        final var futureDislikeRating = Multithreading.supplyAsync(() -> {
+            try {
+                return RydHelper.getDislikeRating(videoId);
+            } catch (Exception e) {
+                ExceptionHandler.handle(e);
+            }
+            return null;
+        });
+
         final List<Subtitle> subtitles = new ObjectArrayList<>();
         final List<ChapterSegment> chapters = new ObjectArrayList<>();
 
@@ -163,6 +172,20 @@ public class ResponseHelper {
             lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
         } catch (Exception e) {
             lbryId = null;
+        }
+
+        // Attempt to get dislikes calculating with the RYD API rating
+        if (info.getDislikeCount() < 0 && info.getLikeCount() >= 0) {
+            double rating;
+            try {
+                rating = futureDislikeRating.get(2, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                rating = -1;
+            }
+
+            if (rating > 1 && rating <= 5) {
+                info.setDislikeCount(Math.round(info.getLikeCount() * ((5 - rating) / (rating - 1))));
+            }
         }
 
         final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
