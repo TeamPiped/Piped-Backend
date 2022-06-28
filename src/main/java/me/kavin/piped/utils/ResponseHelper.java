@@ -491,12 +491,18 @@ public class ResponseHelper {
     public static byte[] suggestionsResponse(String query)
             throws IOException, ExtractionException {
 
+        if (StringUtils.isEmpty(query))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
         return mapper.writeValueAsBytes(YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
     }
 
     public static byte[] opensearchSuggestionsResponse(String query)
             throws IOException, ExtractionException {
+
+        if (StringUtils.isEmpty(query))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         return mapper.writeValueAsBytes(Arrays.asList(
                 query,
@@ -836,6 +842,9 @@ public class ResponseHelper {
 
     public static byte[] feedResponse(String session) throws IOException {
 
+        if (StringUtils.isBlank(session))
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user != null) {
@@ -875,6 +884,9 @@ public class ResponseHelper {
     }
 
     public static byte[] feedResponseRSS(String session) throws IOException, FeedException {
+
+        if (StringUtils.isBlank(session))
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -1062,7 +1074,7 @@ public class ResponseHelper {
             s.remove(playlist);
             tr.commit();
 
-            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
+            Multithreading.runAsync(ResponseHelper::pruneUnusedPlaylistVideos);
         }
 
         return mapper.writeValueAsBytes(new AcceptedResponse());
