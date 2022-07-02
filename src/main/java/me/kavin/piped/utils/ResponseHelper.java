@@ -1425,7 +1425,13 @@ public class ResponseHelper {
             s.persist(channel);
             s.beginTransaction().commit();
 
-            Multithreading.runAsync(() -> subscribePubSub(channelId));
+            Multithreading.runAsync(() -> {
+                try {
+                    subscribePubSub(channelId);
+                } catch (IOException e) {
+                    ExceptionHandler.handle(e);
+                }
+            });
 
             Multithreading.runAsync(() -> {
                 try (Session sess = DatabaseSessionFactory.createSession()) {
@@ -1443,17 +1449,9 @@ public class ResponseHelper {
         }
     }
 
-    public static void subscribePubSub(String channelId) {
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            subscribePubSub(channelId, s);
-        } catch (Exception e) {
-            ExceptionHandler.handle(e);
-        }
-    }
+    public static void subscribePubSub(String channelId) throws IOException {
 
-    private static void subscribePubSub(String channelId, Session s) throws IOException {
-
-        PubSub pubsub = DatabaseHelper.getPubSubFromId(s, channelId);
+        PubSub pubsub = DatabaseHelper.getPubSubFromId(channelId);
 
         if (pubsub == null || System.currentTimeMillis() - pubsub.getSubbedAt() > TimeUnit.DAYS.toMillis(4)) {
 
@@ -1476,18 +1474,17 @@ public class ResponseHelper {
                             .build()).execute();
 
             if (resp.code() == 202) {
-
-                var tr = s.beginTransaction();
-
-                if (pubsub == null) {
-                    pubsub = new PubSub(channelId, System.currentTimeMillis());
-                    s.persist(pubsub);
-                } else {
-                    pubsub.setSubbedAt(System.currentTimeMillis());
-                    s.merge(pubsub);
+                try (Session s = DatabaseSessionFactory.createSession()) {
+                    var tr = s.beginTransaction();
+                    if (pubsub == null) {
+                        pubsub = new PubSub(channelId, System.currentTimeMillis());
+                        s.persist(pubsub);
+                    } else {
+                        pubsub.setSubbedAt(System.currentTimeMillis());
+                        s.merge(pubsub);
+                    }
+                    tr.commit();
                 }
-
-                tr.commit();
 
             } else
                 System.out.println("Failed to subscribe: " + resp.code() + "\n" + Objects.requireNonNull(resp.body()).string());

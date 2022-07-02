@@ -4,10 +4,7 @@ import io.activej.inject.Injector;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import me.kavin.piped.consts.Constants;
-import me.kavin.piped.utils.DatabaseSessionFactory;
-import me.kavin.piped.utils.DownloaderImpl;
-import me.kavin.piped.utils.Multithreading;
-import me.kavin.piped.utils.ResponseHelper;
+import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import org.hibernate.Session;
@@ -18,6 +15,7 @@ import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -75,7 +73,13 @@ public class Main {
                     pubSubList.stream().parallel()
                             .forEach(pubSub -> {
                                 if (pubSub != null)
-                                    Multithreading.runAsyncLimitedPubSub(() -> ResponseHelper.subscribePubSub(pubSub.getId()));
+                                    Multithreading.runAsyncLimitedPubSub(() -> {
+                                        try {
+                                            ResponseHelper.subscribePubSub(pubSub.getId());
+                                        } catch (IOException e) {
+                                            ExceptionHandler.handle(e);
+                                        }
+                                    });
                             });
 
                 } catch (Exception e) {
