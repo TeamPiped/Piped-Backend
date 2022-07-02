@@ -1289,9 +1289,9 @@ public class ResponseHelper {
         }
     }
 
-    public static void handleNewVideo(String url, long time, me.kavin.piped.utils.obj.db.Channel channel, Session s) {
+    public static void handleNewVideo(String url, long time, me.kavin.piped.utils.obj.db.Channel channel) {
         try {
-            handleNewVideo(StreamInfo.getInfo(url), time, channel, s);
+            handleNewVideo(StreamInfo.getInfo(url), time, channel);
         } catch (Exception e) {
             ExceptionHandler.handle(e);
         }
@@ -1318,10 +1318,10 @@ public class ResponseHelper {
         }
     }
 
-    private static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel, Session s) {
+    private static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel) {
 
         if (channel == null)
-            channel = DatabaseHelper.getChannelFromId(s,
+            channel = DatabaseHelper.getChannelFromId(
                     info.getUploaderUrl().substring("https://www.youtube.com/channel/".length()));
 
         long infoTime = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
@@ -1329,15 +1329,17 @@ public class ResponseHelper {
 
         Video video = null;
 
-        if (channel != null && (video = DatabaseHelper.getVideoFromId(s, info.getId())) == null
+        if (channel != null && (video = DatabaseHelper.getVideoFromId(info.getId())) == null
                 && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
 
             video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
                     Math.max(infoTime, time), info.getThumbnailUrl(), channel);
 
-            var tr = s.beginTransaction();
-            s.persist(video);
-            tr.commit();
+            try (Session s = DatabaseSessionFactory.createSession()) {
+                var tr = s.beginTransaction();
+                s.persist(video);
+                tr.commit();
+            }
 
         } else if (video != null) {
             updateVideo(info.getId(), info, time);
@@ -1353,7 +1355,7 @@ public class ResponseHelper {
                 if (video != null) {
                     updateVideo(s, video, item.getViewCount(), item.getDuration(), item.getName());
                 } else if (addIfNotExistent) {
-                    handleNewVideo("https://www.youtube.com/watch?v=" + id, time, null, s);
+                    handleNewVideo("https://www.youtube.com/watch?v=" + id, time, null);
                 }
 
             } catch (Exception e) {
@@ -1371,7 +1373,7 @@ public class ResponseHelper {
                 if (video != null) {
                     updateVideo(s, video, info.getViewCount(), info.getDuration(), info.getName());
                 } else {
-                    handleNewVideo(info, time, null, s);
+                    handleNewVideo(info, time, null);
                 }
 
             } catch (Exception e) {
@@ -1434,14 +1436,12 @@ public class ResponseHelper {
             });
 
             Multithreading.runAsync(() -> {
-                try (Session sess = DatabaseSessionFactory.createSession()) {
-                    for (StreamInfoItem item : info.getRelatedItems()) {
-                        long time = item.getUploadDate() != null
-                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                : System.currentTimeMillis();
-                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                            handleNewVideo(item.getUrl(), time, channel, sess);
-                    }
+                for (StreamInfoItem item : info.getRelatedItems()) {
+                    long time = item.getUploadDate() != null
+                            ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                            : System.currentTimeMillis();
+                    if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                        handleNewVideo(item.getUrl(), time, channel);
                 }
             });
 
