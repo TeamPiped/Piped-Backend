@@ -104,4 +104,11 @@ public class DatabaseHelper {
 
         return s.createQuery(cr).uniqueResult();
     }
+
+    public static PubSub getPubSubFromId(String id) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            s.setHibernateFlushMode(FlushMode.MANUAL);
+            return getPubSubFromId(s, id);
+        }
+    }
 }
