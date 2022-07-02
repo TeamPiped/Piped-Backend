@@ -42,7 +42,13 @@ public class Main {
             }
         }, 0, TimeUnit.MINUTES.toMillis(60));
 
-        new ServerLauncher().launch(args);
+        new Thread(() -> {
+            try {
+                new ServerLauncher().launch(args);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
 
         if (Constants.DISABLE_TIMERS)
             return;
