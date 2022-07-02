@@ -51,6 +51,13 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
+    public static Channel getChannelFromId(String id) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            s.setHibernateFlushMode(FlushMode.MANUAL);
+            return getChannelFromId(s, id);
+        }
+    }
+
     public static List<Channel> getChannelsFromIds(Session s, List<String> id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Channel> cr = cb.createQuery(Channel.class);
@@ -67,6 +74,13 @@ public class DatabaseHelper {
         cr.select(root).where(cb.equal(root.get("id"), id));
 
         return s.createQuery(cr).uniqueResult();
+    }
+
+    public static Video getVideoFromId(String id) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            s.setHibernateFlushMode(FlushMode.MANUAL);
+            return getVideoFromId(s, id);
+        }
     }
 
     public static PlaylistVideo getPlaylistVideoFromId(Session s, String id) {
