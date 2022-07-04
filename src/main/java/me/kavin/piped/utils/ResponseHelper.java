@@ -274,6 +274,9 @@ public class ResponseHelper {
     public static byte[] channelPageResponse(String channelId, String prevpageStr)
             throws IOException, ExtractionException {
 
+        if (StringUtils.isEmpty(prevpageStr))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
         InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(YOUTUBE_SERVICE,
@@ -387,6 +390,9 @@ public class ResponseHelper {
 
     public static byte[] playlistPageResponse(String playlistId, String prevpageStr)
             throws IOException, ExtractionException {
+
+        if (StringUtils.isEmpty(prevpageStr))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
@@ -552,6 +558,9 @@ public class ResponseHelper {
     public static byte[] searchPageResponse(String q, String filter, String prevpageStr)
             throws IOException, ExtractionException {
 
+        if (StringUtils.isEmpty(prevpageStr))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
         InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(YOUTUBE_SERVICE,
@@ -621,6 +630,9 @@ public class ResponseHelper {
     }
 
     public static byte[] commentsPageResponse(String videoId, String prevpageStr) throws Exception {
+
+        if (StringUtils.isEmpty(prevpageStr))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
