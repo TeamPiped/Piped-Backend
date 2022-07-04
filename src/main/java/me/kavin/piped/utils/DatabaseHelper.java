@@ -5,8 +5,8 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import me.kavin.piped.utils.obj.db.*;
-import org.hibernate.FlushMode;
-import org.hibernate.Session;
+import org.hibernate.SharedSessionContract;
+import org.hibernate.StatelessSession;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,13 +14,12 @@ import java.util.UUID;
 public class DatabaseHelper {
 
     public static User getUserFromSession(String session) {
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            s.setHibernateFlushMode(FlushMode.MANUAL);
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             return getUserFromSession(session, s);
         }
     }
 
-    public static User getUserFromSession(String session, Session s) {
+    public static User getUserFromSession(String session, SharedSessionContract s) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<User> cr = cb.createQuery(User.class);
         Root<User> root = cr.from(User.class);
@@ -30,8 +29,7 @@ public class DatabaseHelper {
     }
 
     public static User getUserFromSessionWithSubscribed(String session) {
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            s.setHibernateFlushMode(FlushMode.MANUAL);
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<User> cr = cb.createQuery(User.class);
             Root<User> root = cr.from(User.class);
@@ -42,7 +40,7 @@ public class DatabaseHelper {
         }
     }
 
-    public static Channel getChannelFromId(Session s, String id) {
+    public static Channel getChannelFromId(SharedSessionContract s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Channel> cr = cb.createQuery(Channel.class);
         Root<Channel> root = cr.from(Channel.class);
@@ -52,13 +50,12 @@ public class DatabaseHelper {
     }
 
     public static Channel getChannelFromId(String id) {
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            s.setHibernateFlushMode(FlushMode.MANUAL);
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             return getChannelFromId(s, id);
         }
     }
 
-    public static List<Channel> getChannelsFromIds(Session s, List<String> id) {
+    public static List<Channel> getChannelsFromIds(SharedSessionContract s, List<String> id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Channel> cr = cb.createQuery(Channel.class);
         Root<Channel> root = cr.from(Channel.class);
@@ -67,7 +64,7 @@ public class DatabaseHelper {
         return s.createQuery(cr).list();
     }
 
-    public static Video getVideoFromId(Session s, String id) {
+    public static Video getVideoFromId(SharedSessionContract s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Video> cr = cb.createQuery(Video.class);
         Root<Video> root = cr.from(Video.class);
@@ -77,13 +74,12 @@ public class DatabaseHelper {
     }
 
     public static Video getVideoFromId(String id) {
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            s.setHibernateFlushMode(FlushMode.MANUAL);
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             return getVideoFromId(s, id);
         }
     }
 
-    public static PlaylistVideo getPlaylistVideoFromId(Session s, String id) {
+    public static PlaylistVideo getPlaylistVideoFromId(SharedSessionContract s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
         Root<PlaylistVideo> root = cr.from(PlaylistVideo.class);
@@ -92,7 +88,7 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
-    public static Playlist getPlaylistFromId(Session s, String id) {
+    public static Playlist getPlaylistFromId(SharedSessionContract s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Playlist> cr = cb.createQuery(Playlist.class);
         Root<Playlist> root = cr.from(Playlist.class);
@@ -101,7 +97,7 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
-    public static List<PlaylistVideo> getPlaylistVideosFromIds(Session s, List<String> id) {
+    public static List<PlaylistVideo> getPlaylistVideosFromIds(SharedSessionContract s, List<String> id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
         Root<PlaylistVideo> root = cr.from(PlaylistVideo.class);
@@ -110,7 +106,7 @@ public class DatabaseHelper {
         return s.createQuery(cr).list();
     }
 
-    public static PubSub getPubSubFromId(Session s, String id) {
+    public static PubSub getPubSubFromId(SharedSessionContract s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PubSub> cr = cb.createQuery(PubSub.class);
         Root<PubSub> root = cr.from(PubSub.class);
@@ -120,8 +116,7 @@ public class DatabaseHelper {
     }
 
     public static PubSub getPubSubFromId(String id) {
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            s.setHibernateFlushMode(FlushMode.MANUAL);
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             return getPubSubFromId(s, id);
         }
     }
