@@ -10,7 +10,6 @@ import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
-import org.hibernate.Transaction;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
@@ -99,7 +98,7 @@ public class Main {
                     var root = cd.from(Video.class);
                     cd.where(cb.lessThan(root.get("uploaded"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)));
 
-                    Transaction tr = s.beginTransaction();
+                    var tr = s.beginTransaction();
 
                     var query = s.createMutationQuery(cd);
 
