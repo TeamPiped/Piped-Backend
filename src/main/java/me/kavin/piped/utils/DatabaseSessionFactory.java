@@ -1,14 +1,10 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
-import me.kavin.piped.utils.obj.db.Channel;
-import me.kavin.piped.utils.obj.db.Playlist;
-import me.kavin.piped.utils.obj.db.PlaylistVideo;
-import me.kavin.piped.utils.obj.db.PubSub;
-import me.kavin.piped.utils.obj.db.User;
-import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.db.*;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.StatelessSession;
 import org.hibernate.cfg.Configuration;
 
 public class DatabaseSessionFactory {
@@ -30,5 +26,9 @@ public class DatabaseSessionFactory {
 
     public static final Session createSession() {
         return sessionFactory.openSession();
+    }
+
+    public static StatelessSession createStatelessSession() {
+        return sessionFactory.openStatelessSession();
     }
 }

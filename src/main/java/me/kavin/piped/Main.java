@@ -8,6 +8,7 @@ import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import org.hibernate.Session;
+import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -54,7 +55,7 @@ public class Main {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                try (Session s = DatabaseSessionFactory.createSession()) {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                     CriteriaBuilder cb = s.getCriteriaBuilder();
                     CriteriaQuery<PubSub> criteria = cb.createQuery(PubSub.class);

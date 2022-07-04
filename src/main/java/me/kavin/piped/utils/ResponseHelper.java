@@ -29,6 +29,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
+import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
@@ -224,9 +225,10 @@ public class ResponseHelper {
         info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
 
         Multithreading.runAsync(() -> {
-            try (Session s = DatabaseSessionFactory.createSession()) {
 
-                me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(s, info.getId());
+            me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(info.getId());
+
+            try (Session s = DatabaseSessionFactory.createSession()) {
 
                 if (channel != null) {
                     if (channel.isVerified() != info.isVerified()
@@ -324,7 +326,7 @@ public class ResponseHelper {
     }
 
     private static byte[] playlistPipedResponse(String playlistId) throws IOException {
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
             var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
@@ -421,7 +423,7 @@ public class ResponseHelper {
     private static byte[] playlistPipedRSSResponse(String playlistId)
             throws FeedException {
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
             var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
@@ -720,7 +722,7 @@ public class ResponseHelper {
 
         user = user.toLowerCase();
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<User> cr = cb.createQuery(User.class);
             Root<User> root = cr.from(User.class);
@@ -786,11 +788,9 @@ public class ResponseHelper {
                     tr.commit();
 
                     Multithreading.runAsync(() -> {
-                        try (Session s2 = DatabaseSessionFactory.createSession()) {
-                            var channel = DatabaseHelper.getChannelFromId(s2, channelId);
-                            if (channel == null) {
-                                Multithreading.runAsync(() -> saveChannel(channelId));
-                            }
+                        var channel = DatabaseHelper.getChannelFromId(channelId);
+                        if (channel == null) {
+                            Multithreading.runAsync(() -> saveChannel(channelId));
                         }
                     });
                 }
@@ -825,7 +825,7 @@ public class ResponseHelper {
     }
 
     public static byte[] isSubscribedResponse(String session, String channelId) throws IOException {
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
             var query = cb.createQuery(Long.class);
             var root = query.from(User.class);
@@ -848,7 +848,7 @@ public class ResponseHelper {
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user != null) {
-            try (Session s = DatabaseSessionFactory.createSession()) {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                 CriteriaBuilder cb = s.getCriteriaBuilder();
 
@@ -892,7 +892,7 @@ public class ResponseHelper {
 
         if (user != null) {
 
-            try (Session s = DatabaseSessionFactory.createSession()) {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                 SyndFeed feed = new SyndFeedImpl();
                 feed.setFeedType("atom_1.0");
@@ -954,7 +954,7 @@ public class ResponseHelper {
         if (user != null) {
 
             Multithreading.runAsync(() -> {
-                try (Session sess = DatabaseSessionFactory.createSession()) {
+                try (Session s = DatabaseSessionFactory.createSession()) {
                     if (override) {
                         user.setSubscribed(Set.of(channelIds));
                     } else {
@@ -963,15 +963,15 @@ public class ResponseHelper {
                     }
 
                     if (channelIds.length > 0) {
-                        var tr = sess.beginTransaction();
-                        sess.merge(user);
+                        var tr = s.beginTransaction();
+                        s.merge(user);
                         tr.commit();
                     }
                 }
             });
 
             Multithreading.runAsync(() -> {
-                try (Session s = DatabaseSessionFactory.createSession()) {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                     var channels = DatabaseHelper.getChannelsFromIds(s, Arrays.asList(channelIds));
 
                     Arrays.stream(channelIds).parallel()
@@ -996,7 +996,7 @@ public class ResponseHelper {
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user != null) {
-            try (Session s = DatabaseSessionFactory.createSession()) {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                 CriteriaBuilder cb = s.getCriteriaBuilder();
                 var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
@@ -1275,14 +1275,14 @@ public class ResponseHelper {
             s.merge(playlist);
             tr.commit();
 
-            Multithreading.runAsync(() -> pruneUnusedPlaylistVideos());
+            Multithreading.runAsync(ResponseHelper::pruneUnusedPlaylistVideos);
 
             return mapper.writeValueAsBytes(new AcceptedResponse());
         }
     }
 
     public static String registeredBadgeRedirect() {
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             long registered = (Long) s.createQuery("select count(*) from User").uniqueResult();
 
             return String.format("https://img.shields.io/badge/Registered%%20Users-%s-blue", registered);
@@ -1349,11 +1349,12 @@ public class ResponseHelper {
     private static void updateVideo(String id, StreamInfoItem item, long time, boolean addIfNotExistent) {
         Multithreading.runAsync(() -> {
             try {
-                Session s = DatabaseSessionFactory.createSession();
-                Video video = DatabaseHelper.getVideoFromId(s, id);
+                Video video = DatabaseHelper.getVideoFromId(id);
 
                 if (video != null) {
-                    updateVideo(s, video, item.getViewCount(), item.getDuration(), item.getName());
+                    try (Session s = DatabaseSessionFactory.createSession()) {
+                        updateVideo(s, video, item.getViewCount(), item.getDuration(), item.getName());
+                    }
                 } else if (addIfNotExistent) {
                     handleNewVideo("https://www.youtube.com/watch?v=" + id, time, null);
                 }
@@ -1367,11 +1368,12 @@ public class ResponseHelper {
     private static void updateVideo(String id, StreamInfo info, long time) {
         Multithreading.runAsync(() -> {
             try {
-                Session s = DatabaseSessionFactory.createSession();
-                Video video = DatabaseHelper.getVideoFromId(s, id);
+                Video video = DatabaseHelper.getVideoFromId(id);
 
                 if (video != null) {
-                    updateVideo(s, video, info.getViewCount(), info.getDuration(), info.getName());
+                    try (Session s = DatabaseSessionFactory.createSession()) {
+                        updateVideo(s, video, info.getViewCount(), info.getDuration(), info.getName());
+                    }
                 } else {
                     handleNewVideo(info, time, null);
                 }
