@@ -64,8 +64,10 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
                         Multithreading.runAsync(() -> {
                             for (var entry : feed.getEntries()) {
-                                ResponseHelper.handleNewVideo(entry.getLinks().get(0).getHref(),
-                                        entry.getPublishedDate().getTime(), null);
+                                String url = entry.getLinks().get(0).getHref();
+                                if (DatabaseHelper.getVideoFromId(StringUtils.substring(url, -11)) != null)
+                                    continue;
+                                ResponseHelper.handleNewVideo(url, entry.getPublishedDate().getTime(), null);
                             }
                         });
 
