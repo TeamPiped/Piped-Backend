@@ -824,7 +824,7 @@ public class ResponseHelper {
         if (user != null) {
             try (Session s = DatabaseSessionFactory.createSession()) {
                 var tr = s.beginTransaction();
-                s.createNativeQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
+                s.createNativeMutationQuery("delete from users_subscribed where subscriber = :id and channel = :channel")
                         .setParameter("id", user.getId()).setParameter("channel", channelId).executeUpdate();
                 tr.commit();
                 return mapper.writeValueAsBytes(new AcceptedResponse());
@@ -966,7 +966,7 @@ public class ResponseHelper {
         if (user != null) {
 
             Multithreading.runAsync(() -> {
-                try (Session s = DatabaseSessionFactory.createSession()) {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                     if (override) {
                         user.setSubscribed(Set.of(channelIds));
                     } else {
@@ -976,7 +976,7 @@ public class ResponseHelper {
 
                     if (channelIds.length > 0) {
                         var tr = s.beginTransaction();
-                        s.merge(user);
+                        s.update(user);
                         tr.commit();
                     }
                 }
@@ -1295,7 +1295,7 @@ public class ResponseHelper {
 
     public static String registeredBadgeRedirect() {
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-            long registered = (Long) s.createQuery("select count(*) from User").uniqueResult();
+            long registered = s.createQuery("select count(*) from User", Long.class).uniqueResult();
 
             return String.format("https://img.shields.io/badge/Registered%%20Users-%s-blue", registered);
         }
@@ -1347,9 +1347,9 @@ public class ResponseHelper {
             video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
                     Math.max(infoTime, time), info.getThumbnailUrl(), channel);
 
-            try (Session s = DatabaseSessionFactory.createSession()) {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                 var tr = s.beginTransaction();
-                s.persist(video);
+                s.insert(video);
                 tr.commit();
             }
 
@@ -1364,7 +1364,7 @@ public class ResponseHelper {
                 Video video = DatabaseHelper.getVideoFromId(id);
 
                 if (video != null) {
-                    try (Session s = DatabaseSessionFactory.createSession()) {
+                    try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                         updateVideo(s, video, item.getViewCount(), item.getDuration(), item.getName());
                     }
                 } else if (addIfNotExistent) {
@@ -1383,7 +1383,7 @@ public class ResponseHelper {
                 Video video = DatabaseHelper.getVideoFromId(id);
 
                 if (video != null) {
-                    try (Session s = DatabaseSessionFactory.createSession()) {
+                    try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                         updateVideo(s, video, info.getViewCount(), info.getDuration(), info.getName());
                     }
                 } else {
@@ -1396,7 +1396,7 @@ public class ResponseHelper {
         });
     }
 
-    private static void updateVideo(Session s, Video video, long views, long duration, String title) {
+    private static void updateVideo(StatelessSession s, Video video, long views, long duration, String title) {
 
         boolean changed = false;
 
@@ -1415,7 +1415,7 @@ public class ResponseHelper {
 
         if (changed) {
             var tr = s.beginTransaction();
-            s.merge(video);
+            s.update(video);
             tr.commit();
         }
     }
@@ -1490,14 +1490,14 @@ public class ResponseHelper {
                             .build()).execute();
 
             if (resp.code() == 202) {
-                try (Session s = DatabaseSessionFactory.createSession()) {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                     var tr = s.beginTransaction();
                     if (pubsub == null) {
                         pubsub = new PubSub(channelId, System.currentTimeMillis());
-                        s.persist(pubsub);
+                        s.insert(pubsub);
                     } else {
                         pubsub.setSubbedAt(System.currentTimeMillis());
-                        s.merge(pubsub);
+                        s.update(pubsub);
                     }
                     tr.commit();
                 }

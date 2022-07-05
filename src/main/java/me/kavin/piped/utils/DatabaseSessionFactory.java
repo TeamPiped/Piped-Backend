@@ -15,8 +15,7 @@ public class DatabaseSessionFactory {
 
         final Configuration configuration = new Configuration();
 
-        Constants.hibernateProperties.forEach((key, value) -> configuration.setProperty(key, value));
-        configuration.setProperty("hibernate.temp.use_jdbc_metadata_defaults", "false");
+        Constants.hibernateProperties.forEach(configuration::setProperty);
         configuration.configure();
 
         sessionFactory = configuration.addAnnotatedClass(User.class).addAnnotatedClass(Channel.class)
@@ -24,7 +23,7 @@ public class DatabaseSessionFactory {
                 .addAnnotatedClass(PlaylistVideo.class).buildSessionFactory();
     }
 
-    public static final Session createSession() {
+    public static Session createSession() {
         return sessionFactory.openSession();
     }
 
