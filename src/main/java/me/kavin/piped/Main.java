@@ -8,7 +8,6 @@ import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
-import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
@@ -32,7 +31,7 @@ public class Main {
             @Override
             public void run() {
                 try {
-                    System.out.println(String.format("ThrottlingCache: %o entries", YoutubeThrottlingDecrypter.getCacheSize()));
+                    System.out.printf("ThrottlingCache: %o entries%n", YoutubeThrottlingDecrypter.getCacheSize());
                     YoutubeThrottlingDecrypter.clearCache();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -64,7 +63,7 @@ public class Main {
                             .where(cb.and(
                                     cb.lessThan(root.get("subbedAt"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4)),
                                     cb.isMember(root.get("id"), userRoot.<Collection<String>>get("subscribed_ids"))
-                            )).distinct(true);
+                            ));
 
                     List<PubSub> pubSubList = s.createQuery(criteria).list();
 
@@ -91,7 +90,7 @@ public class Main {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                try (Session s = DatabaseSessionFactory.createSession()) {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                     var cb = s.getCriteriaBuilder();
                     var cd = cb.createCriteriaDelete(Video.class);
@@ -102,7 +101,7 @@ public class Main {
 
                     var query = s.createMutationQuery(cd);
 
-                    System.out.println(String.format("Cleanup: Removed %o old videos", query.executeUpdate()));
+                    System.out.printf("Cleanup: Removed %o old videos%n", query.executeUpdate());
 
                     tr.commit();
 
