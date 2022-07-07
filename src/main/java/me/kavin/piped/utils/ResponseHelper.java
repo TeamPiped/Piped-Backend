@@ -880,7 +880,7 @@ public class ResponseHelper {
 
                 List<StreamItem> feedItems = new ObjectArrayList<>();
 
-                for (Video video : s.createQuery(criteria).list()) {
+                for (Video video : s.createQuery(criteria).setTimeout(20).list()) {
                     var channel = video.getChannel();
 
                     feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
@@ -930,7 +930,10 @@ public class ResponseHelper {
                         ))
                         .orderBy(cb.desc(root.get("uploaded")));
 
-                List<Video> videos = s.createQuery(criteria).setMaxResults(100).list();
+                List<Video> videos = s.createQuery(criteria)
+                        .setTimeout(20)
+                        .setMaxResults(100)
+                        .list();
 
                 final List<SyndEntry> entries = new ObjectArrayList<>();
 
