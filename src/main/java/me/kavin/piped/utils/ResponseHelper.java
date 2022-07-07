@@ -773,8 +773,6 @@ public class ResponseHelper {
                 var tr = s.beginTransaction();
                 s.remove(user);
                 tr.commit();
-
-                Multithreading.runAsync(ResponseHelper::pruneUnusedPlaylistVideos);
             } catch (Exception e) {
                 return mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
             }
@@ -1091,7 +1089,6 @@ public class ResponseHelper {
             s.remove(playlist);
             tr.commit();
 
-            Multithreading.runAsync(ResponseHelper::pruneUnusedPlaylistVideos);
         }
 
         return mapper.writeValueAsBytes(new AcceptedResponse());
@@ -1292,8 +1289,6 @@ public class ResponseHelper {
             s.merge(playlist);
             tr.commit();
 
-            Multithreading.runAsync(ResponseHelper::pruneUnusedPlaylistVideos);
-
             return mapper.writeValueAsBytes(new AcceptedResponse());
         }
     }
@@ -1311,27 +1306,6 @@ public class ResponseHelper {
             handleNewVideo(StreamInfo.getInfo(url), time, channel);
         } catch (Exception e) {
             ExceptionHandler.handle(e);
-        }
-    }
-
-    private static void pruneUnusedPlaylistVideos() {
-
-        try (Session s = DatabaseSessionFactory.createSession()) {
-            CriteriaBuilder cb = s.getCriteriaBuilder();
-
-            var pvQuery = cb.createCriteriaDelete(PlaylistVideo.class);
-            var pvRoot = pvQuery.from(PlaylistVideo.class);
-
-            var subQuery = pvQuery.subquery(me.kavin.piped.utils.obj.db.Playlist.class);
-            var subRoot = subQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
-
-            subQuery.select(subRoot.join("videos").get("id"));
-
-            pvQuery.where(cb.not(pvRoot.get("id").in(subQuery)));
-
-            var tr = s.beginTransaction();
-            s.createMutationQuery(pvQuery).executeUpdate();
-            tr.commit();
         }
     }
 

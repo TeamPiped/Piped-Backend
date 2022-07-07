@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
@@ -107,6 +108,30 @@ public class Main {
 
                 } catch (Exception e) {
                     e.printStackTrace();
+                }
+            }
+        }, 0, TimeUnit.MINUTES.toMillis(60));
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+                    CriteriaBuilder cb = s.getCriteriaBuilder();
+
+                    var pvQuery = cb.createCriteriaDelete(PlaylistVideo.class);
+                    var pvRoot = pvQuery.from(PlaylistVideo.class);
+
+                    var subQuery = pvQuery.subquery(me.kavin.piped.utils.obj.db.Playlist.class);
+                    var subRoot = subQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
+
+                    subQuery.select(subRoot.join("videos").get("id"));
+
+                    pvQuery.where(cb.not(pvRoot.get("id").in(subQuery)));
+
+                    var tr = s.beginTransaction();
+                    s.createMutationQuery(pvQuery).executeUpdate();
+                    tr.commit();
                 }
             }
         }, 0, TimeUnit.MINUTES.toMillis(60));
