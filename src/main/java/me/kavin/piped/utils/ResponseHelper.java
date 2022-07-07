@@ -866,6 +866,7 @@ public class ResponseHelper {
 
                 // Get all videos from subscribed channels, with channel info
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+                criteria.distinct(true);
                 var root = criteria.from(Video.class);
                 var userRoot = criteria.from(User.class);
                 root.fetch("channel", JoinType.INNER);
@@ -917,6 +918,7 @@ public class ResponseHelper {
 
                 // Get all videos from subscribed channels, with channel info
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+                criteria.distinct(true);
                 var root = criteria.from(Video.class);
                 var userRoot = criteria.from(User.class);
                 root.fetch("channel", JoinType.INNER);
