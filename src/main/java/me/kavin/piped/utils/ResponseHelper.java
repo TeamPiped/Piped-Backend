@@ -982,6 +982,8 @@ public class ResponseHelper {
                         s.update(user);
                         tr.commit();
                     }
+                } catch (Exception e) {
+                    ExceptionHandler.handle(e);
                 }
             });
 
@@ -996,6 +998,8 @@ public class ResponseHelper {
                                             .findFirst().isEmpty()
                             )
                             .forEach(channelId -> Multithreading.runAsyncLimited(() -> saveChannel(channelId)));
+                } catch (Exception e) {
+                    ExceptionHandler.handle(e);
                 }
             });
 
@@ -1417,10 +1421,12 @@ public class ResponseHelper {
         var channel = new me.kavin.piped.utils.obj.db.Channel(channelId, info.getName(),
                 info.getAvatarUrl(), info.isVerified());
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var tr = s.beginTransaction();
-            s.persist(channel);
+            s.insert(channel);
             tr.commit();
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
         }
 
         Multithreading.runAsync(() -> {
