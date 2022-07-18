@@ -1,6 +1,7 @@
 package me.kavin.piped.utils.obj.db;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Cascade;
 
 import java.io.Serializable;
 import java.util.Set;
@@ -29,10 +30,11 @@ public class User implements Serializable {
     private String sessionId;
 
     @ElementCollection
-    @CollectionTable(name = "users_subscribed", joinColumns = @JoinColumn(name = "subscriber"), indexes = {
-            @Index(columnList = "subscriber", name = "users_subscribed_subscriber_idx"),
-            @Index(columnList = "channel", name = "users_subscribed_channel_idx")})
-    @Column(name = "channel", length = 30)
+    @CollectionTable(name = "users_subscribed", joinColumns = @JoinColumn(name = "subscriber", nullable = false),
+            indexes = {@Index(columnList = "subscriber", name = "users_subscribed_subscriber_idx"),
+                    @Index(columnList = "channel", name = "users_subscribed_channel_idx")})
+    @Column(name = "channel", length = 30, nullable = false)
+    @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Set<String> subscribed_ids;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)

@@ -967,7 +967,7 @@ public class ResponseHelper {
         if (user != null) {
 
             Multithreading.runAsync(() -> {
-                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                try (Session s = DatabaseSessionFactory.createSession()) {
                     if (override) {
                         user.setSubscribed(Set.of(channelIds));
                     } else {
@@ -977,7 +977,7 @@ public class ResponseHelper {
 
                     if (channelIds.length > 0) {
                         var tr = s.beginTransaction();
-                        s.update(user);
+                        s.merge(user);
                         tr.commit();
                     }
                 } catch (Exception e) {

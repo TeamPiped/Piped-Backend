@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 public class Channel {
 
     @Id
-    @Column(name = "uploader_id", length = 30)
+    @Column(name = "uploader_id", unique = true, nullable = false, length = 30)
     private String uploader_id;
 
     @Column(name = "uploader", length = 80)

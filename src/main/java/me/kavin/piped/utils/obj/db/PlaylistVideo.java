@@ -19,7 +19,7 @@ public class PlaylistVideo {
     }
 
     @Id
-    @Column(name = "id", unique = true, length = 16)
+    @Column(name = "id", unique = true, length = 16, nullable = false)
     private String id;
 
     @Column(name = "title", length = 120)
@@ -32,7 +32,7 @@ public class PlaylistVideo {
     private String thumbnail;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploader_id")
+    @JoinColumn(name = "uploader_id", nullable = false)
     private Channel channel;
 
     public String getId() {
