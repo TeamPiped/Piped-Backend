@@ -9,6 +9,7 @@ import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
+import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.Localization;
@@ -40,13 +41,21 @@ public class Main {
             }
         }, 0, TimeUnit.MINUTES.toMillis(60));
 
-        new Thread(() -> {
-            try {
-                new ServerLauncher().launch(args);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
+        if (!Constants.DISABLE_SERVER)
+            new Thread(() -> {
+                try {
+                    new ServerLauncher().launch(args);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }).start();
+
+        try (Session ignored = DatabaseSessionFactory.createSession()) {
+            System.out.println("Database connection is ready!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
 
         if (Constants.DISABLE_TIMERS)
             return;
