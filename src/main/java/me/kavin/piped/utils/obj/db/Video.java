@@ -27,6 +27,7 @@ public class Video {
     @Column(name = "thumbnail", length = 400)
     private String thumbnail;
 
+    @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploader_id", nullable = false)
     private Channel channel;
