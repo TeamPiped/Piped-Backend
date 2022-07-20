@@ -67,6 +67,19 @@ if [[ -z "$AUTH_TOKEN" || $AUTH_TOKEN == "null" ]]; then
     exit 1
 fi
 
+# Logout Session
+curl ${CURLOPTS[@]} $HOST/logout -X POST -H "Authorization: Bearer $AUTH_TOKEN" || exit 1
+
+# Login Account
+curl ${CURLOPTS[@]} $HOST/login -X POST -H "Content-Type: application/json" -d $AUTH_REQ || exit 1
+
+AUTH_TOKEN=$(curl -s -o - -f $HOST/login -X POST -H "Content-Type: application/json" -d $AUTH_REQ | jq -r .token)
+
+if [[ -z "$AUTH_TOKEN" || $AUTH_TOKEN == "null" ]]; then
+    echo "Failed to get auth token"
+    exit 1
+fi
+
 # Check Subscription Status
 curl ${CURLOPTS[@]} $HOST/subscribed -G --data-urlencode "channelId=UCsXVk37bltHxD1rDPwtNM8Q" -H "Authorization: $AUTH_TOKEN" || exit 1
 

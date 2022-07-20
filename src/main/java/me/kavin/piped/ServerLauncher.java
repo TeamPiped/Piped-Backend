@@ -345,6 +345,12 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(POST, "/logout", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.logoutResponse(request.getHeader(AUTHORIZATION)), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(GET, "/", AsyncServlet.ofBlocking(executor, request -> HttpResponse.redirect302(Constants.FRONTEND_URL)));
 
         return new CustomServletDecorator(router);

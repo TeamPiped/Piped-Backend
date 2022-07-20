@@ -1295,6 +1295,22 @@ public class ResponseHelper {
         }
     }
 
+    public static final byte[] logoutResponse(String session) throws JsonProcessingException {
+
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+            var tr = s.beginTransaction();
+            if (s.createMutationQuery("UPDATE User user SET user.sessionId = :newSessionId where user.sessionId = :sessionId")
+                    .setParameter("sessionId", session).setParameter("newSessionId", String.valueOf(UUID.randomUUID()))
+                    .executeUpdate() > 0) {
+                tr.commit();
+                return Constants.mapper.writeValueAsBytes(new AcceptedResponse());
+            } else
+                tr.rollback();
+        }
+
+        return Constants.mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+    }
+
     public static String registeredBadgeRedirect() {
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             long registered = s.createQuery("select count(*) from User", Long.class).uniqueResult();
