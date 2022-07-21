@@ -179,7 +179,7 @@ public class ResponseHelper {
         if (info.getDislikeCount() < 0 && info.getLikeCount() >= 0) {
             double rating;
             try {
-                rating = futureDislikeRating.get(2, TimeUnit.SECONDS);
+                rating = futureDislikeRating.get(3, TimeUnit.SECONDS);
             } catch (Exception e) {
                 rating = -1;
             }
