@@ -12,6 +12,10 @@ import java.io.IOException;
 public class LbryHelper {
 
     public static String getLBRYId(String videoId) throws IOException {
+
+        if (Constants.DISABLE_LBRY)
+            return null;
+
         return new JSONObject(
                 RequestUtils.sendGet("https://api.lbry.com/yt/resolve?video_ids=" + URLUtils.silentEncode(videoId))
         ).getJSONObject("data").getJSONObject("videos").optString(videoId, null);
