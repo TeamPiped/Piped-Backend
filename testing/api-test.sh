@@ -26,7 +26,7 @@ curl ${CURLOPTS[@]} $HOST/playlists/PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT || exit 1
 
 # Playlist Nextpage
 PLAYLIST_NEXTPAGE=$(curl -s -o - -f $HOST/playlists/PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT | jq -r .nextpage)
-curl ${CURLOPTS[@]} $HOST/nextpage/playlists/UCsXVk37bltHxD1rDPwtNM8Q -G --data-urlencode "nextpage=$PLAYLIST_NEXTPAGE" || exit 1
+curl ${CURLOPTS[@]} $HOST/nextpage/playlists/PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT -G --data-urlencode "nextpage=$PLAYLIST_NEXTPAGE" || exit 1
 
 # Clips
 curl ${CURLOPTS[@]} $HOST/clips/Ugkx71jS31nwsms_Cc65oi7yXF1mILflhhrO || exit 1
@@ -126,3 +126,8 @@ curl ${CURLOPTS[@]} $HOST/import/playlist -X POST -H "Content-Type: application/
 
 # Delete User Test
 curl ${CURLOPTS[@]} $HOST/user/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg password "$PASS" '{"password": $password}') || exit 1
+
+# Unauthenticated subscription tests
+CHANNEL_IDS=UCsXVk37bltHxD1rDPwtNM8Q,UCXuqSBlHAE6Xw-yeJA0Tunw
+curl ${CURLOPTS[@]} $HOST/feed/unauthenticated -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1
+curl ${CURLOPTS[@]} $HOST/feed/unauthenticated/rss -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1
