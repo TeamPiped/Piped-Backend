@@ -12,7 +12,7 @@ public class UnauthenticatedSubscription {
     public UnauthenticatedSubscription() {
     }
 
-    public UnauthenticatedSubscription(String id, String channelId, long subscribedAt) {
+    public UnauthenticatedSubscription(String id) {
         this.id = id;
         this.subscribedAt = System.currentTimeMillis();
     }

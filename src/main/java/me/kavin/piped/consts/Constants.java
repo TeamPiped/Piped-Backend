@@ -59,6 +59,8 @@ public class Constants {
 
     public static final boolean DISABLE_LBRY;
 
+    public static final int SUBSCRIPTIONS_EXPIRY;
+
     public static final String VERSION;
 
     public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
@@ -90,6 +92,7 @@ public class Constants {
             DISABLE_RYD = Boolean.parseBoolean(getProperty(prop, "DISABLE_RYD", "false"));
             DISABLE_SERVER = Boolean.parseBoolean(getProperty(prop, "DISABLE_SERVER", "false"));
             DISABLE_LBRY = Boolean.parseBoolean(getProperty(prop, "DISABLE_LBRY", "false"));
+            SUBSCRIPTIONS_EXPIRY = Integer.parseInt(getProperty(prop, "SUBSCRIPTIONS_EXPIRY", "30"));
             System.getenv().forEach((key, value) -> {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);

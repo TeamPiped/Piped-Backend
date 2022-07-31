@@ -962,8 +962,50 @@ public class ResponseHelper {
 
         Set<String> filtered = Arrays.stream(channelIds)
                 .filter(StringUtils::isNotBlank)
-                .filter(StringUtils::isAlphanumeric)
-                .filter(id -> id.startsWith("UC"))
+                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
+                .collect(Collectors.toUnmodifiableSet());
+
+        if (filtered.isEmpty())
+            return mapper.writeValueAsBytes(Collections.EMPTY_LIST);
+
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+
+            // Get all videos from subscribed channels, with channel info
+            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+            var root = criteria.from(Video.class);
+            root.fetch("channel", JoinType.INNER);
+
+            criteria.select(root)
+                    .where(cb.and(
+                            root.get("channel").get("id").in(filtered)
+                    ))
+                    .orderBy(cb.desc(root.get("uploaded")));
+
+            List<StreamItem> feedItems = new ObjectArrayList<>();
+
+            for (Video video : s.createQuery(criteria).setTimeout(20).list()) {
+                var channel = video.getChannel();
+
+                feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
+                        rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
+                        rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
+                        video.getUploaded(), channel.isVerified()));
+            }
+
+            updateSubscribedTime(filtered);
+            addMissingChannels(filtered);
+
+            return mapper.writeValueAsBytes(feedItems);
+        }
+    }
+
+    public static byte[] unauthenticatedFeedResponseRSS(String[] channelIds) throws Exception {
+
+        Set<String> filtered = Arrays.stream(channelIds)
+                .filter(StringUtils::isNotBlank)
+                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
                 .collect(Collectors.toUnmodifiableSet());
 
         if (filtered.isEmpty())
@@ -981,7 +1023,7 @@ public class ResponseHelper {
 
             criteria.select(root)
                     .where(cb.and(
-                            root.get("channel").in(filtered)
+                            root.get("channel").get("id").in(filtered)
                     ))
                     .orderBy(cb.desc(root.get("uploaded")));
 
@@ -1021,62 +1063,67 @@ public class ResponseHelper {
             feed.setEntries(entries);
 
             updateSubscribedTime(filtered);
+            addMissingChannels(filtered);
 
             return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
-        }
-    }
-
-    public static byte[] unauthenticatedFeedResponseRSS(String[] channelIds) throws Exception {
-
-        Set<String> filtered = Arrays.stream(channelIds)
-                .filter(StringUtils::isNotBlank)
-                .filter(StringUtils::isAlphanumeric)
-                .filter(id -> id.startsWith("UC"))
-                .collect(Collectors.toUnmodifiableSet());
-
-        if (filtered.isEmpty())
-            return mapper.writeValueAsBytes(Collections.EMPTY_LIST);
-
-        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-
-            CriteriaBuilder cb = s.getCriteriaBuilder();
-
-            // Get all videos from subscribed channels, with channel info
-            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-            var root = criteria.from(Video.class);
-            root.fetch("channel", JoinType.INNER);
-
-            criteria.select(root)
-                    .where(cb.and(
-                            root.get("channel").in(filtered)
-                    ))
-                    .orderBy(cb.desc(root.get("uploaded")));
-
-            List<StreamItem> feedItems = new ObjectArrayList<>();
-
-            for (Video video : s.createQuery(criteria).setTimeout(20).list()) {
-                var channel = video.getChannel();
-
-                feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
-                        rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
-                        rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
-                        video.getUploaded(), channel.isVerified()));
-            }
-
-            updateSubscribedTime(filtered);
-
-            return mapper.writeValueAsBytes(feedItems);
         }
     }
 
     private static void updateSubscribedTime(Collection<String> channelIds) {
         Multithreading.runAsync(() -> {
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                var tr = s.beginTransaction();
                 var cb = s.getCriteriaBuilder();
                 var cu = cb.createCriteriaUpdate(UnauthenticatedSubscription.class);
                 var root = cu.getRoot();
-                cu.where(root.get("id").in(channelIds)).set(root.get("lastSubscribed"), System.currentTimeMillis());
+                cu.where(root.get("id").in(channelIds))
+                        .set(root.get("subscribedAt"), System.currentTimeMillis())
+                        .where(cb.lt(root.get("subscribedAt"), System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY) / 2)));
                 s.createMutationQuery(cu).executeUpdate();
+                tr.commit();
+            } catch (Exception e) {
+                ExceptionHandler.handle(e);
+            }
+        });
+    }
+
+    private static void addMissingChannels(Collection<String> channelIds) {
+        Multithreading.runAsyncLimited(() -> {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+                var cb = s.getCriteriaBuilder();
+
+                {
+                    var query = cb.createQuery();
+                    var root = query.from(UnauthenticatedSubscription.class);
+                    query.select(root.get("id"))
+                            .where(root.get("id").in(channelIds));
+
+                    List<Object> existing = s.createQuery(query).setTimeout(20).list();
+
+                    var tr = s.beginTransaction();
+                    channelIds.stream()
+                            .filter(id -> !existing.contains(id))
+                            .map(UnauthenticatedSubscription::new)
+                            .forEach(s::insert);
+                    tr.commit();
+                }
+
+                {
+                    var query = cb.createQuery();
+                    var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+                    query.select(root.get("id"))
+                            .where(root.get("id").in(channelIds));
+
+                    List<Object> existing = s.createQuery(query).setTimeout(20).list();
+
+                    channelIds.stream()
+                            .filter(id -> !existing.contains(id))
+                            .forEach(id -> Multithreading.runAsyncLimited(() -> {
+                                saveChannel(id);
+                            }));
+                }
+
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             }
