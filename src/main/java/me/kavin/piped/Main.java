@@ -5,10 +5,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
-import me.kavin.piped.utils.obj.db.PlaylistVideo;
-import me.kavin.piped.utils.obj.db.PubSub;
-import me.kavin.piped.utils.obj.db.User;
-import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.db.*;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -69,10 +66,17 @@ public class Main {
                     CriteriaQuery<PubSub> criteria = cb.createQuery(PubSub.class);
                     var root = criteria.from(PubSub.class);
                     var userRoot = criteria.from(User.class);
+                    var subquery = criteria.subquery(UnauthenticatedSubscription.class);
+                    var subRoot = subquery.from(UnauthenticatedSubscription.class);
+                    subquery.select(subRoot.get("id"))
+                            .where(cb.gt(subRoot.get("subscribedAt"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY)));
                     criteria.select(root)
-                            .where(cb.and(
-                                    cb.lessThan(root.get("subbedAt"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4)),
-                                    cb.isMember(root.get("id"), userRoot.<Collection<String>>get("subscribed_ids"))
+                            .where(cb.or(
+                                    cb.and(
+                                            cb.lessThan(root.get("subbedAt"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4)),
+                                            cb.isMember(root.get("id"), userRoot.<Collection<String>>get("subscribed_ids"))
+                                    ),
+                                    root.get("id").in(subquery)
                             ));
 
                     List<PubSub> pubSubList = s.createQuery(criteria).list();

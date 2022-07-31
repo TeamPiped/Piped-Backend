@@ -15,11 +15,10 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.ipfs.IPFS;
+import me.kavin.piped.utils.obj.Channel;
+import me.kavin.piped.utils.obj.Playlist;
 import me.kavin.piped.utils.obj.*;
-import me.kavin.piped.utils.obj.db.PlaylistVideo;
-import me.kavin.piped.utils.obj.db.PubSub;
-import me.kavin.piped.utils.obj.db.User;
-import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.db.*;
 import me.kavin.piped.utils.obj.search.SearchChannel;
 import me.kavin.piped.utils.obj.search.SearchPlaylist;
 import me.kavin.piped.utils.resp.*;
@@ -957,6 +956,178 @@ public class ResponseHelper {
         }
 
         return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+    }
+
+    public static byte[] unauthenticatedFeedResponse(String[] channelIds) throws Exception {
+
+        Set<String> filtered = Arrays.stream(channelIds)
+                .filter(StringUtils::isNotBlank)
+                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
+                .collect(Collectors.toUnmodifiableSet());
+
+        if (filtered.isEmpty())
+            return mapper.writeValueAsBytes(Collections.EMPTY_LIST);
+
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+
+            // Get all videos from subscribed channels, with channel info
+            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+            var root = criteria.from(Video.class);
+            root.fetch("channel", JoinType.INNER);
+
+            criteria.select(root)
+                    .where(cb.and(
+                            root.get("channel").get("id").in(filtered)
+                    ))
+                    .orderBy(cb.desc(root.get("uploaded")));
+
+            List<StreamItem> feedItems = new ObjectArrayList<>();
+
+            for (Video video : s.createQuery(criteria).setTimeout(20).list()) {
+                var channel = video.getChannel();
+
+                feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
+                        rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
+                        rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
+                        video.getUploaded(), channel.isVerified()));
+            }
+
+            updateSubscribedTime(filtered);
+            addMissingChannels(filtered);
+
+            return mapper.writeValueAsBytes(feedItems);
+        }
+    }
+
+    public static byte[] unauthenticatedFeedResponseRSS(String[] channelIds) throws Exception {
+
+        Set<String> filtered = Arrays.stream(channelIds)
+                .filter(StringUtils::isNotBlank)
+                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
+                .collect(Collectors.toUnmodifiableSet());
+
+        if (filtered.isEmpty())
+            return mapper.writeValueAsBytes(mapper.createObjectNode()
+                    .put("error", "No valid channel IDs provided"));
+
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+
+            // Get all videos from subscribed channels, with channel info
+            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
+            var root = criteria.from(Video.class);
+            root.fetch("channel", JoinType.INNER);
+
+            criteria.select(root)
+                    .where(cb.and(
+                            root.get("channel").get("id").in(filtered)
+                    ))
+                    .orderBy(cb.desc(root.get("uploaded")));
+
+            List<StreamItem> feedItems = new ObjectArrayList<>();
+
+            List<Video> videos = s.createQuery(criteria)
+                    .setTimeout(20)
+                    .setMaxResults(100)
+                    .list();
+
+            SyndFeed feed = new SyndFeedImpl();
+            feed.setFeedType("atom_1.0");
+            feed.setTitle("Piped - Feed");
+            feed.setDescription("Piped's RSS unauthenticated subscription feed.");
+            feed.setUri(Constants.FRONTEND_URL + "/feed");
+            feed.setPublishedDate(new Date());
+
+            final List<SyndEntry> entries = new ObjectArrayList<>();
+
+            for (Video video : videos) {
+                var channel = video.getChannel();
+                SyndEntry entry = new SyndEntryImpl();
+
+                SyndPerson person = new SyndPersonImpl();
+                person.setName(channel.getUploader());
+                person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+
+                entry.setAuthors(Collections.singletonList(person));
+
+                entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                entry.setTitle(video.getTitle());
+                entry.setPublishedDate(new Date(video.getUploaded()));
+                entries.add(entry);
+            }
+
+            feed.setEntries(entries);
+
+            updateSubscribedTime(filtered);
+            addMissingChannels(filtered);
+
+            return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
+        }
+    }
+
+    private static void updateSubscribedTime(Collection<String> channelIds) {
+        Multithreading.runAsync(() -> {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                var tr = s.beginTransaction();
+                var cb = s.getCriteriaBuilder();
+                var cu = cb.createCriteriaUpdate(UnauthenticatedSubscription.class);
+                var root = cu.getRoot();
+                cu.where(root.get("id").in(channelIds))
+                        .set(root.get("subscribedAt"), System.currentTimeMillis())
+                        .where(cb.lt(root.get("subscribedAt"), System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY) / 2)));
+                s.createMutationQuery(cu).executeUpdate();
+                tr.commit();
+            } catch (Exception e) {
+                ExceptionHandler.handle(e);
+            }
+        });
+    }
+
+    private static void addMissingChannels(Collection<String> channelIds) {
+        Multithreading.runAsyncLimited(() -> {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+                var cb = s.getCriteriaBuilder();
+
+                {
+                    var query = cb.createQuery();
+                    var root = query.from(UnauthenticatedSubscription.class);
+                    query.select(root.get("id"))
+                            .where(root.get("id").in(channelIds));
+
+                    List<Object> existing = s.createQuery(query).setTimeout(20).list();
+
+                    var tr = s.beginTransaction();
+                    channelIds.stream()
+                            .filter(id -> !existing.contains(id))
+                            .map(UnauthenticatedSubscription::new)
+                            .forEach(s::insert);
+                    tr.commit();
+                }
+
+                {
+                    var query = cb.createQuery();
+                    var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+                    query.select(root.get("id"))
+                            .where(root.get("id").in(channelIds));
+
+                    List<Object> existing = s.createQuery(query).setTimeout(20).list();
+
+                    channelIds.stream()
+                            .filter(id -> !existing.contains(id))
+                            .forEach(id -> Multithreading.runAsyncLimited(() -> {
+                                saveChannel(id);
+                            }));
+                }
+
+            } catch (Exception e) {
+                ExceptionHandler.handle(e);
+            }
+        });
     }
 
     public static byte[] importResponse(String session, String[] channelIds, boolean override) throws IOException {

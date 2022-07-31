@@ -20,7 +20,7 @@ public class DatabaseSessionFactory {
 
         sessionFactory = configuration.addAnnotatedClass(User.class).addAnnotatedClass(Channel.class)
                 .addAnnotatedClass(Video.class).addAnnotatedClass(PubSub.class).addAnnotatedClass(Playlist.class)
-                .addAnnotatedClass(PlaylistVideo.class).buildSessionFactory();
+                .addAnnotatedClass(PlaylistVideo.class).addAnnotatedClass(UnauthenticatedSubscription.class).buildSessionFactory();
     }
 
     public static Session createSession() {

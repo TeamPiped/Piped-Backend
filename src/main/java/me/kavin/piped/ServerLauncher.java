@@ -266,6 +266,22 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/feed/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.unauthenticatedFeedResponse(
+                                Objects.requireNonNull(request.getQueryParameter("channels")).split(",")
+                        ), "public, s-maxage=120");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/feed/unauthenticated/rss", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getRawResponse(ResponseHelper.unauthenticatedFeedResponseRSS(
+                                Objects.requireNonNull(request.getQueryParameter("channels")).split(",")
+                        ), "application/atom+xml", "public, s-maxage=120");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(POST, "/import", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
