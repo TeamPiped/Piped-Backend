@@ -131,3 +131,4 @@ curl ${CURLOPTS[@]} $HOST/user/delete -X POST -H "Content-Type: application/json
 CHANNEL_IDS=UCsXVk37bltHxD1rDPwtNM8Q,UCXuqSBlHAE6Xw-yeJA0Tunw
 curl ${CURLOPTS[@]} $HOST/feed/unauthenticated -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1
 curl ${CURLOPTS[@]} $HOST/feed/unauthenticated/rss -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1
+curl ${CURLOPTS[@]} $HOST/subscriptions/unauthenticated -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1

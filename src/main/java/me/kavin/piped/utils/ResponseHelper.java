@@ -1213,6 +1213,35 @@ public class ResponseHelper {
 
     }
 
+    public static byte[] unauthenticatedSubscriptionsResponse(String[] channelIds)
+            throws IOException {
+
+        Set<String> filtered = Arrays.stream(channelIds)
+                .filter(StringUtils::isNotBlank)
+                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
+                .collect(Collectors.toUnmodifiableSet());
+
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
+            var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+            query.select(root);
+            query.where(root.get("uploader_id").in(filtered));
+
+            var channels = s.createQuery(query).list();
+
+            List<SubscriptionChannel> subscriptionItems = channels
+                    .stream().parallel()
+                    .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
+                    .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
+                            channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
+                    .collect(Collectors.toUnmodifiableList());
+
+            return mapper.writeValueAsBytes(subscriptionItems);
+        }
+    }
+
     public static byte[] createPlaylist(String session, String name) throws IOException {
 
         if (StringUtils.isBlank(name))
