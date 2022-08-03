@@ -1390,7 +1390,7 @@ public class ResponseHelper {
 
                 var channel = channelMap.get(channelId);
 
-                playlist.getVideos().add(videoMap.getOrDefault(videoId, new PlaylistVideo(videoId, video.getName(), video.getThumbnailUrl(), video.getDuration(), channel)));
+                playlist.getVideos().add(videoMap.computeIfAbsent(videoId, (key) -> new PlaylistVideo(videoId, video.getName(), video.getThumbnailUrl(), video.getDuration(), channel)));
             });
 
             var tr = s.beginTransaction();
