@@ -864,14 +864,16 @@ public class ResponseHelper {
                 // Get all videos from subscribed channels, with channel info
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
                 var root = criteria.from(Video.class);
-                var userRoot = criteria.from(User.class);
                 root.fetch("channel", JoinType.INNER);
+                var subquery = criteria.subquery(User.class);
+                var subroot = subquery.from(User.class);
+                subquery.select(subroot.get("subscribed_ids"))
+                        .where(cb.equal(subroot.get("id"), user.getId()));
 
                 criteria.select(root)
-                        .where(cb.and(
-                                cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
-                                cb.equal(userRoot.get("id"), user.getId())
-                        ))
+                        .where(
+                                root.get("channel").in(subquery)
+                        )
                         .orderBy(cb.desc(root.get("uploaded")));
 
                 List<StreamItem> feedItems = new ObjectArrayList<>();
@@ -915,14 +917,15 @@ public class ResponseHelper {
                 // Get all videos from subscribed channels, with channel info
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
                 var root = criteria.from(Video.class);
-                var userRoot = criteria.from(User.class);
-                root.fetch("channel", JoinType.INNER);
+                var subquery = criteria.subquery(User.class);
+                var subroot = subquery.from(User.class);
+                subquery.select(subroot.get("subscribed_ids"))
+                        .where(cb.equal(subroot.get("id"), user.getId()));
 
                 criteria.select(root)
-                        .where(cb.and(
-                                cb.isMember(root.get("channel"), userRoot.<Collection<String>>get("subscribed_ids")),
-                                cb.equal(userRoot.get("id"), user.getId())
-                        ))
+                        .where(
+                                root.get("channel").in(subquery)
+                        )
                         .orderBy(cb.desc(root.get("uploaded")));
 
                 List<Video> videos = s.createQuery(criteria)
@@ -1189,12 +1192,14 @@ public class ResponseHelper {
                 CriteriaBuilder cb = s.getCriteriaBuilder();
                 var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
                 var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
-                var userRoot = query.from(User.class);
-                query.select(root);
-                query.where(cb.and(
-                        cb.isMember(root.get("uploader_id"), userRoot.<Collection<String>>get("subscribed_ids")),
-                        cb.equal(userRoot.get("id"), user.getId())
-                ));
+                var subquery = query.subquery(User.class);
+                var subroot = subquery.from(User.class);
+
+                subquery.select(subroot.get("subscribed_ids"))
+                        .where(cb.equal(subroot.get("id"), user.getId()));
+
+                query.select(root)
+                        .where(root.get("uploader_id").in(subquery));
 
                 var channels = s.createQuery(query).list();
 
