@@ -14,7 +14,10 @@ import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -65,19 +68,22 @@ public class Main {
                     CriteriaBuilder cb = s.getCriteriaBuilder();
                     CriteriaQuery<PubSub> criteria = cb.createQuery(PubSub.class);
                     var root = criteria.from(PubSub.class);
-                    var userRoot = criteria.from(User.class);
+                    var userSq = criteria.subquery(User.class);
+                    var userRoot = userSq.from(User.class);
+                    userSq.select(userRoot.get("subscribed_ids"));
                     var subquery = criteria.subquery(UnauthenticatedSubscription.class);
                     var subRoot = subquery.from(UnauthenticatedSubscription.class);
                     subquery.select(subRoot.get("id"))
                             .where(cb.gt(subRoot.get("subscribedAt"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY)));
                     criteria.select(root)
-                            .where(cb.or(
-                                    cb.and(
+                            .where(cb.and(
                                             cb.lessThan(root.get("subbedAt"), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4)),
-                                            cb.isMember(root.get("id"), userRoot.<Collection<String>>get("subscribed_ids"))
-                                    ),
-                                    root.get("id").in(subquery)
-                            ));
+                                            cb.or(
+                                                    root.get("id").in(userSq),
+                                                    root.get("id").in(subquery)
+                                            )
+                                    )
+                            );
 
                     List<PubSub> pubSubList = s.createQuery(criteria).list();
 
