@@ -917,6 +917,7 @@ public class ResponseHelper {
                 // Get all videos from subscribed channels, with channel info
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
                 var root = criteria.from(Video.class);
+                root.fetch("channel", JoinType.INNER);
                 var subquery = criteria.subquery(User.class);
                 var subroot = subquery.from(User.class);
                 subquery.select(subroot.get("subscribed_ids"))
