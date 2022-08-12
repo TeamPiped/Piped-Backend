@@ -35,7 +35,6 @@ public class DownloaderImpl extends Downloader {
     @Override
     public Response execute(@NotNull Request request) {
         try {
-            System.out.println(responseCache.get(request).get());
             return responseCache.get(request).get();
         } catch (Exception e) {
             throw new RuntimeException(e);
