@@ -1,7 +1,7 @@
 package me.kavin.piped.utils;
 
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Scheduler;
 import com.grack.nanojson.JsonParserException;
 import me.kavin.piped.consts.Constants;
@@ -27,14 +27,19 @@ public class DownloaderImpl extends Downloader {
     private static long cookie_received;
     private static final Object cookie_lock = new Object();
 
-    final LoadingCache<Request, Response> responseCache = Caffeine.newBuilder()
+    final AsyncLoadingCache<Request, Response> responseCache = Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
             .scheduler(Scheduler.systemScheduler())
-            .maximumSize(100).build(this::executeRequest);
+            .maximumSize(100).buildAsync(this::executeRequest);
 
     @Override
     public Response execute(@NotNull Request request) {
-        return responseCache.get(request);
+        try {
+            System.out.println(responseCache.get(request).get());
+            return responseCache.get(request).get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
