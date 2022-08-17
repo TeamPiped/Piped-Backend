@@ -57,5 +57,5 @@ jar {
 
 group = 'me.kavin.piped'
 version = '1.0'
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
