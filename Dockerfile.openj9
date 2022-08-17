@@ -1,4 +1,4 @@
-FROM ibm-semeru-runtimes:open-11-jdk AS build
+FROM ibm-semeru-runtimes:open-17-jdk AS build
 
 WORKDIR /app/
 
@@ -7,7 +7,7 @@ COPY . /app/
 RUN --mount=type=cache,target=/root/.gradle/caches/ \
  ./gradlew shadowJar
 
-FROM ibm-semeru-runtimes:open-11-jre
+FROM ibm-semeru-runtimes:open-17-jre
 
 WORKDIR /app/
 
