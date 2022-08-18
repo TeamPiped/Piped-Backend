@@ -8,6 +8,7 @@ import me.kavin.piped.utils.obj.db.*;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.StatelessSession;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,7 +56,7 @@ public class DatabaseHelper {
         }
     }
 
-    public static List<Channel> getChannelsFromIds(SharedSessionContract s, List<String> id) {
+    public static List<Channel> getChannelsFromIds(SharedSessionContract s, Collection<String> id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<Channel> cr = cb.createQuery(Channel.class);
         Root<Channel> root = cr.from(Channel.class);
@@ -97,7 +98,7 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
-    public static List<PlaylistVideo> getPlaylistVideosFromIds(SharedSessionContract s, List<String> id) {
+    public static List<PlaylistVideo> getPlaylistVideosFromIds(SharedSessionContract s, Collection<String> id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
         Root<PlaylistVideo> root = cr.from(PlaylistVideo.class);
