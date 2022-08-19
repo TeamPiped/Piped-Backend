@@ -26,7 +26,7 @@ dependencies {
     implementation 'com.rometools:rome:1.18.0'
     implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
     implementation 'org.jsoup:jsoup:1.15.2'
-    implementation 'io.activej:activej-common:5.3'
+    implementation 'io.activej:activej-common:5.4'
     implementation 'io.activej:activej-http:5.3'
     implementation 'io.activej:activej-boot:5.3'
     implementation 'io.activej:activej-specializer:5.3'
