@@ -772,6 +772,35 @@ public class ResponseHelper {
         }
     }
 
+    public static byte[] changePasswordResponse(String session, String oldPass, String newPass) throws IOException {
+
+        if (StringUtils.isBlank(oldPass) || StringUtils.isBlank(newPass))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            User user = DatabaseHelper.getUserFromSession(session);
+
+            if (user == null)
+                return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+            String hash = user.getPassword();
+
+            if (!hashMatch(hash, oldPass))
+                return mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+
+            try {
+                var tr = s.beginTransaction();
+                user.setPassword(newPass);
+                s.merge(user);
+                tr.commit();
+            } catch (Exception e) {
+                return mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
+            }
+
+            return mapper.writeValueAsBytes(new ChangePasswordResponse(user.getUsername()));
+        }
+    }
+
     public static byte[] subscribeResponse(String session, String channelId)
             throws IOException {
 
