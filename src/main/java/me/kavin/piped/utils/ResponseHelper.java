@@ -1260,6 +1260,38 @@ public class ResponseHelper {
         }
     }
 
+    public static byte[] renamePlaylistResponse(String session, String playlistId, String newName) throws IOException {
+
+        if (StringUtils.isBlank(playlistId))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        User user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
+
+            if (playlist == null)
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Playlist not found"));
+
+            if (playlist.getOwner().getId() != user.getId())
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "You do not own this playlist"));
+
+            playlist.setName(newName);
+
+            var tr = s.beginTransaction();
+            s.merge(playlist);
+            tr.commit();
+
+        }
+
+        return mapper.writeValueAsBytes(new AcceptedResponse());
+    }
+
     public static byte[] deletePlaylistResponse(String session, String playlistId) throws IOException {
 
         if (StringUtils.isBlank(playlistId))
