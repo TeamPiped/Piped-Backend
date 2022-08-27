@@ -1413,6 +1413,11 @@ public class ResponseHelper {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
+            for (PlaylistVideo video : playlist.getVideos()) {
+                if (video.getId() == videoId) return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Playlist already contains the video"));
+            };
+
             if (playlist.getOwner().getId() != user.getId())
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
