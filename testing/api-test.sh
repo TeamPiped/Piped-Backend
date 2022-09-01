@@ -99,6 +99,7 @@ sleep 2
 curl ${CURLOPTS[@]} $HOST/feed -G --data-urlencode "authToken=$AUTH_TOKEN" || exit 1
 
 PLAYLIST_NAME=$(openssl rand -hex 6)
+RENAMED_PLAYLIST_NAME=$(openssl rand --hex 6)
 
 # Create a Playlist
 curl ${CURLOPTS[@]} $HOST/user/playlists/create -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg name "$PLAYLIST_NAME" '{"name": $name}') || exit 1
@@ -117,6 +118,9 @@ curl ${CURLOPTS[@]} $HOST/user/playlists/add -X POST -H "Content-Type: applicati
 
 # Remove from Playlist Test
 curl ${CURLOPTS[@]} $HOST/user/playlists/remove -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg index "0" --arg playlistId $PLAYLIST_ID '{"index": $index, "playlistId": $playlistId}') || exit 1
+
+# Rename Playlist Test
+curl ${CURLOPTS[@]} $HOST/user/playlists/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg playlistId $PLAYLIST_ID --arg newName $RENAMED_PLAYLIST_NAME '{"playlistId": $playlistId, "newName": $newName}') || exit 1
 
 # Delete Playlist Test
 curl ${CURLOPTS[@]} $HOST/user/playlists/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg playlistId $PLAYLIST_ID '{"playlistId": $playlistId}') || exit 1
