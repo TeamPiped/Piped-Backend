@@ -20,7 +20,7 @@ dependencies {
     implementation 'com.github.FireMasterK:nanojson:7056f30ab24294a507cd2b2d56073181ca9bcc8b'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.4'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
     implementation 'org.json:json:20220320'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.1'
     implementation 'com.rometools:rome:1.18.0'
