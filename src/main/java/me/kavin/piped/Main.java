@@ -25,6 +25,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         NewPipe.init(new DownloaderImpl(), new Localization("en", "US"));
+        YoutubeStreamExtractor.forceFetchAndroidClient(true);
         YoutubeStreamExtractor.forceFetchIosClient(true);
 
         Injector.useSpecializer();
