@@ -31,8 +31,8 @@ jobs:
           check-latest: true
           cache: "gradle"
       - name: Run Build
-        run: ./gradlew build
-      - run: mv "build/libs/piped-"*"-all.jar" piped.jar
+        run: ./gradlew shadowJar
+      - run: mv build/libs/piped-*-all.jar piped.jar
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
