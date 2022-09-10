@@ -1,0 +1,11 @@
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app/
+
+COPY ./piped.jar /app/piped.jar
+
+COPY VERSION .
+
+EXPOSE 8080
+
+CMD java -jar /app/piped.jar
