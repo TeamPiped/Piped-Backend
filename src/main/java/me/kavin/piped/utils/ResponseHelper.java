@@ -67,6 +67,10 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 
 public class ResponseHelper {
 
+    public static byte[] configResponse() throws Exception {
+        return mapper.writeValueAsBytes(Constants.frontendProperties);
+    }
+
     public static byte[] streamsResponse(String videoId) throws Exception {
 
         final var futureStream = Multithreading.supplyAsync(() -> {
