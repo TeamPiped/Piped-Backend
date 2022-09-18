@@ -332,7 +332,9 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         var videoId = json.get("videoId").textValue();
-                        return getJsonResponse(ResponseHelper.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoId), "private");
+                        var allowDupicatesValue = json.get("allowDuplicates");
+                        var allowDuplicates = allowDupicatesValue == null ? true : allowDupicatesValue.booleanValue();
+                        return getJsonResponse(ResponseHelper.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoId, allowDuplicates), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

@@ -1390,7 +1390,7 @@ public class ResponseHelper {
         );
     }
 
-    public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
+    public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId, Boolean allowDuplicates) throws IOException, ExtractionException {
 
         if (StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
@@ -1413,10 +1413,14 @@ public class ResponseHelper {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
-            for (PlaylistVideo video : playlist.getVideos()) {
-                if (video.getId() == videoId) return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "Playlist already contains the video"));
-            };
+            if (!allowDuplicates) {
+                for (PlaylistVideo video : playlist.getVideos()) {
+                    if (video.getId() == videoId)
+                        return mapper.writeValueAsBytes(mapper.createObjectNode()
+                                .put("error", "The playlist already contains the video"));
+                }
+                ;
+            }
 
             if (playlist.getOwner().getId() != user.getId())
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
