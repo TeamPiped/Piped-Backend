@@ -1070,9 +1070,10 @@ public class ResponseHelper {
                 var cb = s.getCriteriaBuilder();
                 var cu = cb.createCriteriaUpdate(UnauthenticatedSubscription.class);
                 var root = cu.getRoot();
-                cu.where(root.get("id").in(channelIds))
+                cu
                         .set(root.get("subscribedAt"), System.currentTimeMillis())
-                        .where(cb.lt(root.get("subscribedAt"), System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY) / 2)));
+                        .where(cb.lt(root.get("subscribedAt"), System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY) / 2)))
+                        .where(root.get("id").in(channelIds));
                 s.createMutationQuery(cu).executeUpdate();
                 tr.commit();
             } catch (Exception e) {
