@@ -54,7 +54,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/config", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getJsonResponse(ResponseHelper.configResponse(), "no-store");
+                        return getJsonResponse(ResponseHelper.configResponse(), "public, max-age=86400");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
