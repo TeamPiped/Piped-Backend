@@ -1072,8 +1072,10 @@ public class ResponseHelper {
                 var root = cu.getRoot();
                 cu
                         .set(root.get("subscribedAt"), System.currentTimeMillis())
-                        .where(cb.lt(root.get("subscribedAt"), System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY) / 2)))
-                        .where(root.get("id").in(channelIds));
+                        .where(cb.and(
+                                root.get("id").in(channelIds),
+                                cb.lt(root.get("subscribedAt"), System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY) / 2))
+                        ));
                 s.createMutationQuery(cu).executeUpdate();
                 tr.commit();
             } catch (Exception e) {
