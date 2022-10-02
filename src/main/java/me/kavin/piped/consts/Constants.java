@@ -1,6 +1,7 @@
 package me.kavin.piped.consts;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
 import okhttp3.OkHttpClient;
@@ -67,6 +68,8 @@ public class Constants {
 
     public static final Object2ObjectOpenHashMap<String, String> hibernateProperties = new Object2ObjectOpenHashMap<>();
 
+    public static final ObjectNode frontendProperties = mapper.createObjectNode();
+
     static {
         Properties prop = new Properties();
         try {
@@ -101,6 +104,8 @@ public class Constants {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
+                else if (key.startsWith("frontend."))
+                    frontendProperties.put(StringUtils.substringAfter(key, "frontend."), value);
             });
 
             // transform hibernate properties for legacy configurations

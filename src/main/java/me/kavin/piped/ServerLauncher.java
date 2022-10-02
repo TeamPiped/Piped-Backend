@@ -52,6 +52,12 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/config", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(ResponseHelper.configResponse(), "public, max-age=86400");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 }))
                 .map(GET, "/version", AsyncServlet.ofBlocking(executor, request -> getRawResponse(Constants.VERSION.getBytes(UTF_8), "text/plain", "no-store")))
                 .map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200))
