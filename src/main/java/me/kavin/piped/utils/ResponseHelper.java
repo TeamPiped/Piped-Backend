@@ -1705,7 +1705,7 @@ public class ResponseHelper {
             String topic = "https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + channelId;
 
             var builder = new Request.Builder()
-                    .url("https://pubsubhubbub.appspot.com/subscribe");
+                    .url(Constants.PUBSUB_HUB_URL);
 
             var formBuilder = new FormBody.Builder();
 
