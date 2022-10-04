@@ -36,6 +36,8 @@ public class Constants {
     public static final String PUBLIC_URL;
 
     public static final String PUBSUB_URL;
+    
+    public static final String PUBSUB_HUB_URL;
 
     public static final String HTTP_PROXY;
 
@@ -85,6 +87,7 @@ public class Constants {
             CAPTCHA_API_KEY = getProperty(prop, "CAPTCHA_API_KEY");
             PUBLIC_URL = getProperty(prop, "API_URL");
             PUBSUB_URL = getProperty(prop, "PUBSUB_URL", PUBLIC_URL);
+            PUBSUB_HUB_URL = getProperty(prop, "PUBSUB_HUB_URL", "https://pubsubhubbub.appspot.com/subscribe");
             HTTP_PROXY = getProperty(prop, "HTTP_PROXY");
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.kavin.rocks");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
