@@ -74,6 +74,15 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
+    public static List<Video> getVideosFromIds(SharedSessionContract s, Collection<String> ids) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<Video> cr = cb.createQuery(Video.class);
+        Root<Video> root = cr.from(Video.class);
+        cr.select(root).where(root.get("id").in(ids));
+
+        return s.createQuery(cr).list();
+    }
+
     public static Video getVideoFromId(String id) {
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             return getVideoFromId(s, id);
