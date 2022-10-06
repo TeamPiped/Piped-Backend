@@ -37,6 +37,7 @@ import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.kiosk.KioskExtractor;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
 import org.schabi.newpipe.extractor.kiosk.KioskList;
@@ -231,7 +232,7 @@ public class ResponseHelper {
 
             me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(info.getId());
 
-            try (Session s = DatabaseSessionFactory.createSession()) {
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                 if (channel != null) {
                     if (channel.isVerified() != info.isVerified()
@@ -239,9 +240,29 @@ public class ResponseHelper {
                         channel.setVerified(info.isVerified());
                         channel.setUploaderAvatar(info.getAvatarUrl());
                         var tr = s.beginTransaction();
-                        s.merge(channel);
+                        s.update(channel);
                         tr.commit();
                     }
+
+                    Set<String> ids = info.getRelatedItems()
+                            .stream()
+                            .filter(item -> {
+                                long time = item.getUploadDate() != null
+                                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                        : System.currentTimeMillis();
+                                return System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION);
+                            })
+                            .map(item -> {
+                                try {
+                                    return YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
+                                } catch (ParsingException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .collect(Collectors.toUnmodifiableSet());
+
+                    List<Video> videos = DatabaseHelper.getVideosFromIds(s, ids);
+
                     for (StreamInfoItem item : info.getRelatedItems()) {
                         long time = item.getUploadDate() != null
                                 ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
@@ -249,7 +270,14 @@ public class ResponseHelper {
                         if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
                             try {
                                 String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
-                                updateVideo(id, item, time, true);
+                                var video = videos.stream()
+                                        .filter(v -> v.getId().equals(id))
+                                        .findFirst();
+                                if (video.isPresent()) {
+                                    updateVideo(s, video.get(), item);
+                                } else {
+                                    handleNewVideo("https://youtube.com/watch?v=" + id, time, channel);
+                                }
                             } catch (Exception e) {
                                 ExceptionHandler.handle(e);
                             }
@@ -1622,6 +1650,10 @@ public class ResponseHelper {
                 ExceptionHandler.handle(e);
             }
         });
+    }
+
+    private static void updateVideo(StatelessSession s, Video video, StreamInfoItem item) {
+        updateVideo(s, video, item.getViewCount(), item.getDuration(), item.getName());
     }
 
     private static void updateVideo(StatelessSession s, Video video, long views, long duration, String title) {
