@@ -1368,12 +1368,19 @@ public class ResponseHelper {
 
             var playlists = new ObjectArrayList<>();
 
-            for (var playlist : user.getPlaylists()) {
+            // Select user playlists and count the number of videos in each playlist
+            var query = s.createQuery("SELECT p, COUNT(v) FROM Playlist p LEFT JOIN p.videos v WHERE p.owner = :owner GROUP BY p.id", Object[].class);
+            query.setParameter("owner", user);
+            for (Object[] row : query.list()) {
+                var playlist = (me.kavin.piped.utils.obj.db.Playlist) row[0];
+                var videoCount = (long) row[1];
+
                 ObjectNode node = mapper.createObjectNode();
                 node.put("id", String.valueOf(playlist.getPlaylistId()));
                 node.put("name", playlist.getName());
                 node.put("shortDescription", playlist.getShortDescription());
                 node.put("thumbnail", rewriteURL(playlist.getThumbnail()));
+                node.put("videos", videoCount);
                 playlists.add(node);
             }
 
