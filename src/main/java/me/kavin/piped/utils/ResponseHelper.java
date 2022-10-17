@@ -633,7 +633,7 @@ public class ResponseHelper {
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                         comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                        substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(),
+                        substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
                 ExceptionHandler.handle(e);
@@ -671,7 +671,7 @@ public class ResponseHelper {
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
                         comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
-                        substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(),
+                        substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
                 ExceptionHandler.handle(e);
