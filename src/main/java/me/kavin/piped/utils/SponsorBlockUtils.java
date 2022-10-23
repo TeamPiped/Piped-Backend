@@ -20,14 +20,23 @@ public class SponsorBlockUtils {
 
         String hash = toSha256(id);
 
-        JsonArray jArray = JsonParser.array().from(
-                RequestUtils.sendGet("https://sponsor.ajay.app/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
-                        + "?categories=" + URLUtils.silentEncode(categories))
-        );
+        for (String url : Constants.SPONSORBLOCK_SERVERS) {
+            try (var resp = RequestUtils.sendGetRaw(url + "/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
+                    + "?categories=" + URLUtils.silentEncode(categories))) {
 
-        jArray.removeIf(jObject -> !((JsonObject) jObject).getString("videoID").equalsIgnoreCase(id));
+                if (resp.code() == 200) {
+                    JsonArray jArray = JsonParser.array().from(resp.body().string());
 
-        return JsonWriter.string(jArray.getObject(0));
+                    jArray.removeIf(jObject -> !((JsonObject) jObject).getString("videoID").equalsIgnoreCase(id));
+
+                    return JsonWriter.string(jArray.getObject(0));
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        return Constants.mapper.writeValueAsString(Constants.mapper.createObjectNode()
+                .put("error", "All SponsorBlock servers are down"));
     }
 
     private static String toSha256(final String videoId) throws NoSuchAlgorithmException {

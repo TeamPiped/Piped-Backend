@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
+import java.util.List;
 import java.util.Properties;
 
 public class Constants {
@@ -36,7 +37,7 @@ public class Constants {
     public static final String PUBLIC_URL;
 
     public static final String PUBSUB_URL;
-    
+
     public static final String PUBSUB_HUB_URL;
 
     public static final String HTTP_PROXY;
@@ -55,6 +56,8 @@ public class Constants {
     public static final boolean DISABLE_TIMERS;
 
     public static final String RYD_PROXY_URL;
+
+    public static final List<String> SPONSORBLOCK_SERVERS;
 
     public static final boolean DISABLE_RYD;
 
@@ -95,6 +98,8 @@ public class Constants {
             FEED_RETENTION = Integer.parseInt(getProperty(prop, "FEED_RETENTION", "30"));
             DISABLE_TIMERS = Boolean.parseBoolean(getProperty(prop, "DISABLE_TIMERS", "false"));
             RYD_PROXY_URL = getProperty(prop, "RYD_PROXY_URL", "https://ryd-proxy.kavin.rocks");
+            SPONSORBLOCK_SERVERS = List.of(getProperty(prop, "SPONSORBLOCK_SERVERS", "https://sponsor.ajay.app,https://sponsorblock.kavin.rocks")
+                    .split(","));
             DISABLE_RYD = Boolean.parseBoolean(getProperty(prop, "DISABLE_RYD", "false"));
             DISABLE_SERVER = Boolean.parseBoolean(getProperty(prop, "DISABLE_SERVER", "false"));
             DISABLE_LBRY = Boolean.parseBoolean(getProperty(prop, "DISABLE_LBRY", "false"));
