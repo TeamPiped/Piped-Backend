@@ -351,20 +351,26 @@ public class ResponseHelper {
         return mapper.writeValueAsBytes(new ChannelTabData(nextpage, items));
     }
 
-    public static byte[] channelTabPageResponse(String data, String nextpage) throws Exception {
+    public static byte[] channelTabPageResponse(String data, String prevPageStr) throws Exception {
 
         if (StringUtils.isEmpty(data))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         YouTubeChannelTabHandler tabHandler = mapper.readValue(data, YouTubeChannelTabHandlerMixin.class);
 
-        Page nextPage = mapper.readValue(nextpage, Page.class);
+        Page prevPage = mapper.readValue(prevPageStr, Page.class);
 
-        var info = ChannelTabInfo.getMoreItems(YOUTUBE_SERVICE, tabHandler, nextPage);
+        var info = ChannelTabInfo.getMoreItems(YOUTUBE_SERVICE, tabHandler, prevPage);
+
+        String nextpage = null;
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = mapper.writeValueAsString(page);
+        }
 
         List<ContentItem> items = collectRelatedItems(info.getItems());
 
-        return mapper.writeValueAsBytes(new ChannelTabData(null, items));
+        return mapper.writeValueAsBytes(new ChannelTabData(nextpage, items));
     }
 
     public static byte[] trendingResponse(String region)
