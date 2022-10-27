@@ -384,7 +384,7 @@ public class ResponseHelper {
                 var channel = video.getChannel();
                 relatedStreams.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(), rewriteURL(video.getThumbnail()), channel.getUploader(),
                         "/channel/" + channel.getUploaderId(), rewriteURL(channel.getUploaderAvatar()), null, null,
-                        video.getDuration(), -1, -1, channel.isVerified()));
+                        video.getDuration(), -1, -1, channel.isVerified(), false));
             }
 
             final Playlist playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), null, null, pl.getOwner().getUsername(),
@@ -908,7 +908,7 @@ public class ResponseHelper {
                     feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
                             rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
                             rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
-                            video.getUploaded(), channel.isVerified()));
+                            video.getUploaded(), channel.isVerified(), video.isShort()));
                 }
 
                 return mapper.writeValueAsBytes(feedItems);
@@ -1019,7 +1019,7 @@ public class ResponseHelper {
                 feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
                         rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
                         rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
-                        video.getUploaded(), channel.isVerified()));
+                        video.getUploaded(), channel.isVerified(), video.isShort()));
             }
 
             updateSubscribedTime(filtered);
@@ -1608,7 +1608,7 @@ public class ResponseHelper {
                 && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
 
             video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
-                    Math.max(infoTime, time), info.getThumbnailUrl(), channel);
+                    Math.max(infoTime, time), info.getThumbnailUrl(), info.isShortFormContent(), channel);
 
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                 var tr = s.beginTransaction();
@@ -1786,6 +1786,6 @@ public class ResponseHelper {
         return new StreamItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
                 item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                 rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getShortDescription(), item.getDuration(),
-                item.getViewCount(), item.getUploadDate() != null ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1, item.isUploaderVerified());
+                item.getViewCount(), item.getUploadDate() != null ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1, item.isUploaderVerified(), item.isShortFormContent());
     }
 }
