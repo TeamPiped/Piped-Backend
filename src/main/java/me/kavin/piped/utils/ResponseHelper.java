@@ -19,8 +19,6 @@ import me.kavin.piped.utils.obj.Channel;
 import me.kavin.piped.utils.obj.Playlist;
 import me.kavin.piped.utils.obj.*;
 import me.kavin.piped.utils.obj.db.*;
-import me.kavin.piped.utils.obj.search.SearchChannel;
-import me.kavin.piped.utils.obj.search.SearchPlaylist;
 import me.kavin.piped.utils.resp.*;
 import okhttp3.FormBody;
 import okhttp3.Request;
@@ -34,6 +32,7 @@ import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
 import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
+import org.schabi.newpipe.extractor.channel.ChannelTabInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -45,6 +44,7 @@ import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.search.SearchInfo;
+import org.schabi.newpipe.extractor.services.youtube.linkHandler.YouTubeChannelTabHandler;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
@@ -158,12 +158,7 @@ public class ResponseHelper {
                             stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec())));
         }
 
-        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
-
-        info.getRelatedItems().forEach(o -> {
-            if (o instanceof StreamInfoItem)
-                relatedStreams.add(collectRelatedStream(o));
-        });
+        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
         long time = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
@@ -224,9 +219,7 @@ public class ResponseHelper {
 
         final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/" + channelPath);
 
-        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
-
-        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
+        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
         Multithreading.runAsync(() -> {
 
@@ -292,9 +285,19 @@ public class ResponseHelper {
             nextpage = mapper.writeValueAsString(page);
         }
 
+        List<ChannelTab> tabs = info.getTabs()
+                .stream()
+                .map(tab -> {
+                    try {
+                        return new ChannelTab(tab.getTab().name(), mapper.writeValueAsString(tab));
+                    } catch (JsonProcessingException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).toList();
+
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
                 rewriteURL(info.getBannerUrl()), info.getDescription(), info.getSubscriberCount(), info.isVerified(),
-                nextpage, relatedStreams);
+                nextpage, relatedStreams, tabs);
 
         IPFS.publishData(channel);
 
@@ -313,9 +316,7 @@ public class ResponseHelper {
         InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://youtube.com/channel/" + channelId, prevpage);
 
-        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
-
-        info.getItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
+        final List<ContentItem> relatedStreams = collectRelatedItems(info.getItems());
 
         String nextpage = null;
         if (info.hasNextPage()) {
@@ -329,13 +330,49 @@ public class ResponseHelper {
 
     }
 
+    public static byte[] channelTabResponse(String data)
+            throws IOException, ExtractionException {
+
+        if (StringUtils.isEmpty(data))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        YouTubeChannelTabHandler tabHandler = mapper.readValue(data, YouTubeChannelTabHandlerMixin.class);
+
+        var info = ChannelTabInfo.getInfo(YOUTUBE_SERVICE, tabHandler);
+
+        List<ContentItem> items = collectRelatedItems(info.getRelatedItems());
+
+        String nextpage = null;
+        if (info.hasNextPage()) {
+            Page page = info.getNextPage();
+            nextpage = mapper.writeValueAsString(page);
+        }
+
+        return mapper.writeValueAsBytes(new ChannelTabData(nextpage, items));
+    }
+
+    public static byte[] channelTabPageResponse(String data, String nextpage) throws Exception {
+
+        if (StringUtils.isEmpty(data))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
+        YouTubeChannelTabHandler tabHandler = mapper.readValue(data, YouTubeChannelTabHandlerMixin.class);
+
+        Page nextPage = mapper.readValue(nextpage, Page.class);
+
+        var info = ChannelTabInfo.getMoreItems(YOUTUBE_SERVICE, tabHandler, nextPage);
+
+        List<ContentItem> items = collectRelatedItems(info.getItems());
+
+        return mapper.writeValueAsBytes(new ChannelTabData(null, items));
+    }
+
     public static byte[] trendingResponse(String region)
             throws ExtractionException, IOException {
 
         if (region == null)
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
-        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
 
         KioskList kioskList = YOUTUBE_SERVICE.getKioskList();
         kioskList.forceContentCountry(new ContentCountry(region));
@@ -343,7 +380,7 @@ public class ResponseHelper {
         extractor.fetchPage();
         KioskInfo info = KioskInfo.getInfo(extractor);
 
-        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
+        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
         return mapper.writeValueAsBytes(relatedStreams);
     }
@@ -376,7 +413,7 @@ public class ResponseHelper {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
-            final List<StreamItem> relatedStreams = new ObjectArrayList<>();
+            final List<ContentItem> relatedStreams = new ObjectArrayList<>();
 
             var videos = pl.getVideos();
 
@@ -399,9 +436,7 @@ public class ResponseHelper {
 
         final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
 
-        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
-
-        info.getRelatedItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
+        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
         String nextpage = null;
         if (info.hasNextPage()) {
@@ -430,9 +465,7 @@ public class ResponseHelper {
         InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://www.youtube.com/playlist?list=" + playlistId, prevpage);
 
-        final List<StreamItem> relatedStreams = new ObjectArrayList<>();
-
-        info.getItems().forEach(o -> relatedStreams.add(collectRelatedStream(o)));
+        final List<ContentItem> relatedStreams = collectRelatedItems(info.getItems());
 
         String nextpage = null;
         if (info.hasNextPage()) {
@@ -556,24 +589,7 @@ public class ResponseHelper {
         final SearchInfo info = SearchInfo.getInfo(YOUTUBE_SERVICE,
                 YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));
 
-        ObjectArrayList<Object> items = new ObjectArrayList<>();
-
-        info.getRelatedItems().forEach(item -> {
-            switch (item.getInfoType()) {
-                case STREAM -> items.add(collectRelatedStream(item));
-                case CHANNEL -> {
-                    ChannelInfoItem channel = (ChannelInfoItem) item;
-                    items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                            substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
-                            channel.getStreamCount(), channel.isVerified()));
-                }
-                case PLAYLIST -> {
-                    PlaylistInfoItem playlist = (PlaylistInfoItem) item;
-                    items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                            substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
-                }
-            }
-        });
+        List<ContentItem> items = collectRelatedItems(info.getRelatedItems());
 
         Page nextpage = info.getNextPage();
 
@@ -593,24 +609,7 @@ public class ResponseHelper {
         InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(YOUTUBE_SERVICE,
                 YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null), prevpage);
 
-        ObjectArrayList<Object> items = new ObjectArrayList<>();
-
-        pages.getItems().forEach(item -> {
-            switch (item.getInfoType()) {
-                case STREAM -> items.add(collectRelatedStream(item));
-                case CHANNEL -> {
-                    ChannelInfoItem channel = (ChannelInfoItem) item;
-                    items.add(new SearchChannel(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                            substringYouTube(item.getUrl()), channel.getDescription(), channel.getSubscriberCount(),
-                            channel.getStreamCount(), channel.isVerified()));
-                }
-                case PLAYLIST -> {
-                    PlaylistInfoItem playlist = (PlaylistInfoItem) item;
-                    items.add(new SearchPlaylist(item.getName(), rewriteURL(item.getThumbnailUrl()),
-                            substringYouTube(item.getUrl()), playlist.getUploaderName(), playlist.getStreamCount()));
-                }
-            }
-        });
+        List<ContentItem> items = collectRelatedItems(pages.getItems());
 
         Page nextpage = pages.getNextPage();
 
@@ -1754,29 +1753,45 @@ public class ResponseHelper {
             formBuilder.add("hub.mode", "subscribe");
             formBuilder.add("hub.lease_seconds", "432000");
 
-            var resp = Constants.h2client
+            try (var resp = Constants.h2client
                     .newCall(builder.post(formBuilder.build())
-                            .build()).execute();
+                            .build()).execute()) {
 
-            if (resp.code() == 202) {
-                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                    var tr = s.beginTransaction();
-                    if (pubsub == null) {
-                        pubsub = new PubSub(channelId, System.currentTimeMillis());
-                        s.insert(pubsub);
-                    } else {
-                        pubsub.setSubbedAt(System.currentTimeMillis());
-                        s.update(pubsub);
+                if (resp.code() == 202) {
+                    try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                        var tr = s.beginTransaction();
+                        if (pubsub == null) {
+                            pubsub = new PubSub(channelId, System.currentTimeMillis());
+                            s.insert(pubsub);
+                        } else {
+                            pubsub.setSubbedAt(System.currentTimeMillis());
+                            s.update(pubsub);
+                        }
+                        tr.commit();
                     }
-                    tr.commit();
-                }
 
-            } else
-                System.out.println("Failed to subscribe: " + resp.code() + "\n" + Objects.requireNonNull(resp.body()).string());
+                } else
+                    System.out.println("Failed to subscribe: " + resp.code() + "\n" + Objects.requireNonNull(resp.body()).string());
 
-            resp.close();
+            }
         }
 
+    }
+
+    private static List<ContentItem> collectRelatedItems(List<? extends InfoItem> items) {
+        return items
+                .stream()
+                .parallel()
+                .map(item -> {
+                    if (item instanceof StreamInfoItem)
+                        return collectRelatedStream(item);
+                    else if (item instanceof PlaylistInfoItem)
+                        return collectRelatedPlaylist(item);
+                    else if (item instanceof ChannelInfoItem)
+                        return collectRelatedChannel(item);
+                    else
+                        throw new RuntimeException("Unknown item type: " + item.getClass().getName());
+                }).toList();
     }
 
     private static StreamItem collectRelatedStream(Object o) {
@@ -1787,5 +1802,21 @@ public class ResponseHelper {
                 item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                 rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getShortDescription(), item.getDuration(),
                 item.getViewCount(), item.getUploadDate() != null ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1, item.isUploaderVerified(), item.isShortFormContent());
+    }
+
+    private static PlaylistItem collectRelatedPlaylist(Object o) {
+
+        PlaylistInfoItem item = (PlaylistInfoItem) o;
+
+        return new PlaylistItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
+                item.getUploaderName(), item.getPlaylistType().name(), item.getStreamCount());
+    }
+
+    private static ChannelItem collectRelatedChannel(Object o) {
+
+        ChannelInfoItem item = (ChannelInfoItem) o;
+
+        return new ChannelItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
+                item.getDescription(), item.getSubscriberCount(), item.getStreamCount(), item.isVerified());
     }
 }

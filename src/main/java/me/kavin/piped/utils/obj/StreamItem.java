@@ -1,16 +1,16 @@
 package me.kavin.piped.utils.obj;
 
-public class StreamItem {
+public class StreamItem extends ContentItem {
 
-    private final String type = "video";
+    public final String type = "stream";
 
-    public String url, title, thumbnail, uploaderName, uploaderUrl, uploaderAvatar, uploadedDate, shortDescription;
+    public String title, thumbnail, uploaderName, uploaderUrl, uploaderAvatar, uploadedDate, shortDescription;
     public long duration, views, uploaded;
     public boolean uploaderVerified, isShort;
 
     public StreamItem(String url, String title, String thumbnail, String uploaderName, String uploaderUrl,
                       String uploaderAvatar, String uploadedDate, String shortDescription, long duration, long views, long uploaded, boolean uploaderVerified, boolean isShort) {
-        this.url = url;
+        super(url);
         this.title = title;
         this.thumbnail = thumbnail;
         this.uploaderName = uploaderName;
