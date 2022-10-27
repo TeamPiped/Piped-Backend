@@ -1,6 +1,7 @@
 package me.kavin.piped.consts;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
@@ -69,7 +70,9 @@ public class Constants {
 
     public static final String VERSION;
 
-    public static final ObjectMapper mapper = new ObjectMapper().addMixIn(Page.class, PageMixin.class);
+    public static final ObjectMapper mapper = JsonMapper.builder()
+            .addMixIn(Page.class, PageMixin.class)
+            .build();
 
     public static final Object2ObjectOpenHashMap<String, String> hibernateProperties = new Object2ObjectOpenHashMap<>();
 

@@ -135,6 +135,16 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/channels/tabs", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String nextpage = request.getQueryParameter("nextpage");
+                        if (StringUtils.isEmpty(nextpage))
+                            return getJsonResponse(ResponseHelper.channelTabResponse(request.getQueryParameter("data")), "public, max-age=3600", true);
+                        else
+                            return getJsonResponse(ResponseHelper.channelTabPageResponse(request.getQueryParameter("data"), nextpage), "public, max-age=3600", true);
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(GET, "/playlists/:playlistId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         var playlistId = request.getPathParameter("playlistId");

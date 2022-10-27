@@ -15,7 +15,7 @@ public class Streams {
 
     public List<PipedStream> audioStreams, videoStreams;
 
-    public List<StreamItem> relatedStreams;
+    public List<ContentItem> relatedStreams;
 
     public List<Subtitle> subtitles;
 
@@ -28,7 +28,7 @@ public class Streams {
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
                    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes, long uploaderSubscriberCount,
                    boolean uploaderVerified, List<PipedStream> audioStreams, List<PipedStream> videoStreams,
-                   List<StreamItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
+                   List<ContentItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
                    String lbryId, List<ChapterSegment> chapters) {
         this.title = title;
         this.description = description;

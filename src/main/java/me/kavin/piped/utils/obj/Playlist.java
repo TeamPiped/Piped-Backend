@@ -6,10 +6,10 @@ public class Playlist {
 
     public String name, thumbnailUrl, bannerUrl, nextpage, uploader, uploaderUrl, uploaderAvatar;
     public int videos;
-    public List<StreamItem> relatedStreams;
+    public List<ContentItem> relatedStreams;
 
     public Playlist(String name, String thumbnailUrl, String bannerUrl, String nextpage, String uploader,
-            String uploaderUrl, String uploaderAvatar, int videos, List<StreamItem> relatedStreams) {
+                    String uploaderUrl, String uploaderAvatar, int videos, List<ContentItem> relatedStreams) {
         this.name = name;
         this.thumbnailUrl = thumbnailUrl;
         this.bannerUrl = bannerUrl;

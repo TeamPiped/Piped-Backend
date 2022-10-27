@@ -7,10 +7,12 @@ public class Channel {
     public String id, name, avatarUrl, bannerUrl, description, nextpage;
     public long subscriberCount;
     public boolean verified;
-    public List<StreamItem> relatedStreams;
+    public List<ContentItem> relatedStreams;
+
+    public List<ChannelTab> tabs;
 
     public Channel(String id, String name, String avatarUrl, String bannerUrl, String description, long subscriberCount,
-            boolean verified, String nextpage, List<StreamItem> relatedStreams) {
+                   boolean verified, String nextpage, List<ContentItem> relatedStreams, List<ChannelTab> tabs) {
         this.id = id;
         this.name = name;
         this.avatarUrl = avatarUrl;
@@ -20,5 +22,6 @@ public class Channel {
         this.verified = verified;
         this.nextpage = nextpage;
         this.relatedStreams = relatedStreams;
+        this.tabs = tabs;
     }
 }

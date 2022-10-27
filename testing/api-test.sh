@@ -21,6 +21,10 @@ curl ${CURLOPTS[@]} $HOST/user/Kurzgesagt || exit 1
 CHANNEL_NEXTPAGE=$(curl -s -o - -f $HOST/channel/UCsXVk37bltHxD1rDPwtNM8Q | jq -r .nextpage)
 curl ${CURLOPTS[@]} $HOST/nextpage/channel/UCsXVk37bltHxD1rDPwtNM8Q -G --data-urlencode "nextpage=$CHANNEL_NEXTPAGE" || exit 1
 
+# Channel Tab
+CHANNEL_TAB_DATA=$(curl -s -o - -f $HOST/channel/UCsXVk37bltHxD1rDPwtNM8Q | jq -r .tabs[0].data)
+curl ${CURLOPTS[@]} $HOST/channels/tabs -G --data-urlencode "data=$CHANNEL_TAB_DATA" || exit 1
+
 # Playlist
 curl ${CURLOPTS[@]} $HOST/playlists/PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT || exit 1
 
