@@ -27,6 +27,9 @@ public class Video {
     @Column(name = "thumbnail", length = 400)
     private String thumbnail;
 
+    @Column(name = "is_short", nullable = false, columnDefinition = "boolean default false")
+    private boolean isShort;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploader_id", nullable = false)
     private Channel channel;
@@ -34,13 +37,14 @@ public class Video {
     public Video() {
     }
 
-    public Video(String id, String title, long views, long duration, long uploaded, String thumbnail, Channel channel) {
+    public Video(String id, String title, long views, long duration, long uploaded, String thumbnail, boolean isShort, Channel channel) {
         this.id = id;
         this.title = title;
         this.views = views;
         this.duration = duration;
         this.uploaded = uploaded;
         this.thumbnail = thumbnail;
+        this.isShort = isShort;
         this.channel = channel;
     }
 
@@ -90,6 +94,14 @@ public class Video {
 
     public void setThumbnail(String thumbnail) {
         this.thumbnail = thumbnail;
+    }
+
+    public boolean isShort() {
+        return isShort;
+    }
+
+    public void setShort(boolean aShort) {
+        isShort = aShort;
     }
 
     public Channel getChannel() {
