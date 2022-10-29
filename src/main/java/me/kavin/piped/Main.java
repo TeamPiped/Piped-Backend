@@ -3,6 +3,7 @@ package me.kavin.piped;
 import io.activej.inject.Injector;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import me.kavin.piped.consts.Constants;
+import me.kavin.piped.server.ServerLauncher;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.Video;
@@ -82,7 +83,7 @@ public class Main {
                             .parallel()
                             .forEach(id -> Multithreading.runAsyncLimitedPubSub(() -> {
                                 try {
-                                    ResponseHelper.subscribePubSub(id);
+                                    PubSubHelper.subscribePubSub(id);
                                 } catch (IOException e) {
                                     ExceptionHandler.handle(e);
                                 }
