@@ -21,14 +21,16 @@ public class CollectionUtils {
                 .stream()
                 .parallel()
                 .map(item -> {
-                    if (item instanceof StreamInfoItem)
+                    if (item instanceof StreamInfoItem) {
                         return collectRelatedStream(item);
-                    else if (item instanceof PlaylistInfoItem)
+                    } else if (item instanceof PlaylistInfoItem) {
                         return collectRelatedPlaylist(item);
-                    else if (item instanceof ChannelInfoItem)
+                    } else if (item instanceof ChannelInfoItem) {
                         return collectRelatedChannel(item);
-                    else
-                        throw new RuntimeException("Unknown item type: " + item.getClass().getName());
+                    } else {
+                        throw new RuntimeException(
+                                "Unknown item type: " + item.getClass().getName());
+                    }
                 }).toList();
     }
 
@@ -36,25 +38,34 @@ public class CollectionUtils {
 
         StreamInfoItem item = (StreamInfoItem) o;
 
-        return new StreamItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
+        return new StreamItem(substringYouTube(item.getUrl()), item.getName(),
+                rewriteURL(item.getThumbnailUrl()),
                 item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(), item.getShortDescription(), item.getDuration(),
-                item.getViewCount(), item.getUploadDate() != null ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1, item.isUploaderVerified(), item.isShortFormContent());
+                rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(),
+                item.getShortDescription(), item.getDuration(),
+                item.getViewCount(), item.getUploadDate() != null ?
+                item.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1,
+                item.isUploaderVerified(), item.isShortFormContent());
     }
 
     private static PlaylistItem collectRelatedPlaylist(Object o) {
 
         PlaylistInfoItem item = (PlaylistInfoItem) o;
 
-        return new PlaylistItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
-                item.getUploaderName(), item.getPlaylistType().name(), item.getStreamCount());
+        return new PlaylistItem(substringYouTube(item.getUrl()), item.getName(),
+                rewriteURL(item.getThumbnailUrl()),
+                item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
+                item.isUploaderVerified(),
+                item.getPlaylistType().name(), item.getStreamCount());
     }
 
     private static ChannelItem collectRelatedChannel(Object o) {
 
         ChannelInfoItem item = (ChannelInfoItem) o;
 
-        return new ChannelItem(substringYouTube(item.getUrl()), item.getName(), rewriteURL(item.getThumbnailUrl()),
-                item.getDescription(), item.getSubscriberCount(), item.getStreamCount(), item.isVerified());
+        return new ChannelItem(substringYouTube(item.getUrl()), item.getName(),
+                rewriteURL(item.getThumbnailUrl()),
+                item.getDescription(), item.getSubscriberCount(), item.getStreamCount(),
+                item.isVerified());
     }
 }
