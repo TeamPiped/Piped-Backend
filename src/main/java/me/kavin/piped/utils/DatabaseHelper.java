@@ -4,13 +4,20 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
+import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.*;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.StatelessSession;
+import org.schabi.newpipe.extractor.channel.ChannelInfo;
+import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class DatabaseHelper {
 
@@ -129,5 +136,52 @@ public class DatabaseHelper {
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             return getPubSubFromId(s, id);
         }
+    }
+
+    public static Channel saveChannel(String channelId) {
+
+        if (!channelId.matches("[A-Za-z\\d_-]+"))
+            return null;
+
+
+        final ChannelInfo info;
+
+        try {
+            info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+        } catch (IOException | ExtractionException e) {
+            ExceptionUtils.rethrow(e);
+            return null;
+        }
+
+        var channel = new Channel(channelId, info.getName(),
+                info.getAvatarUrl(), info.isVerified());
+
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+            var tr = s.beginTransaction();
+            s.insert(channel);
+            tr.commit();
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
+        }
+
+        Multithreading.runAsync(() -> {
+            try {
+                PubSubHelper.subscribePubSub(channelId);
+            } catch (IOException e) {
+                ExceptionHandler.handle(e);
+            }
+        });
+
+        Multithreading.runAsync(() -> {
+            for (StreamInfoItem item : info.getRelatedItems()) {
+                long time = item.getUploadDate() != null
+                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                        : System.currentTimeMillis();
+                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                    VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
+            }
+        });
+
+        return channel;
     }
 }
