@@ -223,15 +223,30 @@ public class ResponseHelper {
 
         Multithreading.runAsync(() -> {
 
-            me.kavin.piped.utils.obj.db.Channel channel = DatabaseHelper.getChannelFromId(info.getId());
+            var channel = DatabaseHelper.getChannelFromId(info.getId());
 
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                 if (channel != null) {
-                    if (channel.isVerified() != info.isVerified()
-                            || !channel.getUploaderAvatar().equals(info.getAvatarUrl())) {
+
+                    boolean modified = false;
+
+                    if (channel.isVerified() != info.isVerified()) {
                         channel.setVerified(info.isVerified());
+                        modified = true;
+                    }
+
+                    if (!channel.getUploaderAvatar().equals(info.getAvatarUrl())) {
                         channel.setUploaderAvatar(info.getAvatarUrl());
+                        modified = true;
+                    }
+
+                    if (!channel.getUploader().equals(info.getName())) {
+                        channel.setUploader(info.getName());
+                        modified = true;
+                    }
+
+                    if (modified) {
                         var tr = s.beginTransaction();
                         s.update(channel);
                         tr.commit();
