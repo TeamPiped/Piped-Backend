@@ -21,5 +21,8 @@
       "groupName": "Personal Forks",
       "enabled": false
     }
+  ],
+  "ignoreDeps": [
+    "com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor"
   ]
 }
