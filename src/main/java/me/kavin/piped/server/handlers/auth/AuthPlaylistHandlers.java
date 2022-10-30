@@ -120,7 +120,7 @@ public class AuthPlaylistHandlers {
 
     public static byte[] createPlaylist(String session, String name) throws IOException {
 
-        if (StringUtils.isBlank(name))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(name))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
@@ -144,7 +144,7 @@ public class AuthPlaylistHandlers {
 
     public static byte[] renamePlaylistResponse(String session, String playlistId, String newName) throws IOException {
 
-        if (StringUtils.isBlank(playlistId))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
@@ -176,7 +176,7 @@ public class AuthPlaylistHandlers {
 
     public static byte[] deletePlaylistResponse(String session, String playlistId) throws IOException {
 
-        if (StringUtils.isBlank(playlistId))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
@@ -206,7 +206,7 @@ public class AuthPlaylistHandlers {
 
     public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
 
-        if (StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         var user = DatabaseHelper.getUserFromSession(session);
@@ -267,7 +267,7 @@ public class AuthPlaylistHandlers {
 
     public static byte[] removeFromPlaylistResponse(String session, String playlistId, int index) throws IOException {
 
-        if (StringUtils.isBlank(playlistId))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
@@ -303,7 +303,7 @@ public class AuthPlaylistHandlers {
 
     public static byte[] importPlaylistResponse(String session, String playlistId) throws IOException, ExtractionException {
 
-        if (StringUtils.isBlank(playlistId))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         var user = DatabaseHelper.getUserFromSession(session);
@@ -378,6 +378,9 @@ public class AuthPlaylistHandlers {
     }
 
     public static byte[] playlistsResponse(String session) throws IOException {
+
+        if (StringUtils.isBlank(session))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
 
