@@ -30,7 +30,7 @@ public class Playlist {
     @GeneratedValue(generator = "UUID", strategy = GenerationType.IDENTITY)
     private UUID playlist_id;
 
-    @Column(name = "name", length = 100)
+    @Column(name = "name", length = 200)
     private String name;
 
     @Column(name = "short_description", length = 100)
