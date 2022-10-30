@@ -112,7 +112,7 @@ public class UserHandlers {
 
     public static byte[] deleteUserResponse(String session, String pass) throws IOException {
 
-        if (StringUtils.isBlank(pass))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(pass))
             return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
@@ -139,6 +139,9 @@ public class UserHandlers {
     }
 
     public static byte[] logoutResponse(String session) throws JsonProcessingException {
+
+        if (StringUtils.isBlank(session))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var tr = s.beginTransaction();

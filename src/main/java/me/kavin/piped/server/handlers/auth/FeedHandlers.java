@@ -19,6 +19,7 @@ import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
 import me.kavin.piped.utils.resp.AcceptedResponse;
 import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
+import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.SubscribeStatusResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
@@ -36,6 +37,9 @@ import static me.kavin.piped.utils.URLUtils.rewriteURL;
 public class FeedHandlers {
     public static byte[] subscribeResponse(String session, String channelId)
             throws IOException {
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(channelId))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
 
@@ -68,6 +72,10 @@ public class FeedHandlers {
     }
 
     public static byte[] isSubscribedResponse(String session, String channelId) throws IOException {
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(channelId))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
             var query = cb.createQuery(Long.class);
@@ -86,7 +94,7 @@ public class FeedHandlers {
     public static byte[] feedResponse(String session) throws IOException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -131,7 +139,7 @@ public class FeedHandlers {
     public static byte[] feedResponseRSS(String session) throws IOException, FeedException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -369,6 +377,8 @@ public class FeedHandlers {
 
     public static byte[] importResponse(String session, String[] channelIds, boolean override) throws IOException {
 
+        if (StringUtils.isBlank(session))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSessionWithSubscribed(session);
 
@@ -417,6 +427,9 @@ public class FeedHandlers {
 
     public static byte[] subscriptionsResponse(String session)
             throws IOException {
+
+        if (StringUtils.isBlank(session))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -483,6 +496,9 @@ public class FeedHandlers {
 
     public static byte[] unsubscribeResponse(String session, String channelId)
             throws IOException {
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(channelId))
+            return mapper.writeValueAsBytes(new InvalidRequestResponse());
 
         User user = DatabaseHelper.getUserFromSession(session);
 
