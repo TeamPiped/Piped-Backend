@@ -1,7 +1,21 @@
 package me.kavin.piped.utils.resp;
 
-public class InvalidRequestResponse {
+import me.kavin.piped.utils.IStatusCode;
 
-    public String error = "Invalid request sent.";
+public class InvalidRequestResponse implements IStatusCode {
 
+    public String error;
+
+    public InvalidRequestResponse(String error) {
+        this.error = error;
+    }
+
+    public InvalidRequestResponse() {
+        this.error = "Invalid request sent.";
+    }
+
+    @Override
+    public int getStatusCode() {
+        return 400;
+    }
 }

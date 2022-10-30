@@ -1,8 +1,12 @@
 package me.kavin.piped.utils;
 
-import com.grack.nanojson.*;
+import com.grack.nanojson.JsonArray;
+import com.grack.nanojson.JsonObject;
+import com.grack.nanojson.JsonParser;
+import com.grack.nanojson.JsonWriter;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
+import me.kavin.piped.utils.resp.SimpleErrorMessage;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -13,7 +17,7 @@ import java.security.NoSuchAlgorithmException;
 public class SponsorBlockUtils {
 
     public static String getSponsors(String id, String categories)
-            throws IOException, NoSuchAlgorithmException, JsonParserException {
+            throws IOException, NoSuchAlgorithmException {
 
         if (StringUtils.isEmpty(categories))
             return Constants.mapper.writeValueAsString(new InvalidRequestResponse());
@@ -35,8 +39,9 @@ public class SponsorBlockUtils {
             }
         }
 
-        return Constants.mapper.writeValueAsString(Constants.mapper.createObjectNode()
-                .put("error", "All SponsorBlock servers are down"));
+        ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("All SponsorBlock servers are down"));
+
+        return null;
     }
 
     private static String toSha256(final String videoId) throws NoSuchAlgorithmException {

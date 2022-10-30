@@ -139,9 +139,12 @@ public class ChannelHandlers {
             throws IOException, ExtractionException {
 
         if (StringUtils.isEmpty(prevpageStr))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
+
+        if (prevpage == null)
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         ListExtractor.InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://youtube.com/channel/" + channelId, prevpage);
@@ -164,7 +167,7 @@ public class ChannelHandlers {
             throws IOException, ExtractionException {
 
         if (StringUtils.isEmpty(data))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("data is a required parameter"));
 
         YouTubeChannelTabHandler tabHandler = mapper.readValue(data, YouTubeChannelTabHandlerMixin.class);
 
@@ -184,11 +187,14 @@ public class ChannelHandlers {
     public static byte[] channelTabPageResponse(String data, String prevPageStr) throws Exception {
 
         if (StringUtils.isEmpty(data))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("data is a required parameter"));
 
         YouTubeChannelTabHandler tabHandler = mapper.readValue(data, YouTubeChannelTabHandlerMixin.class);
 
         Page prevPage = mapper.readValue(prevPageStr, Page.class);
+
+        if (prevPage == null)
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         var info = ChannelTabInfo.getMoreItems(YOUTUBE_SERVICE, tabHandler, prevPage);
 

@@ -1,7 +1,9 @@
 package me.kavin.piped.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.sentry.Sentry;
 import me.kavin.piped.consts.Constants;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 
 import java.util.concurrent.CompletionException;
@@ -28,5 +30,21 @@ public class ExceptionHandler {
         }
 
         return e;
+    }
+
+    public static void throwErrorResponse(IStatusCode statusObj) {
+        try {
+            ExceptionUtils.rethrow(new ErrorResponse(statusObj));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void throwErrorResponse(int code, Object content) {
+        try {
+            ExceptionUtils.rethrow(new ErrorResponse(code, content));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
