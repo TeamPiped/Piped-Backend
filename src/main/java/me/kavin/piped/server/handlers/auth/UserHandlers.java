@@ -7,12 +7,12 @@ import jakarta.persistence.criteria.Root;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.DatabaseSessionFactory;
+import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.RequestUtils;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
@@ -31,16 +31,13 @@ public class UserHandlers {
     public static byte[] registerResponse(String user, String pass) throws IOException {
 
         if (Constants.DISABLE_REGISTRATION)
-            return mapper.writeValueAsBytes(new DisabledRegistrationResponse());
+            ExceptionHandler.throwErrorResponse(new DisabledRegistrationResponse());
 
         if (StringUtils.isBlank(user) || StringUtils.isBlank(pass))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse());
 
         if (user.length() > 24)
-            return mapper.writeValueAsBytes(
-                    mapper.createObjectNode()
-                            .put("error", "The username must be less than 24 characters")
-            );
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("The username must be less than 24 characters"));
 
         user = user.toLowerCase();
 
@@ -52,7 +49,7 @@ public class UserHandlers {
             boolean registered = s.createQuery(cr).uniqueResult() != null;
 
             if (registered)
-                return mapper.writeValueAsBytes(new AlreadyRegisteredResponse());
+                ExceptionHandler.throwErrorResponse(new AlreadyRegisteredResponse());
 
             if (Constants.COMPROMISED_PASSWORD_CHECK) {
                 String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
@@ -63,7 +60,7 @@ public class UserHandlers {
                         .split("\n");
                 for (String entry : entries)
                     if (StringUtils.substringBefore(entry, ":").equals(suffix))
-                        return mapper.writeValueAsBytes(new CompromisedPasswordResponse());
+                        ExceptionHandler.throwErrorResponse(new CompromisedPasswordResponse());
             }
 
             User newuser = new User(user, argon2PasswordEncoder.encode(pass), Set.of());
@@ -87,7 +84,7 @@ public class UserHandlers {
             throws IOException {
 
         if (user == null || pass == null)
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("username and password are required parameters"));
 
         user = user.toLowerCase();
 
@@ -106,33 +103,30 @@ public class UserHandlers {
                 }
             }
 
-            return mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+            ExceptionHandler.throwErrorResponse(new IncorrectCredentialsResponse());
+            return null;
         }
     }
 
     public static byte[] deleteUserResponse(String session, String pass) throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(pass))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and password are required parameters"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             User user = DatabaseHelper.getUserFromSession(session);
 
             if (user == null)
-                return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+                ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
             String hash = user.getPassword();
 
             if (!hashMatch(hash, pass))
-                return mapper.writeValueAsBytes(new IncorrectCredentialsResponse());
+                ExceptionHandler.throwErrorResponse(new IncorrectCredentialsResponse());
 
-            try {
-                var tr = s.beginTransaction();
-                s.remove(user);
-                tr.commit();
-            } catch (Exception e) {
-                return mapper.writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage()));
-            }
+            var tr = s.beginTransaction();
+            s.remove(user);
+            tr.commit();
 
             return mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
         }
@@ -141,7 +135,7 @@ public class UserHandlers {
     public static byte[] logoutResponse(String session) throws JsonProcessingException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var tr = s.beginTransaction();

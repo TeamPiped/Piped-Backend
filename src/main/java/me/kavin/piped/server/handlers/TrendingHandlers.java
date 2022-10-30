@@ -1,5 +1,6 @@
 package me.kavin.piped.server.handlers;
 
+import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.obj.ContentItem;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -20,8 +21,7 @@ public class TrendingHandlers {
             throws ExtractionException, IOException {
 
         if (region == null)
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
-
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("region is a required parameter"));
 
         KioskList kioskList = YOUTUBE_SERVICE.getKioskList();
         kioskList.forceContentCountry(new ContentCountry(region));

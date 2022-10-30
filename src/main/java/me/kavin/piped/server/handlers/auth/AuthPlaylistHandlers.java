@@ -13,6 +13,7 @@ import jakarta.persistence.criteria.JoinType;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.DatabaseSessionFactory;
+import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.URLUtils;
 import me.kavin.piped.utils.obj.ContentItem;
 import me.kavin.piped.utils.obj.Playlist;
@@ -44,6 +45,10 @@ import static me.kavin.piped.utils.URLUtils.substringYouTube;
 
 public class AuthPlaylistHandlers {
     public static byte[] playlistPipedResponse(String playlistId) throws IOException {
+
+        if (StringUtils.isBlank(playlistId))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is a required parameter"));
+
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
             var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
@@ -80,6 +85,9 @@ public class AuthPlaylistHandlers {
 
     public static byte[] playlistPipedRSSResponse(String playlistId)
             throws FeedException {
+
+        if (StringUtils.isBlank(playlistId))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is required parameter"));
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
@@ -121,12 +129,12 @@ public class AuthPlaylistHandlers {
     public static byte[] createPlaylist(String session, String name) throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(name))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and name are required parameters"));
 
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var playlist = new me.kavin.piped.utils.obj.db.Playlist(name, user, "https://i.ytimg.com/");
@@ -145,12 +153,12 @@ public class AuthPlaylistHandlers {
     public static byte[] renamePlaylistResponse(String session, String playlistId, String newName) throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
@@ -177,12 +185,12 @@ public class AuthPlaylistHandlers {
     public static byte[] deletePlaylistResponse(String session, String playlistId) throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
@@ -207,12 +215,12 @@ public class AuthPlaylistHandlers {
     public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session, playlistId and videoId are required parameters"));
 
         var user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var cb = s.getCriteriaBuilder();
@@ -268,7 +276,7 @@ public class AuthPlaylistHandlers {
     public static byte[] removeFromPlaylistResponse(String session, String playlistId, int index) throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var cb = s.getCriteriaBuilder();
@@ -304,12 +312,12 @@ public class AuthPlaylistHandlers {
     public static byte[] importPlaylistResponse(String session, String playlistId) throws IOException, ExtractionException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
         var user = DatabaseHelper.getUserFromSession(session);
 
         if (user == null)
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         final String url = "https://www.youtube.com/playlist?list=" + playlistId;
 
@@ -380,14 +388,14 @@ public class AuthPlaylistHandlers {
     public static byte[] playlistsResponse(String session) throws IOException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
 
             User user = DatabaseHelper.getUserFromSession(session, s);
 
             if (user == null)
-                return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+                ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
             var playlists = new ObjectArrayList<>();
 

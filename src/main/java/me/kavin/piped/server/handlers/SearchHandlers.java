@@ -1,5 +1,6 @@
 package me.kavin.piped.server.handlers;
 
+import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.obj.ContentItem;
 import me.kavin.piped.utils.obj.SearchResults;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
@@ -24,7 +25,7 @@ public class SearchHandlers {
             throws IOException, ExtractionException {
 
         if (StringUtils.isEmpty(query))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query is a required parameter"));
 
         return mapper.writeValueAsBytes(YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
@@ -34,7 +35,7 @@ public class SearchHandlers {
             throws IOException, ExtractionException {
 
         if (StringUtils.isEmpty(query))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query is a required parameter"));
 
         return mapper.writeValueAsBytes(Arrays.asList(
                 query,
@@ -62,9 +63,12 @@ public class SearchHandlers {
             throws IOException, ExtractionException {
 
         if (StringUtils.isEmpty(prevpageStr))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
+
+        if (prevpage == null)
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         ListExtractor.InfoItemsPage<InfoItem> pages = SearchInfo.getMoreItems(YOUTUBE_SERVICE,
                 YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null), prevpage);

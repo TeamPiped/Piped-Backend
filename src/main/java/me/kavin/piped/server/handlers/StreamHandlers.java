@@ -212,7 +212,7 @@ public class StreamHandlers {
     public static byte[] commentsPageResponse(String videoId, String prevpageStr) throws Exception {
 
         if (StringUtils.isEmpty(prevpageStr))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
 

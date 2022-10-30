@@ -39,7 +39,7 @@ public class FeedHandlers {
             throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(channelId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and channelId are required parameters"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
 
@@ -66,7 +66,8 @@ public class FeedHandlers {
             }
 
 
-            return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+            return null;
         }
 
     }
@@ -74,7 +75,7 @@ public class FeedHandlers {
     public static byte[] isSubscribedResponse(String session, String channelId) throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(channelId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and channelId are required parameters"));
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
@@ -94,7 +95,7 @@ public class FeedHandlers {
     public static byte[] feedResponse(String session) throws IOException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -133,13 +134,14 @@ public class FeedHandlers {
             }
         }
 
-        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+        return null;
     }
 
-    public static byte[] feedResponseRSS(String session) throws IOException, FeedException {
+    public static byte[] feedResponseRSS(String session) throws FeedException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -201,7 +203,8 @@ public class FeedHandlers {
             }
         }
 
-        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+        return null;
     }
 
     public static byte[] unauthenticatedFeedResponse(String[] channelIds) throws Exception {
@@ -255,8 +258,7 @@ public class FeedHandlers {
                 .collect(Collectors.toUnmodifiableSet());
 
         if (filtered.isEmpty())
-            return mapper.writeValueAsBytes(mapper.createObjectNode()
-                    .put("error", "No valid channel IDs provided"));
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("No valid channel IDs provided"));
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
@@ -378,7 +380,7 @@ public class FeedHandlers {
     public static byte[] importResponse(String session, String[] channelIds, boolean override) throws IOException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
 
         User user = DatabaseHelper.getUserFromSessionWithSubscribed(session);
 
@@ -422,14 +424,15 @@ public class FeedHandlers {
             return mapper.writeValueAsBytes(new AcceptedResponse());
         }
 
-        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+        return null;
     }
 
     public static byte[] subscriptionsResponse(String session)
             throws IOException {
 
         if (StringUtils.isBlank(session))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -461,7 +464,8 @@ public class FeedHandlers {
             }
         }
 
-        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+        return null;
 
     }
 
@@ -472,6 +476,9 @@ public class FeedHandlers {
                 .filter(StringUtils::isNotBlank)
                 .filter(id -> id.matches("[A-Za-z\\d_-]+"))
                 .collect(Collectors.toUnmodifiableSet());
+
+        if (filtered.isEmpty())
+            return mapper.writeValueAsBytes(Collections.EMPTY_LIST);
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
@@ -498,7 +505,7 @@ public class FeedHandlers {
             throws IOException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(channelId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and channelId are required parameters"));
 
         User user = DatabaseHelper.getUserFromSession(session);
 
@@ -513,7 +520,8 @@ public class FeedHandlers {
 
         }
 
-        return mapper.writeValueAsBytes(new AuthenticationFailureResponse());
+        ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+        return null;
 
     }
 }

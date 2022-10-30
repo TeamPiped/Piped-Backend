@@ -19,8 +19,8 @@ import me.kavin.piped.server.handlers.auth.FeedHandlers;
 import me.kavin.piped.server.handlers.auth.UserHandlers;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.resp.DeleteUserRequest;
-import me.kavin.piped.utils.resp.ErrorResponse;
 import me.kavin.piped.utils.resp.LoginRequest;
+import me.kavin.piped.utils.resp.StackTraceResponse;
 import me.kavin.piped.utils.resp.SubscriptionUpdateRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -455,9 +455,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
         e = ExceptionHandler.handle(e, path);
 
+        if (e instanceof ErrorResponse error) {
+            return getJsonResponse(error.getCode(), error.getContent(), "private");
+        }
+
         try {
             return getJsonResponse(500, Constants.mapper
-                    .writeValueAsBytes(new ErrorResponse(ExceptionUtils.getStackTrace(e), e.getMessage())), "private");
+                    .writeValueAsBytes(new StackTraceResponse(ExceptionUtils.getStackTrace(e), e.getMessage())), "private");
         } catch (JsonProcessingException ex) {
             return HttpResponse.ofCode(500);
         }

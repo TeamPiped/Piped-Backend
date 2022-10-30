@@ -9,6 +9,7 @@ import com.rometools.rome.io.SyndFeedOutput;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
+import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.obj.ContentItem;
 import me.kavin.piped.utils.obj.Playlist;
 import me.kavin.piped.utils.obj.StreamsPage;
@@ -35,7 +36,7 @@ public class PlaylistHandlers {
     public static byte[] playlistResponse(String playlistId) throws ExtractionException, IOException {
 
         if (StringUtils.isBlank(playlistId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is a required parameter"));
 
         if (playlistId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
             return AuthPlaylistHandlers.playlistPipedResponse(playlistId);
@@ -70,9 +71,12 @@ public class PlaylistHandlers {
             throws IOException, ExtractionException {
 
         if (StringUtils.isEmpty(prevpageStr))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
+
+        if (prevpage == null)
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
         ListExtractor.InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://www.youtube.com/playlist?list=" + playlistId, prevpage);
@@ -94,7 +98,7 @@ public class PlaylistHandlers {
     public static byte[] playlistRSSResponse(String playlistId) throws ExtractionException, IOException, FeedException {
 
         if (StringUtils.isBlank(playlistId))
-            return mapper.writeValueAsBytes(new InvalidRequestResponse());
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is a required parameter"));
 
         if (playlistId.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
             return AuthPlaylistHandlers.playlistPipedRSSResponse(playlistId);
