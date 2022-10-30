@@ -1,5 +1,7 @@
 package me.kavin.piped.utils;
 
+import io.sentry.Sentry;
+import me.kavin.piped.consts.Constants;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 
 import java.util.concurrent.CompletionException;
@@ -17,9 +19,12 @@ public class ExceptionHandler {
             e = (Exception) e.getCause();
 
         if (!(e instanceof ContentNotAvailableException)) {
-            if (path != null)
-                System.err.println("An error occoured in the path: " + path);
-            e.printStackTrace();
+            Sentry.captureException(e);
+            if (Constants.SENTRY_DSN.isEmpty()) {
+                if (path != null)
+                    System.err.println("An error occoured in the path: " + path);
+                e.printStackTrace();
+            }
         }
 
         return e;

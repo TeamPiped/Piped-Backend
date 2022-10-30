@@ -1,6 +1,7 @@
 package me.kavin.piped;
 
 import io.activej.inject.Injector;
+import io.sentry.Sentry;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.ServerLauncher;
@@ -28,17 +29,15 @@ public class Main {
         YoutubeStreamExtractor.forceFetchAndroidClient(true);
         YoutubeStreamExtractor.forceFetchIosClient(true);
 
+        Sentry.init(Constants.SENTRY_DSN);
+
         Injector.useSpecializer();
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    System.out.printf("ThrottlingCache: %o entries%n", YoutubeThrottlingDecrypter.getCacheSize());
-                    YoutubeThrottlingDecrypter.clearCache();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                System.out.printf("ThrottlingCache: %o entries%n", YoutubeThrottlingDecrypter.getCacheSize());
+                YoutubeThrottlingDecrypter.clearCache();
             }
         }, 0, TimeUnit.MINUTES.toMillis(60));
 
