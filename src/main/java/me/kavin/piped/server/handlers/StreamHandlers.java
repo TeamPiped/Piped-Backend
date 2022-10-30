@@ -37,12 +37,18 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 public class StreamHandlers {
     public static byte[] streamsResponse(String videoId) throws Exception {
 
+        Sentry.configureScope(scope -> {
+            scope.setContexts("videoId", videoId);
+        });
+
         final var futureStream = Multithreading.supplyAsync(() -> {
             ITransaction transaction = Sentry.startTransaction("StreamInfo fetch", "fetch");
             try {
                 return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
             } catch (Exception e) {
                 ExceptionUtils.rethrow(e);
+            } finally {
+                transaction.finish();
             }
             return null;
         });
@@ -188,6 +194,10 @@ public class StreamHandlers {
     }
 
     public static byte[] commentsResponse(String videoId) throws Exception {
+
+        Sentry.configureScope(scope -> {
+            scope.setContexts("videoId", videoId);
+        });
 
         CommentsInfo info = CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
 
