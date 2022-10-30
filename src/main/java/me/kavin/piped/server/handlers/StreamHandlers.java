@@ -3,6 +3,8 @@ package me.kavin.piped.server.handlers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
+import io.sentry.ITransaction;
+import io.sentry.Sentry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
@@ -36,6 +38,7 @@ public class StreamHandlers {
     public static byte[] streamsResponse(String videoId) throws Exception {
 
         final var futureStream = Multithreading.supplyAsync(() -> {
+            ITransaction transaction = Sentry.startTransaction("StreamInfo fetch", "fetch");
             try {
                 return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
             } catch (Exception e) {
@@ -54,21 +57,29 @@ public class StreamHandlers {
         });
 
         final var futureLBRY = Multithreading.supplyAsync(() -> {
+            ITransaction transaction = Sentry.startTransaction("LBRY Stream fetch", "fetch");
             try {
+                var childTask = transaction.startChild("fetch", "LBRY ID fetch");
                 String lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
+                childTask.finish();
 
                 return LbryHelper.getLBRYStreamURL(lbryId);
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
+            } finally {
+                transaction.finish();
             }
             return null;
         });
 
         final var futureDislikeRating = Multithreading.supplyAsync(() -> {
+            ITransaction transaction = Sentry.startTransaction("Dislike Rating", "fetch");
             try {
                 return RydHelper.getDislikeRating(videoId);
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
+            } finally {
+                transaction.finish();
             }
             return null;
         });

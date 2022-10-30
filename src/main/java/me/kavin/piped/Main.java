@@ -29,7 +29,12 @@ public class Main {
         YoutubeStreamExtractor.forceFetchAndroidClient(true);
         YoutubeStreamExtractor.forceFetchIosClient(true);
 
-        Sentry.init(Constants.SENTRY_DSN);
+        Sentry.init(options -> {
+            options.setDsn(Constants.SENTRY_DSN);
+            options.setRelease(Constants.VERSION);
+            options.addIgnoredExceptionForType(ErrorResponse.class);
+            options.setTracesSampleRate(0.1);
+        });
 
         Injector.useSpecializer();
 
