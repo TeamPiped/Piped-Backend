@@ -39,8 +39,9 @@ dependencies {
     implementation 'org.springframework.security:spring-security-crypto:5.7.4'
     implementation 'commons-logging:commons-logging:1.2'
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
-    implementation("com.squareup.okhttp3:okhttp")
-    implementation("com.squareup.okhttp3:okhttp-brotli")
+    implementation 'com.squareup.okhttp3:okhttp'
+    implementation 'com.squareup.okhttp3:okhttp-brotli'
+    implementation 'io.sentry:sentry:6.6.0'
 }
 
 shadowJar {

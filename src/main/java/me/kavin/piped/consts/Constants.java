@@ -68,6 +68,8 @@ public class Constants {
 
     public static final int SUBSCRIPTIONS_EXPIRY;
 
+    public static final String SENTRY_DSN;
+
     public static final String VERSION;
 
     public static final ObjectMapper mapper = JsonMapper.builder()
@@ -107,6 +109,7 @@ public class Constants {
             DISABLE_SERVER = Boolean.parseBoolean(getProperty(prop, "DISABLE_SERVER", "false"));
             DISABLE_LBRY = Boolean.parseBoolean(getProperty(prop, "DISABLE_LBRY", "false"));
             SUBSCRIPTIONS_EXPIRY = Integer.parseInt(getProperty(prop, "SUBSCRIPTIONS_EXPIRY", "30"));
+            SENTRY_DSN = getProperty(prop, "SENTRY_DSN", "");
             System.getenv().forEach((key, value) -> {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
