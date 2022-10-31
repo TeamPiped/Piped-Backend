@@ -1,5 +1,6 @@
 package me.kavin.piped.server.handlers;
 
+import io.sentry.Sentry;
 import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.obj.ContentItem;
 import me.kavin.piped.utils.obj.SearchResults;
@@ -46,6 +47,8 @@ public class SearchHandlers {
 
     public static byte[] searchResponse(String q, String filter)
             throws IOException, ExtractionException {
+
+        Sentry.setExtra("query", q);
 
         final SearchInfo info = SearchInfo.getInfo(YOUTUBE_SERVICE,
                 YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));

@@ -23,6 +23,7 @@ import org.schabi.newpipe.extractor.utils.JsonUtils;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
@@ -37,15 +38,15 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 public class StreamHandlers {
     public static byte[] streamsResponse(String videoId) throws Exception {
 
-        Sentry.configureScope(scope -> {
-            scope.setContexts("videoId", videoId);
-        });
+        Sentry.setExtra("videoId", videoId);
 
         final var futureStream = Multithreading.supplyAsync(() -> {
+            Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("StreamInfo fetch", "fetch");
             try {
                 return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
             } catch (Exception e) {
+                transaction.setThrowable(e);
                 ExceptionUtils.rethrow(e);
             } finally {
                 transaction.finish();
@@ -54,6 +55,7 @@ public class StreamHandlers {
         });
 
         final var futureLbryId = Multithreading.supplyAsync(() -> {
+            Sentry.setExtra("videoId", videoId);
             try {
                 return LbryHelper.getLBRYId(videoId);
             } catch (Exception e) {
@@ -63,13 +65,16 @@ public class StreamHandlers {
         });
 
         final var futureLBRY = Multithreading.supplyAsync(() -> {
+            Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("LBRY Stream fetch", "fetch");
             try {
                 var childTask = transaction.startChild("fetch", "LBRY ID fetch");
                 String lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
+                Sentry.setExtra("lbryId", lbryId);
                 childTask.finish();
 
                 return LbryHelper.getLBRYStreamURL(lbryId);
+            } catch (TimeoutException ignored) {
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             } finally {
@@ -79,6 +84,7 @@ public class StreamHandlers {
         });
 
         final var futureDislikeRating = Multithreading.supplyAsync(() -> {
+            Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("Dislike Rating", "fetch");
             try {
                 return RydHelper.getDislikeRating(videoId);
@@ -195,9 +201,7 @@ public class StreamHandlers {
 
     public static byte[] commentsResponse(String videoId) throws Exception {
 
-        Sentry.configureScope(scope -> {
-            scope.setContexts("videoId", videoId);
-        });
+        Sentry.setExtra("videoId", videoId);
 
         CommentsInfo info = CommentsInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
 
