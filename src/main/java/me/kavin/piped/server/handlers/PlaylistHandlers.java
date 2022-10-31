@@ -6,6 +6,7 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.feed.synd.SyndFeedImpl;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
+import io.sentry.Sentry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
@@ -46,6 +47,8 @@ public class PlaylistHandlers {
 
     private static byte[] playlistYouTubeResponse(String playlistId)
             throws IOException, ExtractionException {
+
+        Sentry.setExtra("playlistId", playlistId);
 
         final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
 

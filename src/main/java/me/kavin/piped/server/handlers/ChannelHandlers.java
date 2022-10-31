@@ -1,6 +1,7 @@
 package me.kavin.piped.server.handlers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.sentry.Sentry;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.*;
@@ -31,6 +32,8 @@ import static me.kavin.piped.utils.URLUtils.rewriteURL;
 
 public class ChannelHandlers {
     public static byte[] channelResponse(String channelPath) throws Exception {
+
+        Sentry.setExtra("channelPath", channelPath);
 
         final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/" + channelPath);
 
