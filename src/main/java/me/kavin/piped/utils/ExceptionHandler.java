@@ -20,7 +20,7 @@ public class ExceptionHandler {
         if (e.getCause() != null && (e instanceof ExecutionException || e instanceof CompletionException))
             e = (Exception) e.getCause();
 
-        if (!(e instanceof ContentNotAvailableException)) {
+        if (!(e instanceof ContentNotAvailableException || e instanceof ErrorResponse)) {
             Sentry.captureException(e);
             if (Constants.SENTRY_DSN.isEmpty()) {
                 if (path != null)
