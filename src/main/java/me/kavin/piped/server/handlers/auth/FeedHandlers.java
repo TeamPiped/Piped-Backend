@@ -119,16 +119,15 @@ public class FeedHandlers {
                         )
                         .orderBy(cb.desc(root.get("uploaded")));
 
-                List<StreamItem> feedItems = new ObjectArrayList<>();
+                List<StreamItem> feedItems = s.createQuery(criteria).setTimeout(20).stream()
+                        .parallel().map(video -> {
+                            var channel = video.getChannel();
 
-                for (Video video : s.createQuery(criteria).setTimeout(20).list()) {
-                    var channel = video.getChannel();
-
-                    feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
-                            rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
-                            rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
-                            video.getUploaded(), channel.isVerified(), video.isShort()));
-                }
+                            return new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
+                                    rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
+                                    rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
+                                    video.getUploaded(), channel.isVerified(), video.isShort());
+                        }).toList();
 
                 return mapper.writeValueAsBytes(feedItems);
             }
@@ -173,29 +172,27 @@ public class FeedHandlers {
                         )
                         .orderBy(cb.desc(root.get("uploaded")));
 
-                List<Video> videos = s.createQuery(criteria)
+                final List<SyndEntry> entries = s.createQuery(criteria)
                         .setTimeout(20)
                         .setMaxResults(100)
-                        .list();
+                        .stream()
+                        .map(video -> {
+                            var channel = video.getChannel();
+                            SyndEntry entry = new SyndEntryImpl();
 
-                final List<SyndEntry> entries = new ObjectArrayList<>();
+                            SyndPerson person = new SyndPersonImpl();
+                            person.setName(channel.getUploader());
+                            person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
 
-                for (Video video : videos) {
-                    var channel = video.getChannel();
-                    SyndEntry entry = new SyndEntryImpl();
+                            entry.setAuthors(Collections.singletonList(person));
 
-                    SyndPerson person = new SyndPersonImpl();
-                    person.setName(channel.getUploader());
-                    person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+                            entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                            entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+                            entry.setTitle(video.getTitle());
+                            entry.setPublishedDate(new Date(video.getUploaded()));
 
-                    entry.setAuthors(Collections.singletonList(person));
-
-                    entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                    entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                    entry.setTitle(video.getTitle());
-                    entry.setPublishedDate(new Date(video.getUploaded()));
-                    entries.add(entry);
-                }
+                            return entry;
+                        }).toList();
 
                 feed.setEntries(entries);
 
@@ -232,16 +229,15 @@ public class FeedHandlers {
                     ))
                     .orderBy(cb.desc(root.get("uploaded")));
 
-            List<StreamItem> feedItems = new ObjectArrayList<>();
+            List<StreamItem> feedItems = s.createQuery(criteria).setTimeout(20).stream()
+                    .parallel().map(video -> {
+                        var channel = video.getChannel();
 
-            for (Video video : s.createQuery(criteria).setTimeout(20).list()) {
-                var channel = video.getChannel();
-
-                feedItems.add(new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
-                        rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
-                        rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
-                        video.getUploaded(), channel.isVerified(), video.isShort()));
-            }
+                        return new StreamItem("/watch?v=" + video.getId(), video.getTitle(),
+                                rewriteURL(video.getThumbnail()), channel.getUploader(), "/channel/" + channel.getUploaderId(),
+                                rewriteURL(channel.getUploaderAvatar()), null, null, video.getDuration(), video.getViews(),
+                                video.getUploaded(), channel.isVerified(), video.isShort());
+                    }).toList();
 
             updateSubscribedTime(filtered);
             addMissingChannels(filtered);
@@ -451,10 +447,9 @@ public class FeedHandlers {
                 query.select(root)
                         .where(root.get("uploader_id").in(subquery));
 
-                var channels = s.createQuery(query).list();
-
-                List<SubscriptionChannel> subscriptionItems = channels
+                List<SubscriptionChannel> subscriptionItems = s.createQuery(query)
                         .stream().parallel()
+                        .filter(Objects::nonNull)
                         .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
                         .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
                                 channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
@@ -488,9 +483,7 @@ public class FeedHandlers {
             query.select(root);
             query.where(root.get("uploader_id").in(filtered));
 
-            var channels = s.createQuery(query).list();
-
-            List<SubscriptionChannel> subscriptionItems = channels
+            List<SubscriptionChannel> subscriptionItems = s.createQuery(query)
                     .stream().parallel()
                     .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
                     .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
