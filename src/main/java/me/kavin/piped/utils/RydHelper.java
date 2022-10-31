@@ -6,7 +6,7 @@ import me.kavin.piped.consts.Constants;
 import java.io.IOException;
 
 import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.RequestUtils.sendGet;
+import static me.kavin.piped.utils.RequestUtils.sendGetRaw;
 
 public class RydHelper {
     public static double getDislikeRating(String videoId) throws IOException {
@@ -14,9 +14,15 @@ public class RydHelper {
         if (Constants.DISABLE_RYD)
             return -1;
 
-        var value = mapper.readTree(sendGet(Constants.RYD_PROXY_URL + "/votes/" + videoId))
-                .get("rating");
+        try (var resp = sendGetRaw(Constants.RYD_PROXY_URL + "/votes/" + videoId)) {
 
-        return value == null ? -1 : value.asDouble(-1);
+            if (!resp.isSuccessful())
+                return -1;
+
+            return mapper.readTree(resp.body().byteStream())
+                    .path("rating")
+                    .asDouble(-1);
+
+        }
     }
 }
