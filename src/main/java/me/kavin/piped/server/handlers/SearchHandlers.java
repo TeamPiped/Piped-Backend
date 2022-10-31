@@ -48,6 +48,9 @@ public class SearchHandlers {
     public static byte[] searchResponse(String q, String filter)
             throws IOException, ExtractionException {
 
+        if (StringUtils.isEmpty(q) || StringUtils.isEmpty(filter))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query and filter are required parameters"));
+
         Sentry.setExtra("query", q);
 
         final SearchInfo info = SearchInfo.getInfo(YOUTUBE_SERVICE,
@@ -65,8 +68,8 @@ public class SearchHandlers {
     public static byte[] searchPageResponse(String q, String filter, String prevpageStr)
             throws IOException, ExtractionException {
 
-        if (StringUtils.isEmpty(prevpageStr))
-            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
+        if (StringUtils.isEmpty(q) || StringUtils.isEmpty(prevpageStr))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query and nextpage are required parameter"));
 
         Page prevpage = mapper.readValue(prevpageStr, Page.class);
 
