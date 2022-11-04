@@ -18,10 +18,7 @@ import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
 import me.kavin.piped.server.handlers.auth.FeedHandlers;
 import me.kavin.piped.server.handlers.auth.UserHandlers;
 import me.kavin.piped.utils.*;
-import me.kavin.piped.utils.resp.DeleteUserRequest;
-import me.kavin.piped.utils.resp.LoginRequest;
-import me.kavin.piped.utils.resp.StackTraceResponse;
-import me.kavin.piped.utils.resp.SubscriptionUpdateRequest;
+import me.kavin.piped.utils.resp.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
@@ -289,7 +286,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/feed/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(
-                                Objects.requireNonNull(request.getQueryParameter("channels")).split(",")
+                                getArray(request.getQueryParameter("channels"))
                         ), "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -297,7 +294,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/feed/unauthenticated/rss", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getRawResponse(FeedHandlers.unauthenticatedFeedResponseRSS(
-                                Objects.requireNonNull(request.getQueryParameter("channels")).split(",")
+                                getArray(request.getQueryParameter("channels"))
                         ), "application/atom+xml", "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -407,6 +404,15 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/", AsyncServlet.ofBlocking(executor, request -> HttpResponse.redirect302(Constants.FRONTEND_URL)));
 
         return new CustomServletDecorator(router);
+    }
+
+    private static String[] getArray(String s) {
+
+        if (s == null) {
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse());
+        }
+
+        return s.split(",");
     }
 
     @Override
