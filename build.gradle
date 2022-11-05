@@ -19,7 +19,7 @@ dependencies {
     implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:cd90b9f950480a1991ef1175b8d10392a6f49234'
     implementation 'com.github.FireMasterK:nanojson:5df3e81e87b791d01f132f376e4b7d4a1780f346'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.14.0'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.4'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.1'
     implementation 'com.rometools:rome:1.18.0'
