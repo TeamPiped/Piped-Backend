@@ -97,7 +97,7 @@ public class Constants {
             PUBSUB_URL = getProperty(prop, "PUBSUB_URL", PUBLIC_URL);
             PUBSUB_HUB_URL = getProperty(prop, "PUBSUB_HUB_URL", "https://pubsubhubbub.appspot.com/subscribe");
             HTTP_PROXY = getProperty(prop, "HTTP_PROXY");
-            FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.kavin.rocks");
+            FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.video");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
             FEED_RETENTION = Integer.parseInt(getProperty(prop, "FEED_RETENTION", "30"));
