@@ -1,7 +1,10 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
+import me.kavin.piped.utils.obj.MatrixHelper;
 import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
@@ -18,6 +21,20 @@ public class VideoHelpers {
     }
 
     public static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel) {
+
+        Multithreading.runAsync(() -> {
+            if (info.getUploadDate() != null && System.currentTimeMillis() - info.getUploadDate().offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
+                try {
+                    MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
+                            StringUtils.substring(info.getUrl(), -11), StringUtils.substring(info.getUploaderUrl(), -24),
+                            info.getName(),
+                            info.getDuration(), info.getViewCount())
+                    );
+                } catch (Exception e) {
+                    ExceptionHandler.handle(e);
+                }
+            }
+        });
 
         if (channel == null)
             channel = DatabaseHelper.getChannelFromId(
