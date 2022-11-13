@@ -1,6 +1,8 @@
 package me.kavin.piped.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import me.kavin.piped.consts.Constants;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -28,5 +30,17 @@ public class RequestUtils {
         response.close();
 
         return responseString;
+    }
+
+    public static JsonNode getJsonNode(OkHttpClient client, Request request) throws IOException {
+        try (var resp = client.newCall(request).execute()) {
+            try {
+                return Constants.mapper.readTree(resp.body().byteStream());
+            } catch (Exception e) {
+                if (!resp.isSuccessful())
+                    ExceptionHandler.handle(e);
+                throw new RuntimeException("Failed to parse JSON", e);
+            }
+        }
     }
 }

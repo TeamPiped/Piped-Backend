@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.*;
+import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.VideoResolvedResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -147,8 +148,14 @@ public class StreamHandlers {
         long time = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
 
-        if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+        if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
             VideoHelpers.updateVideo(info.getId(), info, time);
+            MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
+                    info.getId(), StringUtils.substring(info.getUploaderUrl(), -24),
+                    info.getName(),
+                    info.getDuration(), info.getViewCount())
+            );
+        }
 
         String lbryId;
 
