@@ -7,6 +7,7 @@ import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.*;
 import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
@@ -38,6 +39,23 @@ public class ChannelHandlers {
         final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/" + channelPath);
 
         final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
+
+        Multithreading.runAsync(() -> info.getRelatedItems().forEach(infoItem -> {
+            if (
+                    infoItem.getUploadDate() != null &&
+                            System.currentTimeMillis() - infoItem.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                    < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)
+            )
+                try {
+                    MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
+                            StringUtils.substring(infoItem.getUrl(), -11), StringUtils.substring(infoItem.getUploaderUrl(), -24),
+                            infoItem.getName(),
+                            infoItem.getDuration(), infoItem.getViewCount())
+                    );
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+        }));
 
         Multithreading.runAsync(() -> {
 

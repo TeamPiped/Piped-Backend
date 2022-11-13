@@ -70,6 +70,12 @@ public class Constants {
 
     public static final String SENTRY_DSN;
 
+    public static final String MATRIX_ROOM = "#piped-events:matrix.org";
+
+    public static final String MATRIX_SERVER;
+
+    public static final String MATRIX_TOKEN;
+
     public static final String VERSION;
 
     public static final ObjectMapper mapper = JsonMapper.builder()
@@ -114,6 +120,8 @@ public class Constants {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
             });
+            MATRIX_SERVER = getProperty(prop, "MATRIX_SERVER", "https://matrix-client.matrix.org");
+            MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))

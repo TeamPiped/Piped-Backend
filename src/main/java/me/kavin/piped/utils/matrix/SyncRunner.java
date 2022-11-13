@@ -1,0 +1,210 @@
+package me.kavin.piped.utils.matrix;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.obj.db.Channel;
+import me.kavin.piped.utils.obj.federation.FederatedChannelInfo;
+import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import org.hibernate.StatelessSession;
+
+import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import static me.kavin.piped.consts.Constants.mapper;
+import static me.kavin.piped.utils.obj.MatrixHelper.*;
+
+public class SyncRunner implements Runnable {
+
+    private final OkHttpClient client;
+    private final String url;
+    private final String token;
+
+    /**
+     * @param client The OkHttpClient to use
+     * @param url    The URL to send the request to
+     * @param token  The access token to use requests.
+     */
+    public SyncRunner(OkHttpClient client, String url, String token) {
+        this.client = client;
+        this.url = url;
+        this.token = token;
+    }
+
+    @Override
+    public void run() {
+
+        try {
+            String user_id = null;
+
+            if (!UNAUTHENTICATED) {
+                // whoami to get the user id
+                user_id = RequestUtils.getJsonNode(client, new Request.Builder()
+                                .url(url + "/_matrix/client/v3/account/whoami")
+                                .header("Authorization", "Bearer " + token)
+                                .build())
+                        .get("user_id")
+                        .asText();
+            }
+
+            System.out.println("Logged in as user: " + user_id);
+
+            // Join room and get the room id
+            System.out.println("Room ID: " + ROOM_ID);
+
+            String filter_id = null;
+
+            // We have to filter on client-side if unauthenticated
+            if (!UNAUTHENTICATED) {
+                // Get the filter id
+                filter_id = getFilterId(user_id, ROOM_ID);
+            }
+
+            System.out.println("Filter ID: " + filter_id);
+
+            String next_batch = null;
+
+            //noinspection InfiniteLoopStatement
+            while (true) {
+                try {
+                    String url;
+
+                    if (UNAUTHENTICATED) {
+                        url = this.url + "/_matrix/client/v3/events?room_id=" + URLUtils.silentEncode(ROOM_ID);
+                    } else {
+                        url = this.url + "/_matrix/client/v3/sync?filter=" + filter_id;
+                    }
+
+                    boolean initial_sync = next_batch == null;
+
+                    if (initial_sync) {
+                        url += "&timeout=0";
+                    } else {
+                        url += "&" + (UNAUTHENTICATED ? "from" : "since") + "=" + next_batch;
+                        url += "&timeout=30000";
+                    }
+
+                    var response = RequestUtils.getJsonNode(client, new Request.Builder()
+                            .url(url)
+                            .header("Authorization", "Bearer " + token)
+                            .build());
+
+                    Set<JsonNode> events;
+
+                    if (UNAUTHENTICATED) {
+                        events = StreamSupport.stream(response.get("chunk").spliterator(), true)
+                                .filter(event -> event.get("type").asText().startsWith("video.piped."))
+                                .filter(event -> {
+                                    var sender = event.get("sender").asText();
+                                    for (var user : AUTHORIZED_USERS)
+                                        if (user.asText().equals(sender))
+                                            return true;
+                                    return false;
+                                })
+                                .collect(Collectors.toUnmodifiableSet());
+                    } else {
+                        var resp_events = response.at("/rooms/join/" + ROOM_ID + "/timeline").get("events");
+                        if (resp_events != null) {
+                            events = StreamSupport.stream(resp_events.spliterator(), true)
+                                    .collect(Collectors.toUnmodifiableSet());
+                        } else {
+                            events = Set.of();
+                        }
+                    }
+
+                    if (!initial_sync && events.size() > 0) {
+
+                        System.out.println("Got " + events.size() + " events");
+
+                        for (var event : events) {
+
+                            var type = event.get("type").asText();
+
+                            if (event.get("sender").asText().equals(user_id)) {
+
+                                if (type.startsWith("video.piped.stream.bypass.")) {
+                                    // TODO: Implement geo-restriction bypassing
+                                }
+
+                                continue;
+                            }
+
+                            switch (type) {
+                                case "video.piped.stream.info" -> {
+                                    FederatedVideoInfo info = mapper.treeToValue(event.at("/content/content"), FederatedVideoInfo.class);
+                                    Multithreading.runAsync(() -> {
+                                        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                                            var video = DatabaseHelper.getVideoFromId(s, info.getVideoId());
+                                            Channel channel;
+                                            if (video != null)
+                                                VideoHelpers.updateVideo(s, video,
+                                                        info.getViews(),
+                                                        info.getDuration(),
+                                                        info.getTitle());
+                                            else if ((channel = DatabaseHelper.getChannelFromId(s, info.getUploaderId())) != null) {
+                                                VideoHelpers.handleNewVideo("https://www.youtube.com/watch?v=" + info.getVideoId(), System.currentTimeMillis(), channel);
+                                            }
+                                        }
+                                    });
+                                }
+                                case "video.piped.channel.info" -> {
+                                    FederatedChannelInfo info = mapper.treeToValue(event.at("/content/content"), FederatedChannelInfo.class);
+                                    // TODO: Handle and send channel updates
+                                }
+                                default -> System.err.println("Unknown event type: " + type);
+                            }
+                        }
+                    }
+
+                    next_batch = UNAUTHENTICATED ?
+                            response.get("end").asText() :
+                            response.get("next_batch").asText();
+
+                } catch (Exception ignored) {
+                    Thread.sleep(1000);
+                }
+            }
+
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getFilterId(String user_id, String room_id) throws IOException {
+
+        var root = mapper.createObjectNode();
+
+        var room = root.putObject("room");
+        var timeline = room
+                .putObject("timeline")
+                .put("lazy_load_members", true)
+                .put("limit", 50);
+
+        room.putArray("rooms").add(room_id);
+        timeline.set("senders", AUTHORIZED_USERS);
+
+        timeline.putArray("types").add("video.piped.*");
+
+        root.putObject("account_data").putArray("not_types").add("*");
+        root.putObject("presence").putArray("not_types").add("*");
+        room.putObject("account_data").put("lazy_load_members", true).putArray("not_types").add("*");
+        room.putObject("ephemeral").put("lazy_load_members", true).putArray("not_types").add("*");
+        room.putObject("state").put("lazy_load_members", true).putArray("not_types").add("*");
+
+        // Create a filter
+        return RequestUtils.getJsonNode(client, new Request.Builder()
+                        .url(url + "/_matrix/client/v3/user/" + URLUtils.silentEncode(user_id) + "/filter")
+                        .header("Authorization", "Bearer " + token)
+                        .post(RequestBody.create(mapper.writeValueAsBytes(
+                                root
+                        ), MediaType.get("application/json")))
+                        .build())
+                .get("filter_id")
+                .asText();
+    }
+}

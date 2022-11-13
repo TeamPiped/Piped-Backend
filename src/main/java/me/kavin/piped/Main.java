@@ -6,8 +6,11 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.ServerLauncher;
 import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.matrix.SyncRunner;
+import me.kavin.piped.utils.obj.MatrixHelper;
 import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.Video;
+import okhttp3.OkHttpClient;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -20,6 +23,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static me.kavin.piped.consts.Constants.MATRIX_SERVER;
 
 public class Main {
 
@@ -37,6 +42,12 @@ public class Main {
         });
 
         Injector.useSpecializer();
+
+        new Thread(new SyncRunner(
+                new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build(),
+                MATRIX_SERVER,
+                MatrixHelper.MATRIX_TOKEN)
+        ).start();
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -136,7 +147,7 @@ public class Main {
                     var subQuery = pvQuery.subquery(me.kavin.piped.utils.obj.db.Playlist.class);
                     var subRoot = subQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
 
-                    subQuery.select(subRoot.join("videos").get("id"));
+                    subQuery.select(subRoot.join("videos").get("id")).distinct(true);
 
                     pvQuery.where(cb.not(pvRoot.get("id").in(subQuery)));
 
