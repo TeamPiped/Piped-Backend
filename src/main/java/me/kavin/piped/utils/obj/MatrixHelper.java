@@ -77,7 +77,7 @@ public class MatrixHelper {
                 .put(RequestBody.create(mapper.writeValueAsBytes(
                         mapper.createObjectNode()
                                 .put("msgtype", type)
-                                .set("body", mapper.valueToTree(content))
+                                .set("content", mapper.valueToTree(content))
                 ), MediaType.get("application/json")))
                 .build()
         ).get("event_id").asText();
