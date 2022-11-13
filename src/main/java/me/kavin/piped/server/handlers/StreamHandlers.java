@@ -22,6 +22,7 @@ import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamType;
 import org.schabi.newpipe.extractor.utils.JsonUtils;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -150,11 +151,17 @@ public class StreamHandlers {
 
         if (info.getUploadDate() != null && System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
             VideoHelpers.updateVideo(info.getId(), info, time);
-            MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
-                    info.getId(), StringUtils.substring(info.getUploaderUrl(), -24),
-                    info.getName(),
-                    info.getDuration(), info.getViewCount())
-            );
+            Multithreading.runAsync(() -> {
+                try {
+                    MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
+                            info.getId(), StringUtils.substring(info.getUploaderUrl(), -24),
+                            info.getName(),
+                            info.getDuration(), info.getViewCount())
+                    );
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
         String lbryId;
