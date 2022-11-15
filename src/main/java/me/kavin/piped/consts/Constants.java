@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
+import me.kavin.piped.utils.resp.ListLinkHandlerMixin;
 import okhttp3.OkHttpClient;
 import okhttp3.brotli.BrotliInterceptor;
 import org.apache.commons.io.IOUtils;
@@ -12,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
+import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 
 import java.io.File;
 import java.io.FileReader;
@@ -80,6 +82,7 @@ public class Constants {
 
     public static final ObjectMapper mapper = JsonMapper.builder()
             .addMixIn(Page.class, PageMixin.class)
+            .addMixIn(ListLinkHandler.class, ListLinkHandlerMixin.class)
             .build();
 
     public static final Object2ObjectOpenHashMap<String, String> hibernateProperties = new Object2ObjectOpenHashMap<>();
@@ -162,11 +165,11 @@ public class Constants {
         }
     }
 
-    private static final String getProperty(final Properties prop, String key) {
+    private static String getProperty(final Properties prop, String key) {
         return getProperty(prop, key, null);
     }
 
-    private static final String getProperty(final Properties prop, String key, String def) {
+    private static String getProperty(final Properties prop, String key, String def) {
 
         final String envVal = System.getenv(key);
 

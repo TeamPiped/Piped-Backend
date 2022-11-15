@@ -17,7 +17,7 @@ import org.schabi.newpipe.extractor.channel.ChannelInfo;
 import org.schabi.newpipe.extractor.channel.ChannelTabInfo;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
-import org.schabi.newpipe.extractor.services.youtube.linkHandler.YouTubeChannelTabHandler;
+import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
 import java.io.IOException;
@@ -140,7 +140,7 @@ public class ChannelHandlers {
                 .stream()
                 .map(tab -> {
                     try {
-                        return new ChannelTab(tab.getTab().name(), mapper.writeValueAsString(tab));
+                        return new ChannelTab(tab.getContentFilters().get(0), mapper.writeValueAsString(tab));
                     } catch (JsonProcessingException e) {
                         throw new RuntimeException(e);
                     }
@@ -190,7 +190,7 @@ public class ChannelHandlers {
         if (StringUtils.isEmpty(data))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("data is a required parameter"));
 
-        YouTubeChannelTabHandler tabHandler = mapper.readValue(data, YouTubeChannelTabHandlerMixin.class);
+        ListLinkHandler tabHandler = mapper.readValue(data, ListLinkHandler.class);
 
         var info = ChannelTabInfo.getInfo(YOUTUBE_SERVICE, tabHandler);
 
@@ -210,7 +210,7 @@ public class ChannelHandlers {
         if (StringUtils.isEmpty(data))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("data is a required parameter"));
 
-        YouTubeChannelTabHandler tabHandler = mapper.readValue(data, YouTubeChannelTabHandlerMixin.class);
+        ListLinkHandler tabHandler = mapper.readValue(data, ListLinkHandler.class);
 
         Page prevPage = mapper.readValue(prevPageStr, Page.class);
 
