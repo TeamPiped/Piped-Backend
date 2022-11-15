@@ -43,11 +43,11 @@ public class Main {
 
         Injector.useSpecializer();
 
-        new Thread(new SyncRunner(
+        Multithreading.runAsync(() -> new Thread(new SyncRunner(
                 new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build(),
                 MATRIX_SERVER,
                 MatrixHelper.MATRIX_TOKEN)
-        ).start();
+        ).start());
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
