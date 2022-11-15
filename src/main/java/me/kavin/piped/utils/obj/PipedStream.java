@@ -2,7 +2,7 @@ package me.kavin.piped.utils.obj;
 
 public class PipedStream {
 
-    public String url, format, quality, mimeType, codec;
+    public String url, format, quality, mimeType, codec, audioTrackId, audioTrackName;
     public boolean videoOnly;
 
     public int bitrate, initStart, initEnd, indexStart, indexEnd, width, height, fps;
@@ -16,7 +16,7 @@ public class PipedStream {
     }
 
     public PipedStream(String url, String format, String quality, String mimeType, boolean videoOnly, int bitrate,
-            int initStart, int initEnd, int indexStart, int indexEnd, String codec) {
+                       int initStart, int initEnd, int indexStart, int indexEnd, String codec, String audioTrackId, String audioTrackName) {
         this.url = url;
         this.format = format;
         this.quality = quality;
@@ -28,10 +28,12 @@ public class PipedStream {
         this.indexStart = indexStart;
         this.indexEnd = indexEnd;
         this.codec = codec;
+        this.audioTrackId = audioTrackId;
+        this.audioTrackName = audioTrackName;
     }
 
     public PipedStream(String url, String format, String quality, String mimeType, boolean videoOnly, int bitrate,
-            int initStart, int initEnd, int indexStart, int indexEnd, String codec, int width, int height, int fps) {
+                       int initStart, int initEnd, int indexStart, int indexEnd, String codec, int width, int height, int fps) {
         this.url = url;
         this.format = format;
         this.quality = quality;

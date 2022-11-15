@@ -141,7 +141,7 @@ public class StreamHandlers {
                     .forEach(stream -> audioStreams.add(new PipedStream(rewriteVideoURL(stream.getContent()),
                             String.valueOf(stream.getFormat()), stream.getAverageBitrate() + " kbps",
                             stream.getFormat().getMimeType(), false, stream.getBitrate(), stream.getInitStart(),
-                            stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec())));
+                            stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec(), stream.getAudioTrackId(), stream.getAudioTrackName())));
         }
 
         final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
