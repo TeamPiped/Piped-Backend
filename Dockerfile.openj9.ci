@@ -6,6 +6,8 @@ COPY ./piped.jar /app/piped.jar
 
 COPY VERSION .
 
+RUN /bin/bash -c 'java -Xshareclasses:allowClasspaths -Xquickstart -jar /app/piped.jar &' ; sleep 30 ; pkill java
+
 EXPOSE 8080
 
 CMD java -server -Xmx1G -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+UseParallelGC -XX:-UseBiasedLocking -Xshareclasses:allowClasspaths -Xtune:virtualized -jar /app/piped.jar

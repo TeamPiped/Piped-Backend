@@ -90,7 +90,10 @@ public class Constants {
         Properties prop = new Properties();
         try {
             YOUTUBE_SERVICE = NewPipe.getService(0);
-            prop.load(new FileReader("config.properties"));
+
+            if (new File("config.properties").exists()) {
+                prop.load(new FileReader("config.properties"));
+            }
 
             PORT = Integer.parseInt(getProperty(prop, "PORT", "8080"));
             HTTP_WORKERS = getProperty(prop, "HTTP_WORKERS",
