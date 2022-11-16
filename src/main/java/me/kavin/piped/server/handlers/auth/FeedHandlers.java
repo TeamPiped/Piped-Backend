@@ -14,6 +14,7 @@ import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.Multithreading;
 import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.SubscriptionChannel;
+import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.db.UnauthenticatedSubscription;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.obj.db.Video;
@@ -436,8 +437,8 @@ public class FeedHandlers {
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
                 CriteriaBuilder cb = s.getCriteriaBuilder();
-                var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
-                var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+                var query = cb.createQuery(Channel.class);
+                var root = query.from(Channel.class);
                 var subquery = query.subquery(User.class);
                 var subroot = subquery.from(User.class);
 
@@ -449,8 +450,8 @@ public class FeedHandlers {
 
                 List<SubscriptionChannel> subscriptionItems = s.createQuery(query)
                         .stream().parallel()
-                        .filter(Objects::nonNull)
-                        .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
+                        .filter(channel -> channel.getUploader() != null)
+                        .sorted(Comparator.comparing(Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
                         .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
                                 channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
                         .toList();
@@ -478,14 +479,15 @@ public class FeedHandlers {
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
             CriteriaBuilder cb = s.getCriteriaBuilder();
-            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Channel.class);
-            var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+            var query = cb.createQuery(Channel.class);
+            var root = query.from(Channel.class);
             query.select(root);
             query.where(root.get("uploader_id").in(filtered));
 
             List<SubscriptionChannel> subscriptionItems = s.createQuery(query)
                     .stream().parallel()
-                    .sorted(Comparator.comparing(me.kavin.piped.utils.obj.db.Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
+                    .filter(channel -> channel.getUploader() != null)
+                    .sorted(Comparator.comparing(Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
                     .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
                             channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
                     .toList();
