@@ -101,7 +101,7 @@ public class StreamHandlers {
         final List<Subtitle> subtitles = new ObjectArrayList<>();
         final List<ChapterSegment> chapters = new ObjectArrayList<>();
 
-        final StreamInfo info = futureStream.get();
+        final StreamInfo info = futureStream.get(10, TimeUnit.SECONDS);
 
         info.getStreamSegments().forEach(segment -> chapters.add(new ChapterSegment(segment.getTitle(), rewriteURL(segment.getPreviewUrl()),
                 segment.getStartTimeSeconds())));
