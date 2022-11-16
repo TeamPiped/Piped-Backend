@@ -7,6 +7,7 @@ import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.*;
 import me.kavin.piped.utils.obj.db.Video;
+import me.kavin.piped.utils.obj.federation.FederatedChannelInfo;
 import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -58,6 +59,14 @@ public class ChannelHandlers {
         }));
 
         Multithreading.runAsync(() -> {
+            try {
+                MatrixHelper.sendEvent("video.piped.channel.info", new FederatedChannelInfo(info.getId(), info.getName(), info.getAvatarUrl(), info.isVerified()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        Multithreading.runAsync(() -> {
 
             var channel = DatabaseHelper.getChannelFromId(info.getId());
 
@@ -65,28 +74,7 @@ public class ChannelHandlers {
 
                 if (channel != null) {
 
-                    boolean modified = false;
-
-                    if (channel.isVerified() != info.isVerified()) {
-                        channel.setVerified(info.isVerified());
-                        modified = true;
-                    }
-
-                    if (!channel.getUploaderAvatar().equals(info.getAvatarUrl())) {
-                        channel.setUploaderAvatar(info.getAvatarUrl());
-                        modified = true;
-                    }
-
-                    if (!channel.getUploader().equals(info.getName())) {
-                        channel.setUploader(info.getName());
-                        modified = true;
-                    }
-
-                    if (modified) {
-                        var tr = s.beginTransaction();
-                        s.update(channel);
-                        tr.commit();
-                    }
+                    ChannelHelpers.updateChannel(s, channel, info.getName(), info.getAvatarUrl(), info.isVerified());
 
                     Set<String> ids = info.getRelatedItems()
                             .stream()
