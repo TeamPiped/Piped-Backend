@@ -134,9 +134,11 @@ public class SyncRunner implements Runnable {
                                 continue;
                             }
 
+                            var content = event.at("/content/content");
+
                             switch (type) {
                                 case "video.piped.stream.info" -> {
-                                    FederatedVideoInfo info = mapper.treeToValue(event.at("/content/content"), FederatedVideoInfo.class);
+                                    FederatedVideoInfo info = mapper.treeToValue(content, FederatedVideoInfo.class);
                                     Multithreading.runAsync(() -> {
                                         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                                             var video = DatabaseHelper.getVideoFromId(s, info.getVideoId());
@@ -153,8 +155,17 @@ public class SyncRunner implements Runnable {
                                     });
                                 }
                                 case "video.piped.channel.info" -> {
-                                    FederatedChannelInfo info = mapper.treeToValue(event.at("/content/content"), FederatedChannelInfo.class);
-                                    // TODO: Handle and send channel updates
+                                    FederatedChannelInfo info = mapper.treeToValue(content, FederatedChannelInfo.class);
+                                    Multithreading.runAsync(() -> {
+                                        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                                            var channel = DatabaseHelper.getChannelFromId(s, info.getId());
+                                            if (channel != null)
+                                                ChannelHelpers.updateChannel(s, channel,
+                                                        info.getName(),
+                                                        info.getUploaderUrl(),
+                                                        info.isVerified());
+                                        }
+                                    });
                                 }
                                 default -> System.err.println("Unknown event type: " + type);
                             }
