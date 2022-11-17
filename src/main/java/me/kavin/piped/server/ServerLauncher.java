@@ -22,6 +22,7 @@ import me.kavin.piped.utils.resp.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
+import org.hibernate.StatelessSession;
 import org.jetbrains.annotations.NotNull;
 import org.xml.sax.InputSource;
 
@@ -72,8 +73,10 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         Multithreading.runAsync(() -> {
                             for (var entry : feed.getEntries()) {
                                 String url = entry.getLinks().get(0).getHref();
-                                if (DatabaseHelper.getVideoFromId(StringUtils.substring(url, -11)) != null)
-                                    continue;
+                                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                                    if (DatabaseHelper.doesVideoExist(s, StringUtils.substring(url, -11)))
+                                        continue;
+                                }
                                 VideoHelpers.handleNewVideo(url, entry.getPublishedDate().getTime(), null);
                             }
                         });
