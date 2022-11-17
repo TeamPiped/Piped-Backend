@@ -62,17 +62,13 @@ public class VideoHelpers {
         }
     }
 
-    public static void updateVideo(String id, StreamInfoItem item, long time, boolean addIfNotExistent) {
+    public static void updateVideo(String id, StreamInfoItem item, long time) {
         Multithreading.runAsync(() -> {
             try {
-                Video video = DatabaseHelper.getVideoFromId(id);
-
-                if (video != null) {
-                    try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                        updateVideo(s, video, item.getViewCount(), item.getDuration(), item.getName());
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                    if (!updateVideo(s, id, item.getViewCount(), item.getDuration(), item.getName())) {
+                        handleNewVideo(item.getUrl(), time, null);
                     }
-                } else if (addIfNotExistent) {
-                    handleNewVideo("https://www.youtube.com/watch?v=" + id, time, null);
                 }
 
             } catch (Exception e) {
@@ -84,47 +80,43 @@ public class VideoHelpers {
     public static void updateVideo(String id, StreamInfo info, long time) {
         Multithreading.runAsync(() -> {
             try {
-                Video video = DatabaseHelper.getVideoFromId(id);
-
-                if (video != null) {
-                    try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                        updateVideo(s, video, info.getViewCount(), info.getDuration(), info.getName());
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                    if (!updateVideo(s, id, info.getViewCount(), info.getDuration(), info.getName())) {
+                        handleNewVideo(info, time, null);
                     }
-                } else {
-                    handleNewVideo(info, time, null);
                 }
-
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             }
         });
     }
 
-    public static void updateVideo(StatelessSession s, Video video, StreamInfoItem item) {
-        updateVideo(s, video, item.getViewCount(), item.getDuration(), item.getName());
+    public static void updateVideo(StatelessSession s, String id, StreamInfoItem item) {
+        updateVideo(s, id, item.getViewCount(), item.getDuration(), item.getName());
     }
 
-    public static void updateVideo(StatelessSession s, Video video, long views, long duration, String title) {
+    public static boolean updateVideo(StatelessSession s, String id, long views, long duration, String title) {
 
-        boolean changed = false;
+        var cb = s.getCriteriaBuilder();
+        var cu = cb.createCriteriaUpdate(Video.class);
+        var root = cu.from(Video.class);
+        cu.where(cb.equal(root.get("id"), id));
 
-        if (duration > 0 && video.getDuration() != duration) {
-            video.setDuration(duration);
-            changed = true;
+
+        if (duration > 0) {
+            cu.set(root.get("duration"), duration);
         }
-        if (!video.getTitle().equals(title)) {
-            video.setTitle(title);
-            changed = true;
+        if (title != null) {
+            cu.set(root.get("title"), title);
         }
-        if (views > video.getViews()) {
-            video.setViews(views);
-            changed = true;
+        if (views > 0) {
+            cu.set(root.get("views"), views);
         }
 
-        if (changed) {
-            var tr = s.beginTransaction();
-            s.update(video);
-            tr.commit();
-        }
+        var tr = s.beginTransaction();
+        long updated = s.createMutationQuery(cu).executeUpdate();
+        tr.commit();
+
+        return updated > 0;
     }
 }
