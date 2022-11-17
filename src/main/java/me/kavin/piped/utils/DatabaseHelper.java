@@ -96,6 +96,15 @@ public class DatabaseHelper {
         }
     }
 
+    public static boolean doesVideoExist(SharedSessionContract s, String id) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<Video> cr = cb.createQuery(Video.class);
+        Root<Video> root = cr.from(Video.class);
+        cr.select(root.get("id")).where(cb.equal(root.get("id"), id));
+
+        return s.createQuery(cr).uniqueResult() != null;
+    }
+
     public static PlaylistVideo getPlaylistVideoFromId(SharedSessionContract s, String id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);

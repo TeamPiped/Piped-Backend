@@ -2,7 +2,6 @@ package me.kavin.piped.utils.matrix;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import me.kavin.piped.utils.*;
-import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.federation.FederatedChannelInfo;
 import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import okhttp3.MediaType;
@@ -119,8 +118,6 @@ public class SyncRunner implements Runnable {
 
                     if (!initial_sync && events.size() > 0) {
 
-                        System.out.println("Got " + events.size() + " events");
-
                         for (var event : events) {
 
                             var type = event.get("type").asText();
@@ -141,15 +138,12 @@ public class SyncRunner implements Runnable {
                                     FederatedVideoInfo info = mapper.treeToValue(content, FederatedVideoInfo.class);
                                     Multithreading.runAsync(() -> {
                                         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                                            var video = DatabaseHelper.getVideoFromId(s, info.getVideoId());
-                                            Channel channel;
-                                            if (video != null)
-                                                VideoHelpers.updateVideo(s, video,
-                                                        info.getViews(),
-                                                        info.getDuration(),
-                                                        info.getTitle());
-                                            else if ((channel = DatabaseHelper.getChannelFromId(s, info.getUploaderId())) != null) {
-                                                VideoHelpers.handleNewVideo("https://www.youtube.com/watch?v=" + info.getVideoId(), System.currentTimeMillis(), channel);
+                                            if (!VideoHelpers.updateVideo(s, info.getVideoId(),
+                                                    info.getViews(),
+                                                    info.getDuration(),
+                                                    info.getTitle())) {
+                                                VideoHelpers.handleNewVideo("https://www.youtube.com/watch?v=" + info.getVideoId(),
+                                                        System.currentTimeMillis(), null);
                                             }
                                         }
                                     });
