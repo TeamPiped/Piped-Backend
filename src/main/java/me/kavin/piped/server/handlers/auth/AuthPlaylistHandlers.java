@@ -224,7 +224,6 @@ public class AuthPlaylistHandlers {
             var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
             root.fetch("videos", JoinType.LEFT);
-            root.fetch("owner", JoinType.LEFT);
             query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var playlist = s.createQuery(query).uniqueResult();
 
@@ -280,7 +279,6 @@ public class AuthPlaylistHandlers {
             var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
             root.fetch("videos", JoinType.LEFT);
-            root.fetch("owner", JoinType.LEFT);
             query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var playlist = s.createQuery(query).uniqueResult();
 
