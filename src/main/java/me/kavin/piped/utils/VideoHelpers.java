@@ -43,22 +43,23 @@ public class VideoHelpers {
         long infoTime = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
 
-        Video video = null;
-
-        if (channel != null && (video = DatabaseHelper.getVideoFromId(info.getId())) == null
+        if (channel != null
                 && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
-
-            video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
-                    Math.max(infoTime, time), info.getThumbnailUrl(), info.isShortFormContent(), channel);
-
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                var tr = s.beginTransaction();
-                s.insert(video);
-                tr.commit();
+                if (!DatabaseHelper.doesVideoExist(s, info.getId())) {
+
+                    Video video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
+                            Math.max(infoTime, time), info.getThumbnailUrl(), info.isShortFormContent(), channel);
+
+                    var tr = s.beginTransaction();
+                    s.insert(video);
+                    tr.commit();
+                    return;
+                }
             }
 
-        } else if (video != null) {
             updateVideo(info.getId(), info, time);
+
         }
     }
 
