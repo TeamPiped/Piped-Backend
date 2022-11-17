@@ -33,7 +33,7 @@ public class LbryHelper {
             return null;
 
         var request = new Request.Builder()
-                .url("https://api.lbry.tv/api/v1/proxy?m=get")
+                .url("https://api.na-backend.odysee.com/api/v1/proxy?m=get")
                 .post(RequestBody.create(mapper.writeValueAsBytes(
                         mapper.createObjectNode()
                                 .put("id", System.currentTimeMillis())
