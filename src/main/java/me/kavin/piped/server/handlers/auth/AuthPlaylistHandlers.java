@@ -26,7 +26,6 @@ import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
-import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
@@ -49,13 +48,12 @@ public class AuthPlaylistHandlers {
         if (StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is a required parameter"));
 
-        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
             var cb = s.getCriteriaBuilder();
             var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos", JoinType.LEFT)
-                    .fetch("channel", JoinType.LEFT);
-            root.fetch("owner", JoinType.LEFT);
+            root.fetch("videos", JoinType.RIGHT)
+                    .fetch("channel", JoinType.INNER);
             cq.select(root);
             cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var query = s.createQuery(cq);
@@ -89,13 +87,12 @@ public class AuthPlaylistHandlers {
         if (StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is required parameter"));
 
-        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
             var cb = s.getCriteriaBuilder();
             var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos", JoinType.LEFT)
-                    .fetch("channel", JoinType.LEFT);
-            root.fetch("owner", JoinType.LEFT);
+            root.fetch("videos", JoinType.RIGHT)
+                    .fetch("channel", JoinType.INNER);
             cq.select(root);
             cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var query = s.createQuery(cq);
