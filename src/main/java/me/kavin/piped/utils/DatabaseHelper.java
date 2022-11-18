@@ -150,7 +150,7 @@ public class DatabaseHelper {
             sq.select(sqRoot.get("videos").get("id"))
                     .where(cb.equal(sqRoot.get("playlist_id"), UUID.fromString(id)));
         }
-        cr.where(cb.equal(root.get("id"), sq));
+        cr.where(root.get("id").in(sq));
 
         return s.createQuery(cr).list();
     }

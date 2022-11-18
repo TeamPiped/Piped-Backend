@@ -106,7 +106,7 @@ public class ChannelHandlers {
                                         .filter(v -> v.getId().equals(id))
                                         .findFirst();
                                 if (video.isPresent()) {
-                                    VideoHelpers.updateVideo(s, id, item);
+                                    VideoHelpers.updateVideo(id, item);
                                 } else {
                                     VideoHelpers.handleNewVideo("https://youtube.com/watch?v=" + id, time, channel);
                                 }

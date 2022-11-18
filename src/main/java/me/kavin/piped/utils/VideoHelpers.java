@@ -52,8 +52,13 @@ public class VideoHelpers {
                             Math.max(infoTime, time), info.getThumbnailUrl(), info.isShortFormContent(), channel);
 
                     var tr = s.beginTransaction();
-                    s.insert(video);
-                    tr.commit();
+                    try {
+                        s.insert(video);
+                        tr.commit();
+                    } catch (Exception e) {
+                        tr.rollback();
+                        ExceptionHandler.handle(e);
+                    }
                     return;
                 }
             }
@@ -66,12 +71,9 @@ public class VideoHelpers {
     public static void updateVideo(String id, StreamInfoItem item, long time) {
         Multithreading.runAsync(() -> {
             try {
-                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                    if (!updateVideo(s, id, item.getViewCount(), item.getDuration(), item.getName())) {
-                        handleNewVideo(item.getUrl(), time, null);
-                    }
+                if (!updateVideo(id, item.getViewCount(), item.getDuration(), item.getName())) {
+                    handleNewVideo(item.getUrl(), time, null);
                 }
-
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
             }
@@ -81,10 +83,8 @@ public class VideoHelpers {
     public static void updateVideo(String id, StreamInfo info, long time) {
         Multithreading.runAsync(() -> {
             try {
-                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                    if (!updateVideo(s, id, info.getViewCount(), info.getDuration(), info.getName())) {
-                        handleNewVideo(info, time, null);
-                    }
+                if (!updateVideo(id, info.getViewCount(), info.getDuration(), info.getName())) {
+                    handleNewVideo(info, time, null);
                 }
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
@@ -92,32 +92,43 @@ public class VideoHelpers {
         });
     }
 
-    public static void updateVideo(StatelessSession s, String id, StreamInfoItem item) {
-        updateVideo(s, id, item.getViewCount(), item.getDuration(), item.getName());
+    public static void updateVideo(String id, StreamInfoItem item) {
+        updateVideo(id, item.getViewCount(), item.getDuration(), item.getName());
     }
 
-    public static boolean updateVideo(StatelessSession s, String id, long views, long duration, String title) {
+    public static boolean updateVideo(String id, long views, long duration, String title) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
-        var cb = s.getCriteriaBuilder();
-        var cu = cb.createCriteriaUpdate(Video.class);
-        var root = cu.from(Video.class);
-        cu.where(cb.equal(root.get("id"), id));
+            var cb = s.getCriteriaBuilder();
+            var cu = cb.createCriteriaUpdate(Video.class);
+            var root = cu.from(Video.class);
+            cu.where(cb.equal(root.get("id"), id));
 
 
-        if (duration > 0) {
-            cu.set(root.get("duration"), duration);
+            if (duration > 0) {
+                cu.set(root.get("duration"), duration);
+            }
+            if (title != null) {
+                cu.set(root.get("title"), title);
+            }
+            if (views > 0) {
+                cu.set(root.get("views"), views);
+            }
+
+            long updated;
+
+            var tr = s.beginTransaction();
+            try {
+                updated = s.createMutationQuery(cu).executeUpdate();
+                tr.commit();
+            } catch (Exception e) {
+                tr.rollback();
+
+                // return true, so that we don't try to insert a video!
+                return true;
+            }
+
+            return updated > 0;
         }
-        if (title != null) {
-            cu.set(root.get("title"), title);
-        }
-        if (views > 0) {
-            cu.set(root.get("views"), views);
-        }
-
-        var tr = s.beginTransaction();
-        long updated = s.createMutationQuery(cu).executeUpdate();
-        tr.commit();
-
-        return updated > 0;
     }
 }
