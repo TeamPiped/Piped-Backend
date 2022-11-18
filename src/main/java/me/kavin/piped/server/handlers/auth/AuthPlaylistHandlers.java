@@ -5,16 +5,12 @@ import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndEntryImpl;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.feed.synd.SyndFeedImpl;
-import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import jakarta.persistence.criteria.JoinType;
 import me.kavin.piped.consts.Constants;
-import me.kavin.piped.utils.DatabaseHelper;
-import me.kavin.piped.utils.DatabaseSessionFactory;
-import me.kavin.piped.utils.ExceptionHandler;
-import me.kavin.piped.utils.URLUtils;
+import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.ContentItem;
 import me.kavin.piped.utils.obj.Playlist;
 import me.kavin.piped.utils.obj.StreamItem;
@@ -43,21 +39,17 @@ import static me.kavin.piped.utils.URLUtils.rewriteURL;
 import static me.kavin.piped.utils.URLUtils.substringYouTube;
 
 public class AuthPlaylistHandlers {
-    public static byte[] playlistPipedResponse(String playlistId) throws IOException {
+    public static byte[] playlistPipedResponse(String playlistId) throws Exception {
 
         if (StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is a required parameter"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var cb = s.getCriteriaBuilder();
-            var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
-            var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos", JoinType.RIGHT)
-                    .fetch("channel", JoinType.INNER);
-            cq.select(root);
-            cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
-            var query = s.createQuery(cq);
-            var pl = query.uniqueResult();
+
+            var playlistCompletableFuture = Multithreading.supplyAsync(() -> DatabaseHelper.getPlaylistFromId(s, playlistId));
+            var playlistVideosCompletableFuture = Multithreading.supplyAsync(() -> DatabaseHelper.getPlaylistVideosFromPlaylistId(playlistId, true));
+
+            var pl = playlistCompletableFuture.get();
 
             if (pl == null)
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
@@ -65,7 +57,7 @@ public class AuthPlaylistHandlers {
 
             final List<ContentItem> relatedStreams = new ObjectArrayList<>();
 
-            var videos = pl.getVideos();
+            var videos = playlistVideosCompletableFuture.get();
 
             for (var video : videos) {
                 var channel = video.getChannel();
@@ -82,21 +74,16 @@ public class AuthPlaylistHandlers {
     }
 
     public static byte[] playlistPipedRSSResponse(String playlistId)
-            throws FeedException {
+            throws Exception {
 
         if (StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is required parameter"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var cb = s.getCriteriaBuilder();
-            var cq = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
-            var root = cq.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos", JoinType.RIGHT)
-                    .fetch("channel", JoinType.INNER);
-            cq.select(root);
-            cq.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
-            var query = s.createQuery(cq);
-            var pl = query.uniqueResult();
+            var playlistCompletableFuture = Multithreading.supplyAsync(() -> DatabaseHelper.getPlaylistFromId(s, playlistId));
+            var playlistVideosCompletableFuture = Multithreading.supplyAsync(() -> DatabaseHelper.getPlaylistVideosFromPlaylistId(playlistId, true));
+
+            var pl = playlistCompletableFuture.get();
 
             final List<SyndEntry> entries = new ObjectArrayList<>();
 
@@ -108,7 +95,9 @@ public class AuthPlaylistHandlers {
             feed.setLink(Constants.FRONTEND_URL + "/playlist?list=" + pl.getPlaylistId());
             feed.setPublishedDate(new Date());
 
-            for (var video : pl.getVideos()) {
+            var videos = playlistVideosCompletableFuture.get();
+
+            for (var video : videos) {
                 SyndEntry entry = new SyndEntryImpl();
                 entry.setAuthor(video.getChannel().getUploader());
                 entry.setLink(Constants.FRONTEND_URL + "/video?id=" + video.getId());
@@ -223,7 +212,6 @@ public class AuthPlaylistHandlers {
             var cb = s.getCriteriaBuilder();
             var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos", JoinType.RIGHT);
             query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var playlist = s.createQuery(query).uniqueResult();
 

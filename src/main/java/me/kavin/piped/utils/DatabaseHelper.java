@@ -123,6 +123,12 @@ public class DatabaseHelper {
         return s.createQuery(cr).uniqueResult();
     }
 
+    public static Playlist getPlaylistFromId(String id) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+            return getPlaylistFromId(s, id);
+        }
+    }
+
     public static List<PlaylistVideo> getPlaylistVideosFromIds(SharedSessionContract s, Collection<String> id) {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
@@ -130,6 +136,29 @@ public class DatabaseHelper {
         cr.select(root).where(root.get("id").in(id));
 
         return s.createQuery(cr).list();
+    }
+
+    public static List<PlaylistVideo> getPlaylistVideosFromPlaylistId(SharedSessionContract s, String id, boolean fetchChannel) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
+        var root = cr.from(PlaylistVideo.class);
+        root.fetch("channel", JoinType.RIGHT);
+        cr.select(root);
+        var sq = cr.subquery(String.class);
+        {
+            var sqRoot = sq.from(Playlist.class);
+            sq.select(sqRoot.get("videos").get("id"))
+                    .where(cb.equal(sqRoot.get("playlist_id"), UUID.fromString(id)));
+        }
+        cr.where(cb.equal(root.get("id"), sq));
+
+        return s.createQuery(cr).list();
+    }
+
+    public static List<PlaylistVideo> getPlaylistVideosFromPlaylistId(String id, boolean fetchChannel) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+            return getPlaylistVideosFromPlaylistId(s, id, fetchChannel);
+        }
     }
 
     public static PubSub getPubSubFromId(SharedSessionContract s, String id) {

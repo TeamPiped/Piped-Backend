@@ -34,7 +34,7 @@ import static me.kavin.piped.utils.URLUtils.rewriteURL;
 import static me.kavin.piped.utils.URLUtils.substringYouTube;
 
 public class PlaylistHandlers {
-    public static byte[] playlistResponse(String playlistId) throws ExtractionException, IOException {
+    public static byte[] playlistResponse(String playlistId) throws Exception {
 
         if (StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is a required parameter"));
@@ -98,7 +98,7 @@ public class PlaylistHandlers {
 
     }
 
-    public static byte[] playlistRSSResponse(String playlistId) throws ExtractionException, IOException, FeedException {
+    public static byte[] playlistRSSResponse(String playlistId) throws Exception {
 
         if (StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("playlistId is a required parameter"));
