@@ -142,16 +142,11 @@ public class DatabaseHelper {
         CriteriaBuilder cb = s.getCriteriaBuilder();
         CriteriaQuery<PlaylistVideo> cr = cb.createQuery(PlaylistVideo.class);
         var root = cr.from(PlaylistVideo.class);
-        root.fetch("channel", JoinType.RIGHT);
         cr.select(root);
-        var sq = cr.subquery(String.class);
-        {
-            var sqRoot = sq.from(Playlist.class);
-            sq.select(sqRoot.get("videos").get("id"))
-                    .where(cb.equal(sqRoot.get("playlist_id"), UUID.fromString(id)));
-        }
-        cr.where(root.get("id").in(sq));
-
+        root.fetch("channel", JoinType.LEFT);
+        var plRoot = cr.from(Playlist.class);
+        cr.where(cb.equal(plRoot.get("playlist_id"), UUID.fromString(id)));
+        
         return s.createQuery(cr).list();
     }
 
