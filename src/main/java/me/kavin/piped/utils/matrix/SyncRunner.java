@@ -137,15 +137,14 @@ public class SyncRunner implements Runnable {
                                 case "video.piped.stream.info" -> {
                                     FederatedVideoInfo info = mapper.treeToValue(content, FederatedVideoInfo.class);
                                     Multithreading.runAsync(() -> {
-                                        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                                            if (!VideoHelpers.updateVideo(s, info.getVideoId(),
-                                                    info.getViews(),
-                                                    info.getDuration(),
-                                                    info.getTitle())) {
-                                                VideoHelpers.handleNewVideo("https://www.youtube.com/watch?v=" + info.getVideoId(),
-                                                        System.currentTimeMillis(), null);
-                                            }
+                                        if (!VideoHelpers.updateVideo(info.getVideoId(),
+                                                info.getViews(),
+                                                info.getDuration(),
+                                                info.getTitle())) {
+                                            VideoHelpers.handleNewVideo("https://www.youtube.com/watch?v=" + info.getVideoId(),
+                                                    System.currentTimeMillis(), null);
                                         }
+
                                     });
                                 }
                                 case "video.piped.channel.info" -> {
@@ -171,6 +170,7 @@ public class SyncRunner implements Runnable {
                             response.get("next_batch").asText();
 
                 } catch (Exception ignored) {
+                    ignored.printStackTrace();
                     Thread.sleep(1000);
                 }
             }
