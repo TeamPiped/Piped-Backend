@@ -130,7 +130,7 @@ public class DatabaseHelper {
     }
 
     public static List<PlaylistVideo> getPlaylistVideosFromPlaylistId(SharedSessionContract s, String id, boolean fetchChannel) {
-        var query = s.createNativeQuery("SELECT {playlist_videos.*}, {channels.*} FROM playlist_videos JOIN channels ON playlist_videos.uploader_id = channels.uploader_id JOIN playlists_videos_ids ON playlist_videos.id = playlists_videos_ids.videos_id JOIN playlists ON playlists.id = playlists_videos_ids.playlist_id WHERE playlists.playlist_id = :id")
+        var query = s.createNativeQuery("SELECT {playlist_videos.*}, {channels.*} FROM playlist_videos JOIN channels ON playlist_videos.uploader_id = channels.uploader_id JOIN playlists_videos_ids ON playlist_videos.id = playlists_videos_ids.videos_id JOIN playlists ON playlists.id = playlists_videos_ids.playlist_id WHERE playlists.playlist_id = :id ORDER BY playlists_videos_ids.videos_order ASC")
                 .addEntity("playlist_videos", PlaylistVideo.class)
                 .addEntity("channels", Channel.class)
                 .setParameter("id", UUID.fromString(id));
