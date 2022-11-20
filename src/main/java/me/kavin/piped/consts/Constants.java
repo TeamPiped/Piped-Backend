@@ -135,7 +135,7 @@ public class Constants {
                 else if (key.startsWith("frontend."))
                     frontendProperties.put(StringUtils.substringAfter(key, "frontend."), value);
             });
-            frontendProperties.put("proxyUrl", PROXY_PART);
+            frontendProperties.put("imageProxyUrl", IMAGE_PROXY_PART);
 
             // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",
