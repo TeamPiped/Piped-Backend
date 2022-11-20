@@ -136,6 +136,8 @@ public class Constants {
                     frontendProperties.put(StringUtils.substringAfter(key, "frontend."), value);
             });
 
+            frontendProperties.put("proxyUrl", PROXY_PART);
+
             // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",
                     "org.hibernate.dialect.PostgreSQL10Dialect",
