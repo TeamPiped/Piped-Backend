@@ -1,15 +1,11 @@
 package me.kavin.piped.utils;
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Scheduler;
 import com.grack.nanojson.JsonParserException;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.SolvedCaptcha;
 import okhttp3.FormBody;
 import okhttp3.RequestBody;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.schabi.newpipe.extractor.downloader.Downloader;
@@ -27,25 +23,11 @@ public class DownloaderImpl extends Downloader {
     private static long cookie_received;
     private static final Object cookie_lock = new Object();
 
-    final AsyncLoadingCache<Request, Response> responseCache = Caffeine.newBuilder()
-            .expireAfterWrite(1, TimeUnit.MINUTES)
-            .scheduler(Scheduler.systemScheduler())
-            .executor(Multithreading.getCachedExecutor())
-            .maximumSize(100).buildAsync(this::executeRequest);
-
-    @Override
-    public Response execute(@NotNull Request request) {
-        try {
-            return responseCache.get(request).get();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /**
      * Executes a request with HTTP/2.
      */
-    public Response executeRequest(Request request) throws IOException, ReCaptchaException {
+    @Override
+    public Response execute(Request request) throws IOException, ReCaptchaException {
 
         // TODO: HTTP/3 aka QUIC
         var bytes = request.dataToSend();
