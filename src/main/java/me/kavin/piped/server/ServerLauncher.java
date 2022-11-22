@@ -1,6 +1,7 @@
 package me.kavin.piped.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import io.activej.config.Config;
@@ -31,6 +32,8 @@ import org.xml.sax.InputSource;
 
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -377,8 +380,20 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
-                        var videoId = json.get("videoId").textValue();
-                        return getJsonResponse(AuthPlaylistHandlers.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoId), "private");
+                        var videoIds = new ArrayList<String>();
+                        // backwards compatibility
+                        var videoIdField = json.get("videoId");
+                        if (videoIdField != null) {
+                            videoIds.add(videoIdField.textValue());
+                        }
+                        var videoIdsField = json.get("videoIds");
+                        if (videoIdsField != null) {
+                            for (JsonNode node : videoIdsField) {
+                                videoIds.add(node.asText());
+                            }
+                        }
+
+                        return getJsonResponse(AuthPlaylistHandlers.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoIds), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

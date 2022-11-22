@@ -198,9 +198,9 @@ public class AuthPlaylistHandlers {
         return mapper.writeValueAsBytes(new AcceptedResponse());
     }
 
-    public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
+    public static byte[] addToPlaylistResponse(String session, String playlistId, ArrayList<String> videoIds) throws IOException, ExtractionException {
 
-        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session, playlistId and videoId are required parameters"));
 
         var user = DatabaseHelper.getUserFromSession(session);
@@ -223,33 +223,33 @@ public class AuthPlaylistHandlers {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
-            var video = DatabaseHelper.getPlaylistVideoFromId(s, videoId);
+            var tr = s.beginTransaction();
+            for (String videoId : videoIds) {
+                if (StringUtils.isEmpty(videoId)) continue;
 
-            if (video == null) {
-                StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+                var video = DatabaseHelper.getPlaylistVideoFromId(s, videoId);
 
-                String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
+                if (video == null) {
+                    StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
 
-                var channel = DatabaseHelper.getChannelFromId(s, channelId);
+                    String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
 
-                if (channel == null) {
-                    channel = DatabaseHelper.saveChannel(channelId);
+                    var channel = DatabaseHelper.getChannelFromId(s, channelId);
+
+                    if (channel == null) {
+                        channel = DatabaseHelper.saveChannel(channelId);
+                    }
+
+                    video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+
+                    s.persist(video);
                 }
 
-                video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+               if (playlist.getVideos().isEmpty()) playlist.setThumbnail(video.getThumbnail());
 
-                var tr = s.beginTransaction();
-                s.persist(video);
-                tr.commit();
-
+               playlist.getVideos().add(video);
             }
 
-            if (playlist.getVideos().isEmpty())
-                playlist.setThumbnail(video.getThumbnail());
-
-            playlist.getVideos().add(video);
-
-            var tr = s.beginTransaction();
             s.merge(playlist);
             tr.commit();
 
