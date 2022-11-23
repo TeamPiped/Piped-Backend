@@ -1,9 +1,7 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
-import me.kavin.piped.utils.obj.MatrixHelper;
 import me.kavin.piped.utils.obj.db.Video;
-import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
@@ -21,20 +19,6 @@ public class VideoHelpers {
     }
 
     public static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel) {
-
-        Multithreading.runAsync(() -> {
-            if (info.getUploadDate() != null && System.currentTimeMillis() - info.getUploadDate().offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
-                try {
-                    MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
-                            StringUtils.substring(info.getUrl(), -11), StringUtils.substring(info.getUploaderUrl(), -24),
-                            info.getName(),
-                            info.getDuration(), info.getViewCount())
-                    );
-                } catch (Exception e) {
-                    ExceptionHandler.handle(e);
-                }
-            }
-        });
 
         if (channel == null)
             channel = DatabaseHelper.getChannelFromId(
@@ -68,23 +52,13 @@ public class VideoHelpers {
         }
     }
 
-    public static void updateVideo(String id, StreamInfoItem item, long time) {
-        Multithreading.runAsync(() -> {
-            try {
-                if (!updateVideo(id, item.getViewCount(), item.getDuration(), item.getName())) {
-                    handleNewVideo(item.getUrl(), time, null);
-                }
-            } catch (Exception e) {
-                ExceptionHandler.handle(e);
-            }
-        });
-    }
-
     public static void updateVideo(String id, StreamInfo info, long time) {
         Multithreading.runAsync(() -> {
             try {
                 if (!updateVideo(id, info.getViewCount(), info.getDuration(), info.getName())) {
-                    handleNewVideo(info, time, null);
+                    var channel = DatabaseHelper.getChannelFromId(StringUtils.substring(info.getUploaderUrl(), -24));
+                    if (channel != null)
+                        handleNewVideo(info, time, channel);
                 }
             } catch (Exception e) {
                 ExceptionHandler.handle(e);
