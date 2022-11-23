@@ -9,5 +9,5 @@ services:
         depends_on:
             - cockroachdb
     cockroachdb:
-        image: cockroachdb/cockroach:latest-v21.2
+        image: cockroachdb/cockroach:latest
         command: start-single-node --insecure
