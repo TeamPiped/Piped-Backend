@@ -18,18 +18,22 @@ import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
 import me.kavin.piped.server.handlers.auth.FeedHandlers;
 import me.kavin.piped.server.handlers.auth.UserHandlers;
 import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.obj.MatrixHelper;
+import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.jetbrains.annotations.NotNull;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.xml.sax.InputSource;
 
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
@@ -77,7 +81,29 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                     if (DatabaseHelper.doesVideoExist(s, StringUtils.substring(url, -11)))
                                         continue;
                                 }
-                                VideoHelpers.handleNewVideo(url, entry.getPublishedDate().getTime(), null);
+                                Multithreading.runAsync(() -> {
+                                    try {
+                                        StreamInfo info = StreamInfo.getInfo(url);
+
+                                        Multithreading.runAsync(() -> {
+                                            if (info.getUploadDate() != null && System.currentTimeMillis() - info.getUploadDate().offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
+                                                try {
+                                                    MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
+                                                            StringUtils.substring(info.getUrl(), -11), StringUtils.substring(info.getUploaderUrl(), -24),
+                                                            info.getName(),
+                                                            info.getDuration(), info.getViewCount())
+                                                    );
+                                                } catch (Exception e) {
+                                                    ExceptionHandler.handle(e);
+                                                }
+                                            }
+                                        });
+
+                                        VideoHelpers.handleNewVideo(info, entry.getPublishedDate().getTime(), null);
+                                    } catch (Exception e) {
+                                        ExceptionHandler.handle(e);
+                                    }
+                                });
                             }
                         });
 
