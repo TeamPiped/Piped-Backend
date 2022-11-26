@@ -2,6 +2,7 @@ package me.kavin.piped.consts;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
@@ -14,6 +15,7 @@ import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
+import org.schabi.newpipe.extractor.localization.ContentCountry;
 
 import java.io.File;
 import java.io.FileReader;
@@ -136,6 +138,10 @@ public class Constants {
                     frontendProperties.put(StringUtils.substringAfter(key, "frontend."), value);
             });
             frontendProperties.put("imageProxyUrl", IMAGE_PROXY_PART);
+            frontendProperties.putArray("countries").addAll(
+                    YOUTUBE_SERVICE.getSupportedCountries().stream().map(ContentCountry::getCountryCode)
+                            .map(JsonNodeFactory.instance::textNode).toList()
+            );
 
             // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",
