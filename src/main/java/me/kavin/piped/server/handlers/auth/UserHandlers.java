@@ -25,7 +25,7 @@ import java.util.UUID;
 import static me.kavin.piped.consts.Constants.mapper;
 
 public class UserHandlers {
-    private static final Argon2PasswordEncoder argon2PasswordEncoder = new Argon2PasswordEncoder();
+    private static final Argon2PasswordEncoder argon2PasswordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
 
     public static byte[] registerResponse(String user, String pass) throws IOException {
