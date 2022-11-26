@@ -8,6 +8,7 @@ import com.rometools.rome.feed.synd.SyndFeedImpl;
 import com.rometools.rome.io.SyndFeedOutput;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import jakarta.persistence.criteria.JoinType;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
@@ -198,10 +199,14 @@ public class AuthPlaylistHandlers {
         return mapper.writeValueAsBytes(new AcceptedResponse());
     }
 
-    public static byte[] addToPlaylistResponse(String session, String playlistId, ArrayList<String> videoIds) throws IOException, ExtractionException {
+    public static byte[] addToPlaylistResponse(String session, String playlistId, List<String> videoIds) throws IOException, ExtractionException {
 
-        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
-            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session, playlistId and videoId are required parameters"));
+        videoIds = videoIds.stream()
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toList());
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || videoIds.isEmpty())
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session, playlistId and videoId(s) are required parameters"));
 
         var user = DatabaseHelper.getUserFromSession(session);
 
@@ -223,11 +228,16 @@ public class AuthPlaylistHandlers {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
-            var tr = s.beginTransaction();
+            var playlistVideos = DatabaseHelper.getPlaylistVideosFromIds(s, new ObjectOpenHashSet<>(videoIds));
+
+            var videos = playlist.getVideos();
+
             for (String videoId : videoIds) {
                 if (StringUtils.isEmpty(videoId)) continue;
 
-                var video = DatabaseHelper.getPlaylistVideoFromId(s, videoId);
+                var video = playlistVideos.stream().filter(v -> v.getId().equals(videoId))
+                        .findFirst()
+                        .orElse(null);
 
                 if (video == null) {
                     StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
@@ -245,11 +255,12 @@ public class AuthPlaylistHandlers {
                     s.persist(video);
                 }
 
-               if (playlist.getVideos().isEmpty()) playlist.setThumbnail(video.getThumbnail());
+                if (playlist.getVideos().isEmpty()) playlist.setThumbnail(video.getThumbnail());
 
-               playlist.getVideos().add(video);
+                videos.add(video);
             }
 
+            var tr = s.beginTransaction();
             s.merge(playlist);
             tr.commit();
 

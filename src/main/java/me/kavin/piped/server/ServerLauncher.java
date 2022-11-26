@@ -13,6 +13,7 @@ import io.activej.inject.annotation.Provides;
 import io.activej.inject.module.AbstractModule;
 import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.*;
 import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
@@ -32,8 +33,6 @@ import org.xml.sax.InputSource;
 
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -380,7 +379,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
-                        var videoIds = new ArrayList<String>();
+                        var videoIds = new ObjectArrayList<String>();
                         // backwards compatibility
                         var videoIdField = json.get("videoId");
                         if (videoIdField != null) {
@@ -389,7 +388,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         var videoIdsField = json.get("videoIds");
                         if (videoIdsField != null) {
                             for (JsonNode node : videoIdsField) {
-                                videoIds.add(node.asText());
+                                videoIds.add(node.textValue());
                             }
                         }
 
