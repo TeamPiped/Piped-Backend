@@ -1,6 +1,7 @@
 package me.kavin.piped.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import io.activej.config.Config;
@@ -12,6 +13,7 @@ import io.activej.inject.annotation.Provides;
 import io.activej.inject.module.AbstractModule;
 import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.*;
 import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
@@ -377,8 +379,20 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
-                        var videoId = json.get("videoId").textValue();
-                        return getJsonResponse(AuthPlaylistHandlers.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoId), "private");
+                        var videoIds = new ObjectArrayList<String>();
+                        // backwards compatibility
+                        var videoIdField = json.get("videoId");
+                        if (videoIdField != null) {
+                            videoIds.add(videoIdField.textValue());
+                        }
+                        var videoIdsField = json.get("videoIds");
+                        if (videoIdsField != null) {
+                            for (JsonNode node : videoIdsField) {
+                                videoIds.add(node.textValue());
+                            }
+                        }
+
+                        return getJsonResponse(AuthPlaylistHandlers.addToPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, videoIds), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

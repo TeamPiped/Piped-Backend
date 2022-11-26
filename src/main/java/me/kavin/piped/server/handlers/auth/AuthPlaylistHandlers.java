@@ -8,6 +8,7 @@ import com.rometools.rome.feed.synd.SyndFeedImpl;
 import com.rometools.rome.io.SyndFeedOutput;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import jakarta.persistence.criteria.JoinType;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
@@ -198,10 +199,14 @@ public class AuthPlaylistHandlers {
         return mapper.writeValueAsBytes(new AcceptedResponse());
     }
 
-    public static byte[] addToPlaylistResponse(String session, String playlistId, String videoId) throws IOException, ExtractionException {
+    public static byte[] addToPlaylistResponse(String session, String playlistId, List<String> videoIds) throws IOException, ExtractionException {
 
-        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || StringUtils.isBlank(videoId))
-            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session, playlistId and videoId are required parameters"));
+        videoIds = videoIds.stream()
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toList());
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || videoIds.isEmpty())
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session, playlistId and videoId(s) are required parameters"));
 
         var user = DatabaseHelper.getUserFromSession(session);
 
@@ -223,31 +228,37 @@ public class AuthPlaylistHandlers {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
-            var video = DatabaseHelper.getPlaylistVideoFromId(s, videoId);
+            var playlistVideos = DatabaseHelper.getPlaylistVideosFromIds(s, new ObjectOpenHashSet<>(videoIds));
 
-            if (video == null) {
-                StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+            var videos = playlist.getVideos();
 
-                String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
+            for (String videoId : videoIds) {
+                if (StringUtils.isEmpty(videoId)) continue;
 
-                var channel = DatabaseHelper.getChannelFromId(s, channelId);
+                var video = playlistVideos.stream().filter(v -> v.getId().equals(videoId))
+                        .findFirst()
+                        .orElse(null);
 
-                if (channel == null) {
-                    channel = DatabaseHelper.saveChannel(channelId);
+                if (video == null) {
+                    StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+
+                    String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
+
+                    var channel = DatabaseHelper.getChannelFromId(s, channelId);
+
+                    if (channel == null) {
+                        channel = DatabaseHelper.saveChannel(channelId);
+                    }
+
+                    video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+
+                    s.persist(video);
                 }
 
-                video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+                if (playlist.getVideos().isEmpty()) playlist.setThumbnail(video.getThumbnail());
 
-                var tr = s.beginTransaction();
-                s.persist(video);
-                tr.commit();
-
+                videos.add(video);
             }
-
-            if (playlist.getVideos().isEmpty())
-                playlist.setThumbnail(video.getThumbnail());
-
-            playlist.getVideos().add(video);
 
             var tr = s.beginTransaction();
             s.merge(playlist);
