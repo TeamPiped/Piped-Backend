@@ -145,6 +145,22 @@ public class StreamHandlers {
 
                 Streams streams = federatedGeoBypassResponse.getData();
 
+                // re-rewrite image URLs
+                streams.chapters.forEach(chapter -> chapter.image = rewriteURL(chapter.image));
+                streams.relatedStreams.forEach(contentItem -> {
+                    if (contentItem instanceof StreamItem streamItem) {
+                        streamItem.thumbnail = rewriteURL(streamItem.thumbnail);
+                        streamItem.uploaderAvatar = rewriteURL(streamItem.uploaderAvatar);
+                    } else if (contentItem instanceof ChannelItem channelItem) {
+                        channelItem.thumbnail = rewriteURL(channelItem.thumbnail);
+                    } else if (contentItem instanceof PlaylistItem playlistItem) {
+                        playlistItem.thumbnail = rewriteURL(playlistItem.thumbnail);
+                    }
+                });
+                streams.subtitles.forEach(subtitle -> subtitle.url = rewriteURL(subtitle.url));
+                streams.thumbnailUrl = rewriteURL(streams.thumbnailUrl);
+                streams.uploaderAvatar = rewriteURL(streams.uploaderAvatar);
+
                 String lbryId;
 
                 try {
