@@ -1,5 +1,8 @@
 package me.kavin.piped.utils.obj;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class ChannelItem extends ContentItem {
 
     public final String type = "channel";

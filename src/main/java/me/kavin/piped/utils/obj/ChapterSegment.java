@@ -1,5 +1,8 @@
 package me.kavin.piped.utils.obj;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class ChapterSegment {
 
     public String title, image;
