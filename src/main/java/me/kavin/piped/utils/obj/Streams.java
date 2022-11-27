@@ -1,9 +1,11 @@
 package me.kavin.piped.utils.obj;
 
+import lombok.NoArgsConstructor;
 import me.kavin.piped.consts.Constants;
 
 import java.util.List;
 
+@NoArgsConstructor
 public class Streams {
 
     public String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls, dash,

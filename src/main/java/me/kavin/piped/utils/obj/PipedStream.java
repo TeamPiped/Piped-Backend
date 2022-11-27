@@ -1,5 +1,8 @@
 package me.kavin.piped.utils.obj;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class PipedStream {
 
     public String url, format, quality, mimeType, codec, audioTrackId, audioTrackName;

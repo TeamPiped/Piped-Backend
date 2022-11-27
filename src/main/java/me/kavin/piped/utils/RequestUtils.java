@@ -43,4 +43,12 @@ public class RequestUtils {
             }
         }
     }
+
+    public static JsonNode sendGetJson(String url, String ua) throws IOException {
+        return getJsonNode(Constants.h2client, new Request.Builder().header("User-Agent", ua).url(url).build());
+    }
+
+    public static JsonNode sendGetJson(String url) throws IOException {
+        return sendGetJson(url, Constants.USER_AGENT);
+    }
 }

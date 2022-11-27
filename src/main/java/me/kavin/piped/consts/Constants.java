@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
+import me.kavin.piped.utils.RequestUtils;
 import me.kavin.piped.utils.resp.ListLinkHandlerMixin;
 import okhttp3.OkHttpClient;
 import okhttp3.brotli.BrotliInterceptor;
@@ -23,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 public class Constants {
 
@@ -80,6 +82,10 @@ public class Constants {
 
     public static final String MATRIX_TOKEN;
 
+    public static final String GEO_RESTRICTION_CHECKER_URL;
+
+    public static final String YOUTUBE_COUNTRY;
+
     public static final String VERSION;
 
     public static final ObjectMapper mapper = JsonMapper.builder()
@@ -130,6 +136,7 @@ public class Constants {
             });
             MATRIX_SERVER = getProperty(prop, "MATRIX_SERVER", "https://matrix-client.matrix.org");
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
+            GEO_RESTRICTION_CHECKER_URL = getProperty(prop, "GEO_RESTRICTION_CHECKER_URL");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
@@ -164,6 +171,18 @@ public class Constants {
             }
             h2client = builder.build();
             h2_no_redir_client = builder_noredir.build();
+            String temp = null;
+            try {
+                var html = RequestUtils.sendGet("https://www.youtube.com/");
+                var regex = Pattern.compile("GL\":\"([A-Z]{2})\"", Pattern.MULTILINE);
+                var matcher = regex.matcher(html);
+                if (matcher.find()) {
+                    temp = matcher.group(1);
+                }
+            } catch (Exception ignored) {
+                System.err.println("Failed to get country from YouTube!");
+            }
+            YOUTUBE_COUNTRY = temp;
             VERSION = new File("VERSION").exists() ?
                     IOUtils.toString(new FileReader("VERSION")) :
                     "unknown";

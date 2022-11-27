@@ -1,14 +1,20 @@
 package me.kavin.piped.utils.matrix;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.obj.MatrixHelper;
+import me.kavin.piped.utils.obj.Streams;
 import me.kavin.piped.utils.obj.federation.FederatedChannelInfo;
+import me.kavin.piped.utils.obj.federation.FederatedGeoBypassRequest;
+import me.kavin.piped.utils.obj.federation.FederatedGeoBypassResponse;
 import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.hibernate.StatelessSession;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
 
 import java.io.IOException;
 import java.util.Set;
@@ -121,17 +127,40 @@ public class SyncRunner implements Runnable {
                         for (var event : events) {
 
                             var type = event.get("type").asText();
+                            var content = event.at("/content/content");
+
+                            if (type.startsWith("video.piped.stream.bypass.")) {
+                                switch (type) {
+                                    case "video.piped.stream.bypass.request" -> {
+                                        FederatedGeoBypassRequest bypassRequest = mapper.treeToValue(content, FederatedGeoBypassRequest.class);
+                                        if (bypassRequest.getAllowedCountries().contains(Constants.YOUTUBE_COUNTRY)) {
+                                            // We're capable of helping another instance!
+                                            Multithreading.runAsync(() -> {
+                                                try {
+                                                    StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + bypassRequest.getVideoId());
+
+                                                    Streams streams = CollectionUtils.collectStreamInfo(info);
+
+                                                    FederatedGeoBypassResponse bypassResponse = new FederatedGeoBypassResponse(bypassRequest.getVideoId(), Constants.YOUTUBE_COUNTRY, streams);
+
+                                                    MatrixHelper.sendEvent("video.piped.stream.bypass.response", bypassResponse);
+
+                                                } catch (Exception ignored) {
+                                                }
+                                            });
+                                        }
+                                    }
+                                    case "video.piped.stream.bypass.response" -> {
+                                        FederatedGeoBypassResponse bypassResponse = mapper.treeToValue(content, FederatedGeoBypassResponse.class);
+                                        GeoRestrictionBypassHelper.addResponse(bypassResponse);
+                                    }
+                                }
+                            }
 
                             if (event.get("sender").asText().equals(user_id)) {
-
-                                if (type.startsWith("video.piped.stream.bypass.")) {
-                                    // TODO: Implement geo-restriction bypassing
-                                }
-
                                 continue;
                             }
 
-                            var content = event.at("/content/content");
 
                             switch (type) {
                                 case "video.piped.stream.info" -> {
