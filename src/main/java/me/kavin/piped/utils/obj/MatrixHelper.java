@@ -42,12 +42,20 @@ public class MatrixHelper {
             }
 
             if (UNAUTHENTICATED) {
-                ROOM_ID = RequestUtils.getJsonNode(h2client, new Request.Builder()
-                                .url(MATRIX_SERVER + "/_matrix/client/v3/directory/room/" + URLUtils.silentEncode(MATRIX_ROOM))
-                                .header("Authorization", "Bearer " + MATRIX_TOKEN)
-                                .build())
-                        .get("room_id")
-                        .asText();
+
+                var joinResp = RequestUtils.getJsonNode(h2client, new Request.Builder()
+                        .url(MATRIX_SERVER + "/_matrix/client/v3/directory/room/" + URLUtils.silentEncode(MATRIX_ROOM))
+                        .header("Authorization", "Bearer " + MATRIX_TOKEN)
+                        .build());
+
+                try {
+                    ROOM_ID = joinResp.get("room_id")
+                            .asText();
+                } catch (Exception e) {
+                    System.err.println("Failed to join matrix room.");
+                    System.err.println("Response: " + mapper.writeValueAsString(joinResp));
+                    throw e;
+                }
             } else {
                 ROOM_ID = RequestUtils.getJsonNode(h2client, new Request.Builder()
                                 .url(MATRIX_SERVER + "/_matrix/client/v3/join/" + URLUtils.silentEncode(MATRIX_ROOM))
