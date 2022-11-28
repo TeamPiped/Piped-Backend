@@ -20,6 +20,7 @@ import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
+import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 import org.schabi.newpipe.extractor.exceptions.GeographicRestrictionException;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.utils.JsonUtils;
@@ -105,17 +106,23 @@ public class StreamHandlers {
         });
 
         StreamInfo info = null;
+        Throwable exception = null;
 
         try {
             info = futureStream.get(10, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
-            if (!(e.getCause() instanceof GeographicRestrictionException)) {
+            exception = e.getCause();
+            if (
+                // Some videos, like topic channel videos are not available everywhere
+                    !(exception instanceof ContentNotAvailableException contentNotAvailableException && contentNotAvailableException.getMessage().equals("This video is not available")) &&
+                            !(e.getCause() instanceof GeographicRestrictionException)
+            ) {
                 ExceptionUtils.rethrow(e);
             }
         }
 
         if (info == null) {
-            // We're geo restricted
+            // We might be geo restricted
 
             if (Constants.MATRIX_TOKEN != null && Constants.GEO_RESTRICTION_CHECKER_URL != null) {
 
@@ -123,6 +130,10 @@ public class StreamHandlers {
 
                 {
                     var restrictedTree = RequestUtils.sendGetJson(Constants.GEO_RESTRICTION_CHECKER_URL + "/api/region/check?video_id=" + videoId);
+                    if (!restrictedTree.get("restricted").asBoolean()) {
+                        assert exception != null;
+                        throw (Exception) exception;
+                    }
                     var it = restrictedTree.get("regions").elements();
                     while (it.hasNext()) {
                         var region = it.next();
@@ -203,7 +214,10 @@ public class StreamHandlers {
                 throw new GeographicRestrictionException("This instance does not have a geo restriction checker set in its configuration");
             }
 
-            throw new GeographicRestrictionException("Geo restricted content, this instance is not part of the Matrix Federation protocol");
+            if (exception == null)
+                throw new GeographicRestrictionException("Geo restricted content, this instance is not part of the Matrix Federation protocol");
+            else
+                throw (Exception) exception;
         }
 
         Streams streams = CollectionUtils.collectStreamInfo(info);
