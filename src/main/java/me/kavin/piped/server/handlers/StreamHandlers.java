@@ -114,7 +114,7 @@ public class StreamHandlers {
             exception = e.getCause();
             if (
                 // Some videos, like topic channel videos are not available everywhere
-                    !(exception instanceof ContentNotAvailableException contentNotAvailableException && contentNotAvailableException.getMessage().equals("This video is not available")) &&
+                    !(exception instanceof ContentNotAvailableException contentNotAvailableException && (contentNotAvailableException.getMessage().equals("This video is not available") || contentNotAvailableException.getMessage().equals("Got error: \"Video unavailable\""))) &&
                             !(e.getCause() instanceof GeographicRestrictionException)
             ) {
                 ExceptionUtils.rethrow(e);
