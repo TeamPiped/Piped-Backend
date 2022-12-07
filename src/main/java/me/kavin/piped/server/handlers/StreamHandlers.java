@@ -311,7 +311,7 @@ public class StreamHandlers {
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
-                        comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
+                        comment.getCommentId(), comment.getCommentText().getContent(), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
@@ -349,7 +349,7 @@ public class StreamHandlers {
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
-                        comment.getCommentId(), comment.getCommentText(), comment.getTextualUploadDate(),
+                        comment.getCommentId(), comment.getCommentText().getContent(), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
