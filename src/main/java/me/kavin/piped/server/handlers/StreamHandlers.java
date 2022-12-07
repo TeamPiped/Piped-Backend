@@ -22,11 +22,13 @@ import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 import org.schabi.newpipe.extractor.exceptions.GeographicRestrictionException;
+import org.schabi.newpipe.extractor.stream.Description;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.utils.JsonUtils;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -311,7 +313,7 @@ public class StreamHandlers {
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
-                        comment.getCommentId(), comment.getCommentText().getContent(), comment.getTextualUploadDate(),
+                        comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::getContent).orElse(null), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
@@ -349,7 +351,7 @@ public class StreamHandlers {
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
-                        comment.getCommentId(), comment.getCommentText().getContent(), comment.getTextualUploadDate(),
+                        comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::getContent).orElse(null), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
             } catch (JsonProcessingException e) {
