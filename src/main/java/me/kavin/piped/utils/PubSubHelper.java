@@ -35,24 +35,26 @@ public class PubSubHelper {
                     .newCall(builder.post(formBuilder.build())
                             .build()).execute()) {
 
-                if (resp.code() == 202) {
-                    try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                        var tr = s.beginTransaction();
-                        if (pubsub == null) {
-                            pubsub = new PubSub(channelId, System.currentTimeMillis());
-                            s.insert(pubsub);
-                        } else {
-                            pubsub.setSubbedAt(System.currentTimeMillis());
-                            s.update(pubsub);
-                        }
-                        tr.commit();
-                    }
-
-                } else
+                if (resp.code() != 202)
                     System.out.println("Failed to subscribe: " + resp.code() + "\n" + Objects.requireNonNull(resp.body()).string());
 
             }
         }
 
+    }
+
+    public static void updatePubSub(String channelId) {
+        var pubsub = DatabaseHelper.getPubSubFromId(channelId);
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+            s.beginTransaction();
+            if (pubsub == null) {
+                pubsub = new PubSub(channelId, System.currentTimeMillis());
+                s.insert(pubsub);
+            } else {
+                pubsub.setSubbedAt(System.currentTimeMillis());
+                s.update(pubsub);
+            }
+            s.getTransaction().commit();
+        }
     }
 }

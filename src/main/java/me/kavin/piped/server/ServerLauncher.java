@@ -69,8 +69,15 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 }))
                 .map(GET, "/version", AsyncServlet.ofBlocking(executor, request -> getRawResponse(Constants.VERSION.getBytes(UTF_8), "text/plain", "no-store")))
                 .map(HttpMethod.OPTIONS, "/*", request -> HttpResponse.ofCode(200))
-                .map(GET, "/webhooks/pubsub", request -> HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge"))))
-                .map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
+                .map(GET, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
+                    var topic = request.getQueryParameter("hub.topic");
+                    if (topic != null)
+                        Multithreading.runAsync(() -> {
+                            String channelId = StringUtils.substringAfter(topic, "channel_id=");
+                            PubSubHelper.updatePubSub(channelId);
+                        });
+                    return HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge")));
+                })).map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
                     try {
 
                         SyndFeed feed = new SyndFeedInput().build(

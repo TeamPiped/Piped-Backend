@@ -19,7 +19,6 @@ import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -99,7 +98,7 @@ public class Main {
                             .forEach(id -> Multithreading.runAsyncLimitedPubSub(() -> {
                                 try {
                                     PubSubHelper.subscribePubSub(id);
-                                } catch (IOException e) {
+                                } catch (Exception e) {
                                     ExceptionHandler.handle(e);
                                 }
                             }));
