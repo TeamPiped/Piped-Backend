@@ -1,5 +1,7 @@
 package me.kavin.piped.utils;
 
+import com.grack.nanojson.JsonObject;
+import com.grack.nanojson.JsonWriter;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Video;
 import org.apache.commons.lang3.StringUtils;
@@ -8,6 +10,12 @@ import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
 import java.util.concurrent.TimeUnit;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.schabi.newpipe.extractor.NewPipe.getPreferredContentCountry;
+import static org.schabi.newpipe.extractor.NewPipe.getPreferredLocalization;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getJsonPostResponse;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
 
 public class VideoHelpers {
     public static void handleNewVideo(String url, long time, me.kavin.piped.utils.obj.db.Channel channel) {
@@ -18,7 +26,7 @@ public class VideoHelpers {
         }
     }
 
-    public static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel) {
+    public static void handleNewVideo(StreamInfo info, long time, me.kavin.piped.utils.obj.db.Channel channel) throws Exception {
 
         if (channel == null)
             channel = DatabaseHelper.getChannelFromId(
@@ -29,6 +37,9 @@ public class VideoHelpers {
 
         if (channel != null
                 && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
+
+            info.setShortFormContent(isShort(info.getId()));
+
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                 if (!DatabaseHelper.doesVideoExist(s, info.getId())) {
 
@@ -50,6 +61,20 @@ public class VideoHelpers {
             updateVideo(info.getId(), info, time);
 
         }
+    }
+
+    public static boolean isShort(String videoId) throws Exception {
+
+        final byte[] body = JsonWriter.string(prepareDesktopJsonBuilder(
+                        getPreferredLocalization(), getPreferredContentCountry())
+                        .value("url", "https://www.youtube.com/shorts/" + videoId)
+                        .done())
+                .getBytes(UTF_8);
+
+        final JsonObject jsonResponse = getJsonPostResponse("navigation/resolve_url",
+                body, getPreferredLocalization());
+
+        return jsonResponse.getObject("endpoint").has("reelWatchEndpoint");
     }
 
     public static void updateVideo(String id, StreamInfo info, long time) {
