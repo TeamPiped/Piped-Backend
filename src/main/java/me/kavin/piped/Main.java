@@ -124,11 +124,8 @@ public class Main {
                             .getResultStream()
                             .parallel()
                             .forEach(id -> Multithreading.runAsyncLimitedPubSub(() -> {
-                                System.out.println(id);
                                 if (StringUtils.isBlank(id) || !id.matches("UC[A-Za-z\\d_-]{22}"))
                                     return;
-                                else
-                                    System.out.println("Subscribing to " + id);
                                 try (StatelessSession sess = DatabaseSessionFactory.createStatelessSession()) {
                                     var pubsub = new PubSub(id, -1);
                                     var tr = sess.beginTransaction();
