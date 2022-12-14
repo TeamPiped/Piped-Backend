@@ -31,6 +31,14 @@ public class PubSubHelper {
             formBuilder.add("hub.mode", "subscribe");
             formBuilder.add("hub.lease_seconds", "432000");
 
+            if (pubsub == null)
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                    pubsub = new PubSub(channelId, -1);
+                    var tr = s.beginTransaction();
+                    s.insert(pubsub);
+                    tr.commit();
+                }
+
             try (var resp = Constants.h2client
                     .newCall(builder.post(formBuilder.build())
                             .build()).execute()) {
