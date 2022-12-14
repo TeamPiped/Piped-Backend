@@ -12,7 +12,6 @@ import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.Video;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -123,9 +122,8 @@ public class Main {
                             .setParameter("unauthSubbed", System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY))
                             .getResultStream()
                             .parallel()
+                            .filter(ChannelHelpers::isValidId)
                             .forEach(id -> Multithreading.runAsyncLimitedPubSub(() -> {
-                                if (StringUtils.isBlank(id) || !id.matches("UC[A-Za-z\\d_-]{22}"))
-                                    return;
                                 try (StatelessSession sess = DatabaseSessionFactory.createStatelessSession()) {
                                     var pubsub = new PubSub(id, -1);
                                     var tr = sess.beginTransaction();

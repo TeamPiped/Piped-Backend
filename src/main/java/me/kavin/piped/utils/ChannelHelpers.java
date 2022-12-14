@@ -3,6 +3,7 @@ package me.kavin.piped.utils;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
 import okhttp3.Request;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
 
 import java.io.IOException;
@@ -10,6 +11,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 public class ChannelHelpers {
+
+    public static boolean isValidId(String id) {
+        return !StringUtils.isBlank(id) && id.matches("UC[a-zA-Z\\d_-]{22}");
+    }
 
     public static void updateChannel(StatelessSession s, Channel channel, String name, String avatarUrl, boolean uploaderVerified) {
 

@@ -8,10 +8,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.JoinType;
 import me.kavin.piped.consts.Constants;
-import me.kavin.piped.utils.DatabaseHelper;
-import me.kavin.piped.utils.DatabaseSessionFactory;
-import me.kavin.piped.utils.ExceptionHandler;
-import me.kavin.piped.utils.Multithreading;
+import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.StreamItem;
 import me.kavin.piped.utils.obj.SubscriptionChannel;
 import me.kavin.piped.utils.obj.db.Channel;
@@ -41,6 +38,9 @@ public class FeedHandlers {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(channelId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and channelId are required parameters"));
+
+        if (!ChannelHelpers.isValidId(channelId))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("channelId is not a valid YouTube channel ID"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
 
@@ -208,8 +208,7 @@ public class FeedHandlers {
     public static byte[] unauthenticatedFeedResponse(String[] channelIds) throws Exception {
 
         Set<String> filtered = Arrays.stream(channelIds)
-                .filter(StringUtils::isNotBlank)
-                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
+                .filter(ChannelHelpers::isValidId)
                 .collect(Collectors.toUnmodifiableSet());
 
         if (filtered.isEmpty())
@@ -250,8 +249,7 @@ public class FeedHandlers {
     public static byte[] unauthenticatedFeedResponseRSS(String[] channelIds) throws Exception {
 
         Set<String> filtered = Arrays.stream(channelIds)
-                .filter(StringUtils::isNotBlank)
-                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
+                .filter(ChannelHelpers::isValidId)
                 .collect(Collectors.toUnmodifiableSet());
 
         if (filtered.isEmpty())
@@ -469,8 +467,7 @@ public class FeedHandlers {
             throws IOException {
 
         Set<String> filtered = Arrays.stream(channelIds)
-                .filter(StringUtils::isNotBlank)
-                .filter(id -> id.matches("[A-Za-z\\d_-]+"))
+                .filter(ChannelHelpers::isValidId)
                 .collect(Collectors.toUnmodifiableSet());
 
         if (filtered.isEmpty())

@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit;
 public class PubSubHelper {
     public static void subscribePubSub(String channelId) throws IOException {
 
+        if (!ChannelHelpers.isValidId(channelId))
+            return;
+
         PubSub pubsub = DatabaseHelper.getPubSubFromId(channelId);
 
         if (pubsub == null || System.currentTimeMillis() - pubsub.getSubbedAt() > TimeUnit.DAYS.toMillis(4)) {
