@@ -175,7 +175,7 @@ public class DatabaseHelper {
 
     public static Channel saveChannel(String channelId) {
 
-        if (!channelId.matches("[A-Za-z\\d_-]+"))
+        if (!ChannelHelpers.isValidId(channelId))
             return null;
 
 

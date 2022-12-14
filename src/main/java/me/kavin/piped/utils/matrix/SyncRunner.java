@@ -148,11 +148,13 @@ public class SyncRunner implements Runnable {
                                                 } catch (Exception ignored) {
                                                 }
                                             });
+                                            continue;
                                         }
                                     }
                                     case "video.piped.stream.bypass.response" -> {
                                         FederatedGeoBypassResponse bypassResponse = mapper.treeToValue(content, FederatedGeoBypassResponse.class);
                                         GeoRestrictionBypassHelper.addResponse(bypassResponse);
+                                        continue;
                                     }
                                 }
                             }
