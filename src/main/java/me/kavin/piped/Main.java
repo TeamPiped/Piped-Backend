@@ -9,8 +9,10 @@ import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.matrix.SyncRunner;
 import me.kavin.piped.utils.obj.MatrixHelper;
 import me.kavin.piped.utils.obj.db.PlaylistVideo;
+import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.Video;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
@@ -108,6 +110,38 @@ public class Main {
                 }
             }
         }, 0, TimeUnit.MINUTES.toMillis(90));
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+                    s.createNativeQuery("SELECT channel_id.channel FROM " +
+                                    "(SELECT DISTINCT channel FROM users_subscribed UNION SELECT id FROM unauthenticated_subscriptions WHERE subscribed_at > :unauthSubbed) " +
+                                    "channel_id LEFT JOIN pubsub on pubsub.id = channel_id.channel " +
+                                    "WHERE pubsub.id IS NULL", String.class)
+                            .setParameter("unauthSubbed", System.currentTimeMillis() - TimeUnit.DAYS.toMillis(Constants.SUBSCRIPTIONS_EXPIRY))
+                            .getResultStream()
+                            .parallel()
+                            .forEach(id -> Multithreading.runAsyncLimitedPubSub(() -> {
+                                System.out.println(id);
+                                if (StringUtils.isBlank(id) || !id.matches("UC[A-Za-z\\d_-]{22}"))
+                                    return;
+                                else
+                                    System.out.println("Subscribing to " + id);
+                                try (StatelessSession sess = DatabaseSessionFactory.createStatelessSession()) {
+                                    var pubsub = new PubSub(id, -1);
+                                    var tr = sess.beginTransaction();
+                                    sess.insert(pubsub);
+                                    tr.commit();
+                                }
+                            }));
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, TimeUnit.DAYS.toMillis(1));
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
