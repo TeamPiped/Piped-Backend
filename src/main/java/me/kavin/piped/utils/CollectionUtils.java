@@ -24,8 +24,9 @@ public class CollectionUtils {
 
         final List<PreviewFrames> previewFrames = new ObjectArrayList<>();
 
-        info.getPreviewFrames().forEach(frame -> new PreviewFrames(frame.getUrls(), frame.getFrameWidth(), frame.getFrameHeight(),
-                frame.getTotalCount(), frame.getDurationPerFrame(), frame.getFramesPerPageX(), frame.getFramesPerPageY()));
+        info.getPreviewFrames().forEach(frame -> previewFrames.add(new PreviewFrames(frame.getUrls(), frame.getFrameWidth(),
+                frame.getFrameHeight(), frame.getTotalCount(), frame.getDurationPerFrame(), frame.getFramesPerPageX(),
+                frame.getFramesPerPageY())));
 
         info.getSubtitles()
                 .forEach(subtitle -> subtitles.add(new Subtitle(rewriteURL(subtitle.getContent()),
