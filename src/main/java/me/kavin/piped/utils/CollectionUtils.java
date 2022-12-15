@@ -22,6 +22,11 @@ public class CollectionUtils {
         info.getStreamSegments().forEach(segment -> chapters.add(new ChapterSegment(segment.getTitle(), rewriteURL(segment.getPreviewUrl()),
                 segment.getStartTimeSeconds())));
 
+        final List<PreviewFrames> previewFrames = new ObjectArrayList<>();
+
+        info.getPreviewFrames().forEach(frame -> new PreviewFrames(frame.getUrls(), frame.getFrameWidth(), frame.getFrameHeight(),
+                frame.getTotalCount(), frame.getDurationPerFrame(), frame.getFramesPerPageX(), frame.getFramesPerPageY()));
+
         info.getSubtitles()
                 .forEach(subtitle -> subtitles.add(new Subtitle(rewriteURL(subtitle.getContent()),
                         subtitle.getFormat().getMimeType(), subtitle.getDisplayLanguageName(),
@@ -51,14 +56,12 @@ public class CollectionUtils {
 
         final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
-        final Streams streams = new Streams(info.getName(), info.getDescription().getContent(),
+        return new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl()),
-                rewriteVideoURL(info.getDashMpdUrl()), null, chapters);
-
-        return streams;
+                rewriteVideoURL(info.getDashMpdUrl()), null, chapters, previewFrames);
     }
 
     public static List<ContentItem> collectRelatedItems(List<? extends InfoItem> items) {
