@@ -24,7 +24,7 @@ public class CollectionUtils {
 
         final List<PreviewFrames> previewFrames = new ObjectArrayList<>();
 
-        info.getPreviewFrames().forEach(frame -> previewFrames.add(new PreviewFrames(frame.getUrls(), frame.getFrameWidth(),
+        info.getPreviewFrames().forEach(frame -> previewFrames.add(new PreviewFrames(frame.getUrls().stream().map(URLUtils::rewriteURL).toList(), frame.getFrameWidth(),
                 frame.getFrameHeight(), frame.getTotalCount(), frame.getDurationPerFrame(), frame.getFramesPerPageX(),
                 frame.getFramesPerPageY())));
 
