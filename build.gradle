@@ -35,7 +35,7 @@ dependencies {
     implementation 'org.hibernate:hibernate-core:6.1.6.Final'
     implementation 'org.hibernate:hibernate-hikaricp:6.1.6.Final'
     implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'org.springframework.security:spring-security-crypto:6.0.0'
+    implementation 'org.springframework.security:spring-security-crypto:6.0.1'
     implementation 'commons-logging:commons-logging:1.2'
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
     implementation 'com.squareup.okhttp3:okhttp'
