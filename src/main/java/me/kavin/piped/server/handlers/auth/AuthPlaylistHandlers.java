@@ -240,19 +240,27 @@ public class AuthPlaylistHandlers {
                         .orElse(null);
 
                 if (video == null) {
-                    StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+                    try {
+                        StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
 
-                    String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
+                        String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
 
-                    var channel = DatabaseHelper.getChannelFromId(s, channelId);
+                        var channel = DatabaseHelper.getChannelFromId(s, channelId);
 
-                    if (channel == null) {
-                        channel = DatabaseHelper.saveChannel(channelId);
+                        if (channel == null) {
+                            channel = DatabaseHelper.saveChannel(channelId);
+                        }
+
+                        video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+
+                        s.persist(video);
+                    } catch (Exception e) {
+                        // only return an error if the unavailable video is the only one in the request
+                        if (videoIds.size() == 1) {
+                            return mapper.writeValueAsBytes(mapper.createObjectNode()
+                                    .put("error", "The video is either private or got deleted"));
+                        }
                     }
-
-                    video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
-
-                    s.persist(video);
                 }
 
                 if (playlist.getVideos().isEmpty()) playlist.setThumbnail(video.getThumbnail());
