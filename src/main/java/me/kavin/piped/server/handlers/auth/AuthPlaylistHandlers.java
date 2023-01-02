@@ -232,6 +232,8 @@ public class AuthPlaylistHandlers {
 
             var videos = playlist.getVideos();
 
+            boolean added = false;
+
             for (String videoId : videoIds) {
                 if (StringUtils.isEmpty(videoId)) continue;
 
@@ -255,17 +257,22 @@ public class AuthPlaylistHandlers {
 
                         s.persist(video);
                     } catch (Exception e) {
-                        // only return an error if the unavailable video is the only one in the request
-                        if (videoIds.size() == 1) {
-                            return mapper.writeValueAsBytes(mapper.createObjectNode()
-                                    .put("error", "The video is either private or got deleted"));
-                        }
+                        ExceptionHandler.handle(e);
+                        continue;
                     }
                 }
 
                 if (playlist.getVideos().isEmpty()) playlist.setThumbnail(video.getThumbnail());
 
+                added = true;
+
                 videos.add(video);
+            }
+
+            if (!added) {
+                // only return an error if no videos were added
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Unable to add any videos, since they were unable to be fetched"));
             }
 
             var tr = s.beginTransaction();
