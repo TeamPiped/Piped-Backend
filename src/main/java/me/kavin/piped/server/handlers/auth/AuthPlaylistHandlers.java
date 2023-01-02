@@ -232,6 +232,8 @@ public class AuthPlaylistHandlers {
 
             var videos = playlist.getVideos();
 
+            boolean added = false;
+
             for (String videoId : videoIds) {
                 if (StringUtils.isEmpty(videoId)) continue;
 
@@ -240,24 +242,37 @@ public class AuthPlaylistHandlers {
                         .orElse(null);
 
                 if (video == null) {
-                    StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+                    try {
+                        StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
 
-                    String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
+                        String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
 
-                    var channel = DatabaseHelper.getChannelFromId(s, channelId);
+                        var channel = DatabaseHelper.getChannelFromId(s, channelId);
 
-                    if (channel == null) {
-                        channel = DatabaseHelper.saveChannel(channelId);
+                        if (channel == null) {
+                            channel = DatabaseHelper.saveChannel(channelId);
+                        }
+
+                        video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+
+                        s.persist(video);
+                    } catch (Exception e) {
+                        ExceptionHandler.handle(e);
+                        continue;
                     }
-
-                    video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
-
-                    s.persist(video);
                 }
 
                 if (playlist.getVideos().isEmpty()) playlist.setThumbnail(video.getThumbnail());
 
+                added = true;
+
                 videos.add(video);
+            }
+
+            if (!added) {
+                // only return an error if no videos were added
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Unable to add any videos, since they were unable to be fetched"));
             }
 
             var tr = s.beginTransaction();
