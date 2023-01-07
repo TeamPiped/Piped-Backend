@@ -126,6 +126,9 @@ curl ${CURLOPTS[@]} $HOST/user/playlists/remove -X POST -H "Content-Type: applic
 # Rename Playlist Test
 curl ${CURLOPTS[@]} $HOST/user/playlists/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg playlistId $PLAYLIST_ID --arg newName $RENAMED_PLAYLIST_NAME '{"playlistId": $playlistId, "newName": $newName}') || exit 1
 
+# Clear Playlist Test
+curl ${CURLOPTS[@]} $HOST/user/playlists/clear -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg playlistId $PLAYLIST_ID '{"playlistId": $playlistId}') || exit 1
+
 # Delete Playlist Test
 curl ${CURLOPTS[@]} $HOST/user/playlists/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg playlistId $PLAYLIST_ID '{"playlistId": $playlistId}') || exit 1
 
