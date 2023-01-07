@@ -283,8 +283,7 @@ public class AuthPlaylistHandlers {
         }
     }
 
-    public static byte[] removeFromPlaylistResponse(String session, String playlistId, int index) throws IOException {
-
+    public static byte[] removeFromPlaylistResponse(String session, String playlistId, Integer index) throws IOException {
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
@@ -304,11 +303,15 @@ public class AuthPlaylistHandlers {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
-            if (index < 0 || index >= playlist.getVideos().size())
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "Video Index out of bounds"));
+            if (index != null) {
+                if (index < 0 || index >= playlist.getVideos().size())
+                    return mapper.writeValueAsBytes(mapper.createObjectNode()
+                            .put("error", "Video Index out of bounds"));
 
-            playlist.getVideos().remove(index);
+                playlist.getVideos().remove((int) index);
+            } else {
+                playlist.getVideos().clear();
+            }
 
             var tr = s.beginTransaction();
             s.merge(playlist);
