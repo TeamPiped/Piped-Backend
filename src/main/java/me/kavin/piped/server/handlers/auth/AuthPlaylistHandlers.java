@@ -283,7 +283,7 @@ public class AuthPlaylistHandlers {
         }
     }
 
-    public static byte[] removeFromPlaylistResponse(String session, String playlistId, Integer index) throws IOException {
+    public static byte[] removeFromPlaylistResponse(String session, String playlistId, int index) throws IOException {
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
@@ -303,15 +303,41 @@ public class AuthPlaylistHandlers {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
-            if (index != null) {
-                if (index < 0 || index >= playlist.getVideos().size())
-                    return mapper.writeValueAsBytes(mapper.createObjectNode()
-                            .put("error", "Video Index out of bounds"));
+            if (index < 0 || index >= playlist.getVideos().size())
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Video Index out of bounds"));
 
-                playlist.getVideos().remove((int) index);
-            } else {
-                playlist.getVideos().clear();
-            }
+            playlist.getVideos().remove(index);
+
+            var tr = s.beginTransaction();
+            s.merge(playlist);
+            tr.commit();
+
+            return mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+    }
+
+    public static byte[] clearPlaylistResponse(String session, String playlistId) throws IOException {
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var cb = s.getCriteriaBuilder();
+            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+            var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            root.fetch("videos", JoinType.RIGHT);
+            query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
+            var playlist = s.createQuery(query).uniqueResult();
+
+            if (playlist == null)
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Playlist not found"));
+
+            if (playlist.getOwner().getId() != DatabaseHelper.getUserFromSession(session).getId())
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "You are not the owner this playlist"));
+
+            playlist.getVideos().clear();
 
             var tr = s.beginTransaction();
             s.merge(playlist);

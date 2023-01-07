@@ -416,7 +416,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
-                        return getJsonResponse(AuthPlaylistHandlers.removeFromPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, null), "private");
+                        return getJsonResponse(AuthPlaylistHandlers.clearPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
