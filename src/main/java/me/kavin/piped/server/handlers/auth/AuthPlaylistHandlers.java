@@ -284,6 +284,7 @@ public class AuthPlaylistHandlers {
     }
 
     public static byte[] removeFromPlaylistResponse(String session, String playlistId, int index) throws IOException {
+
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
@@ -318,6 +319,7 @@ public class AuthPlaylistHandlers {
     }
 
     public static byte[] clearPlaylistResponse(String session, String playlistId) throws IOException {
+
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
