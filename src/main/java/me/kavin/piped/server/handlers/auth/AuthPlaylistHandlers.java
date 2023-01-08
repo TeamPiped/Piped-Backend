@@ -318,6 +318,36 @@ public class AuthPlaylistHandlers {
         }
     }
 
+    public static byte[] clearPlaylistResponse(String session, String playlistId) throws IOException {
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var cb = s.getCriteriaBuilder();
+            var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
+            var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
+            query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
+            var playlist = s.createQuery(query).uniqueResult();
+
+            if (playlist == null)
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Playlist not found"));
+
+            if (playlist.getOwner().getId() != DatabaseHelper.getUserFromSession(session).getId())
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "You are not the owner this playlist"));
+
+            playlist.setVideos(new ObjectArrayList<>());
+
+            var tr = s.beginTransaction();
+            s.merge(playlist);
+            tr.commit();
+
+            return mapper.writeValueAsBytes(new AcceptedResponse());
+        }
+    }
+
     public static byte[] importPlaylistResponse(String session, String playlistId) throws IOException, ExtractionException {
 
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))

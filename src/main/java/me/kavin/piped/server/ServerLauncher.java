@@ -412,6 +412,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(POST, "/user/playlists/clear", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").textValue();
+                        return getJsonResponse(AuthPlaylistHandlers.clearPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(POST, "/user/playlists/rename", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
