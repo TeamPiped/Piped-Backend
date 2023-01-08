@@ -23,7 +23,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.1'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.1'
     implementation 'com.rometools:rome:1.18.0'
-    implementation 'com.github.ipfs:java-ipfs-http-client:v1.3.3'
+    implementation 'com.github.ipfs:java-ipfs-http-client:0.4.3.1'
     implementation 'org.jsoup:jsoup:1.15.3'
     implementation 'io.activej:activej-common:5.4.3'
     implementation 'io.activej:activej-http:5.4.3'
