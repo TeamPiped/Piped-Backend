@@ -327,7 +327,6 @@ public class AuthPlaylistHandlers {
             var cb = s.getCriteriaBuilder();
             var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos", JoinType.RIGHT);
             query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var playlist = s.createQuery(query).uniqueResult();
 
@@ -339,7 +338,7 @@ public class AuthPlaylistHandlers {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
 
-            playlist.getVideos().clear();
+            playlist.setVideos(new ObjectArrayList<>());
 
             var tr = s.beginTransaction();
             s.merge(playlist);
