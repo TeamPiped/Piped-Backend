@@ -302,6 +302,12 @@ public class FeedHandlers {
 
                 if (filtered.size() == 1) {
                     feed.setTitle(channel.getUploader());
+                    SyndImage channelIcon = new SyndImageImpl();
+                    channelIcon.setLink(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+                    channelIcon.setTitle(channel.getUploader());
+                    channelIcon.setUrl(channel.getUploaderAvatar());
+                    feed.setIcon(channelIcon);
+                    feed.setImage(channelIcon);
                 }
             }
 
