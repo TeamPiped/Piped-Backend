@@ -17,7 +17,6 @@ import com.rometools.rome.feed.synd.SyndPersonImpl;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -75,6 +74,7 @@ public class ChannelHelpers {
         SyndEntry entry = new SyndEntryImpl();
         SyndPerson person = new SyndPersonImpl();
         SyndContent content = new SyndContentImpl();
+        SyndContent thumbnail = new SyndContentImpl();
         
         person.setName(channel.getUploader());
         person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
@@ -84,10 +84,14 @@ public class ChannelHelpers {
         entry.setTitle(video.getTitle());
         entry.setPublishedDate(new Date(video.getUploaded()));
 
-        String contentText = String.format("Title: %s\nViews: %d\nId: %s\nDuration: %d\nIs YT Shorts: %b\nThumbnail: %s", video.getTitle(), video.getViews(), video.getId(), video.getDuration(), video.isShort(), video.getThumbnail());
+        String contentText = String.format("Title: %s\nViews: %d\nId: %s\nDuration: %d\nIs YT Shorts: %b", video.getTitle(), video.getViews(), video.getId(), video.getDuration(), video.isShort());
         content.setValue(contentText);
 
-        entry.setContents(List.of(content));
+        String thumbnailContent = String.format("<a href=\"%s\"><img src=\"%s\"/></a>", Constants.FRONTEND_URL + "/watch?v=" + video.getId(), video.getThumbnail());
+        thumbnail.setType("xhtml");
+        thumbnail.setValue(thumbnailContent);
+
+        entry.setContents(List.of(thumbnail, content));
         
         return entry;
     }
