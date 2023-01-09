@@ -179,19 +179,7 @@ public class FeedHandlers {
                         .stream()
                         .map(video -> {
                             var channel = video.getChannel();
-                            SyndEntry entry = new SyndEntryImpl();
-
-                            SyndPerson person = new SyndPersonImpl();
-                            person.setName(channel.getUploader());
-                            person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
-
-                            entry.setAuthors(Collections.singletonList(person));
-
-                            entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                            entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                            entry.setTitle(video.getTitle());
-                            entry.setPublishedDate(new Date(video.getUploaded()));
-
+                            SyndEntry entry = ChannelHelpers.createEntry(video, channel);
                             return entry;
                         }).toList();
 
@@ -286,18 +274,7 @@ public class FeedHandlers {
 
             for (Video video : videos) {
                 var channel = video.getChannel();
-                SyndEntry entry = new SyndEntryImpl();
-
-                SyndPerson person = new SyndPersonImpl();
-                person.setName(channel.getUploader());
-                person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
-
-                entry.setAuthors(Collections.singletonList(person));
-
-                entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
-                entry.setTitle(video.getTitle());
-                entry.setPublishedDate(new Date(video.getUploaded()));
+                SyndEntry entry = ChannelHelpers.createEntry(video, channel);
                 entries.add(entry);
 
                 if (filtered.size() == 1) {

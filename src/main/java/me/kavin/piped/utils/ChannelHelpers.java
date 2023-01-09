@@ -2,13 +2,25 @@ package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
+import me.kavin.piped.utils.obj.db.Video;
 import okhttp3.Request;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
 
+import com.rometools.rome.feed.synd.SyndContent;
+import com.rometools.rome.feed.synd.SyndContentImpl;
+import com.rometools.rome.feed.synd.SyndEntry;
+import com.rometools.rome.feed.synd.SyndEntryImpl;
+import com.rometools.rome.feed.synd.SyndPerson;
+import com.rometools.rome.feed.synd.SyndPersonImpl;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 public class ChannelHelpers {
 
@@ -59,4 +71,24 @@ public class ChannelHelpers {
         }
     }
 
+    public static SyndEntry createEntry(Video video, Channel channel) {
+        SyndEntry entry = new SyndEntryImpl();
+        SyndPerson person = new SyndPersonImpl();
+        SyndContent content = new SyndContentImpl();
+        
+        person.setName(channel.getUploader());
+        person.setUri(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+        entry.setAuthors(Collections.singletonList(person));
+        entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+        entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+        entry.setTitle(video.getTitle());
+        entry.setPublishedDate(new Date(video.getUploaded()));
+
+        String contentText = String.format("Title: %s\nViews: %d\nId: %s\nDuration: %d\nIs YT Shorts: %b\nThumbnail: %s", video.getTitle(), video.getViews(), video.getId(), video.getDuration(), video.isShort(), video.getThumbnail());
+        content.setValue(contentText);
+
+        entry.setContents(List.of(content));
+        
+        return entry;
+    }
 }
