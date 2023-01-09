@@ -299,6 +299,10 @@ public class FeedHandlers {
                 entry.setTitle(video.getTitle());
                 entry.setPublishedDate(new Date(video.getUploaded()));
                 entries.add(entry);
+
+                if (filtered.size() == 1) {
+                    feed.setTitle(channel.getUploader());
+                }
             }
 
             feed.setEntries(entries);
