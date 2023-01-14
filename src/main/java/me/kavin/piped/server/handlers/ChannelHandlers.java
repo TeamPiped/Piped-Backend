@@ -3,7 +3,6 @@ package me.kavin.piped.server.handlers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.sentry.Sentry;
 import me.kavin.piped.consts.Constants;
-import me.kavin.piped.ipfs.IPFS;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.*;
 import me.kavin.piped.utils.obj.db.Video;
@@ -137,8 +136,6 @@ public class ChannelHandlers {
         final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
                 rewriteURL(info.getBannerUrl()), info.getDescription(), info.getSubscriberCount(), info.isVerified(),
                 nextpage, relatedStreams, tabs);
-
-        IPFS.publishData(channel);
 
         return mapper.writeValueAsBytes(channel);
 
