@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static me.kavin.piped.utils.URLUtils.rewriteURL;
+
 public class ChannelHelpers {
 
     public static boolean isValidId(String id) {
@@ -82,12 +84,11 @@ public class ChannelHelpers {
         String contentText = String.format("Title: %s\nViews: %d\nId: %s\nDuration: %d\nIs YT Shorts: %b", video.getTitle(), video.getViews(), video.getId(), video.getDuration(), video.isShort());
         content.setValue(contentText);
 
-        String thumbnailContent = StringEscapeUtils.escapeXml11(
+        String thumbnailContent =
                 String.format("<div xmlns=\"http://www.w3.org/1999/xhtml\"><a href=\"%s\"><img src=\"%s\"/></a></div>",
-                        Constants.FRONTEND_URL + "/watch?v=" + video.getId()
-                        , video.getThumbnail()
-                )
-        );
+                        Constants.FRONTEND_URL + "/watch?v=" + video.getId(),
+                        StringEscapeUtils.escapeXml11(rewriteURL(video.getThumbnail()))
+                );
         thumbnail.setType("xhtml");
         thumbnail.setValue(thumbnailContent);
 
