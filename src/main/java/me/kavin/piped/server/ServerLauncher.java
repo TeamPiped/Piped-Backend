@@ -329,6 +329,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(POST, "/feed/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                                String[].class);
+                        return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(subscriptions), "public, s-maxage=120");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(GET, "/feed/unauthenticated/rss", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getRawResponse(FeedHandlers.unauthenticatedFeedResponseRSS(
@@ -366,6 +374,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         return getJsonResponse(FeedHandlers.unauthenticatedSubscriptionsResponse(
                                 Objects.requireNonNull(request.getQueryParameter("channels")).split(",")
                         ), "public, s-maxage=120");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/subscriptions/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                                String[].class);
+                        return getJsonResponse(FeedHandlers.unauthenticatedSubscriptionsResponse(subscriptions), "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
