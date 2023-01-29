@@ -1,16 +1,13 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
 import org.apache.commons.lang3.StringUtils;
+import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.io.IOException;
+import java.util.Map;
 
-import static me.kavin.piped.consts.Constants.h2client;
 import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.RequestUtils.sendGet;
 import static me.kavin.piped.utils.URLUtils.silentEncode;
 
 public class LbryHelper {
@@ -20,7 +17,7 @@ public class LbryHelper {
         if (Constants.DISABLE_LBRY)
             return null;
 
-        return mapper.readTree(sendGet("https://api.lbry.com/yt/resolve?video_ids=" + silentEncode(videoId)))
+        return RequestUtils.sendGetJson("https://api.lbry.com/yt/resolve?video_ids=" + silentEncode(videoId))
                 .at("/data/videos")
                 .path(videoId)
                 .asText(null);
@@ -32,11 +29,9 @@ public class LbryHelper {
         if (StringUtils.isEmpty(lbryId))
             return null;
 
-        var request = new Request.Builder()
-                .url("https://api.na-backend.odysee.com/api/v1/proxy?m=get")
-                .post(RequestBody.create(mapper.writeValueAsBytes(
+        var resp = ReqwestUtils.fetch("https://api.na-backend.odysee.com/api/v1/proxy?m=get", "POST",
+                mapper.writeValueAsBytes(
                         mapper.createObjectNode()
-                                .put("id", System.currentTimeMillis())
                                 .put("id", System.currentTimeMillis())
                                 .put("jsonrpc", "2.0")
                                 .put("method", "get")
@@ -45,15 +40,11 @@ public class LbryHelper {
                                                 .put("uri", "lbry://" + lbryId)
                                                 .put("save_file", true)
                                 )
-                ), MediaType.get("application/json")))
-                .build();
-
-        try (var resp = h2client.newCall(request).execute()) {
-            if (resp.isSuccessful()) {
-                return mapper.readTree(resp.body().byteStream())
-                        .at("/result/streaming_url")
-                        .asText(null);
-            }
+                ), Map.of("Content-Type", "application/json"));
+        if (resp.status() / 100 == 2) {
+            return mapper.readTree(resp.body())
+                    .at("/result/streaming_url")
+                    .asText(null);
         }
 
         return null;

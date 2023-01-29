@@ -25,11 +25,13 @@ public class SponsorBlockUtils {
         String hash = toSha256(id);
 
         for (String url : Constants.SPONSORBLOCK_SERVERS) {
-            try (var resp = RequestUtils.sendGetRaw(url + "/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
-                    + "?categories=" + URLUtils.silentEncode(categories))) {
+            try {
 
-                if (resp.code() == 200) {
-                    JsonArray jArray = JsonParser.array().from(resp.body().string());
+                var resp = RequestUtils.sendGetRaw(url + "/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
+                        + "?categories=" + URLUtils.silentEncode(categories));
+
+                if (resp.status() == 200) {
+                    JsonArray jArray = JsonParser.array().from(new String(resp.body()));
 
                     jArray.removeIf(jObject -> !((JsonObject) jObject).getString("videoID").equalsIgnoreCase(id));
 

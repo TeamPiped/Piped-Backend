@@ -3,11 +3,12 @@ package me.kavin.piped.utils;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.PubSub;
 import okhttp3.FormBody;
-import okhttp3.Request;
+import okio.Buffer;
 import org.hibernate.StatelessSession;
+import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.io.IOException;
-import java.util.Objects;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class PubSubHelper {
@@ -22,9 +23,6 @@ public class PubSubHelper {
 
             String callback = Constants.PUBSUB_URL + "/webhooks/pubsub";
             String topic = "https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + channelId;
-
-            var builder = new Request.Builder()
-                    .url(Constants.PUBSUB_HUB_URL);
 
             var formBuilder = new FormBody.Builder();
 
@@ -42,16 +40,16 @@ public class PubSubHelper {
                     tr.commit();
                 }
 
-            try (var resp = Constants.h2client
-                    .newCall(builder.post(formBuilder.build())
-                            .build()).execute()) {
+            // write form to read later
+            var buffer = new Buffer();
+            formBuilder.build().writeTo(buffer);
 
-                if (resp.code() != 202)
-                    System.out.println("Failed to subscribe: " + resp.code() + "\n" + Objects.requireNonNull(resp.body()).string());
+            var resp = ReqwestUtils.fetch(callback, "POST", buffer.readByteArray(), Map.of());
 
-            }
+            if (resp.status() != 202)
+                System.out.println("Failed to subscribe: " + resp.status() + "\n" + new String(resp.body()));
+
         }
-
     }
 
     public static void updatePubSub(String channelId) {
