@@ -138,8 +138,13 @@ curl ${CURLOPTS[@]} $HOST/import/playlist -X POST -H "Content-Type: application/
 # Delete User Test
 curl ${CURLOPTS[@]} $HOST/user/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg password "$PASS" '{"password": $password}') || exit 1
 
-# Unauthenticated subscription tests
+# Unauthenticated subscription tests GET
 CHANNEL_IDS=UCsXVk37bltHxD1rDPwtNM8Q,UCXuqSBlHAE6Xw-yeJA0Tunw
 curl ${CURLOPTS[@]} $HOST/feed/unauthenticated -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1
 curl ${CURLOPTS[@]} $HOST/feed/unauthenticated/rss -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1
 curl ${CURLOPTS[@]} $HOST/subscriptions/unauthenticated -G --data-urlencode "channels=$CHANNEL_IDS" || exit 1
+
+# Unauthenticated subscription tests POST
+CHANNEL_IDS='[UCsXVk37bltHxD1rDPwtNM8Q,UCXuqSBlHAE6Xw-yeJA0Tunw]'
+curl ${CURLOPTS[@]} $HOST/feed/unauthenticated -X POST -d "$CHANNEL_IDS" || exit 1
+curl ${CURLOPTS[@]} $HOST/subscriptions/unauthenticated -X POST -d "$CHANNEL_IDS" || exit 1
