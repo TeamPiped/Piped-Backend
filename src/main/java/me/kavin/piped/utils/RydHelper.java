@@ -14,15 +14,14 @@ public class RydHelper {
         if (Constants.DISABLE_RYD)
             return -1;
 
-        try (var resp = sendGetRaw(Constants.RYD_PROXY_URL + "/votes/" + videoId)) {
+        var resp = sendGetRaw(Constants.RYD_PROXY_URL + "/votes/" + videoId);
 
-            if (!resp.isSuccessful())
-                return -1;
+        if (resp.status() / 100 != 2)
+            return -1;
 
-            return mapper.readTree(resp.body().byteStream())
-                    .path("rating")
-                    .asDouble(-1);
+        return mapper.readTree(resp.body())
+                .path("rating")
+                .asDouble(-1);
 
-        }
     }
 }

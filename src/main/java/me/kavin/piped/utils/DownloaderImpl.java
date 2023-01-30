@@ -1,10 +1,10 @@
 package me.kavin.piped.utils;
 
 import com.grack.nanojson.JsonParserException;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.SolvedCaptcha;
 import okhttp3.FormBody;
-import okhttp3.RequestBody;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
@@ -12,9 +12,12 @@ import org.schabi.newpipe.extractor.downloader.Downloader;
 import org.schabi.newpipe.extractor.downloader.Request;
 import org.schabi.newpipe.extractor.downloader.Response;
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
+import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.io.IOException;
 import java.net.HttpCookie;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class DownloaderImpl extends Downloader {
@@ -31,23 +34,16 @@ public class DownloaderImpl extends Downloader {
 
         // TODO: HTTP/3 aka QUIC
         var bytes = request.dataToSend();
-        RequestBody body = null;
-        if (bytes != null)
-            body = RequestBody.create(bytes);
-
-        var builder = new okhttp3.Request.Builder()
-                .url(request.url())
-                .method(request.httpMethod(), body)
-                .header("User-Agent", Constants.USER_AGENT);
+        Map<String, String> headers = new Object2ObjectOpenHashMap<>();
 
         if (saved_cookie != null && !saved_cookie.hasExpired())
-            builder.header("Cookie", saved_cookie.getName() + "=" + saved_cookie.getValue());
+            headers.put("Cookie", saved_cookie.getName() + "=" + saved_cookie.getValue());
 
-        request.headers().forEach((name, values) -> values.forEach(value -> builder.header(name, value)));
+        request.headers().forEach((name, values) -> values.forEach(value -> headers.put(name, value)));
 
-        var resp = Constants.h2client.newCall(builder.build()).execute();
+        var resp = ReqwestUtils.fetch(request.url(), request.httpMethod(), bytes, headers);
 
-        if (resp.code() == 429) {
+        if (resp.status() == 429) {
 
             synchronized (cookie_lock) {
 
@@ -55,14 +51,14 @@ public class DownloaderImpl extends Downloader {
                         || (System.currentTimeMillis() - cookie_received > TimeUnit.MINUTES.toMillis(30)))
                     saved_cookie = null;
 
-                String redir_url = String.valueOf(resp.request().url());
+                String redir_url = String.valueOf(resp.finalUrl());
 
                 if (saved_cookie == null && redir_url.startsWith("https://www.google.com/sorry")) {
 
                     var formBuilder = new FormBody.Builder();
                     String sitekey = null, data_s = null;
 
-                    for (Element el : Jsoup.parse(resp.body().string()).selectFirst("form").children()) {
+                    for (Element el : Jsoup.parse(new String(resp.body())).selectFirst("form").children()) {
                         String name;
                         if (!(name = el.tagName()).equals("script")) {
                             if (name.equals("input"))
@@ -105,11 +101,10 @@ public class DownloaderImpl extends Downloader {
 
         }
 
-        var response = new Response(resp.code(), resp.message(), resp.headers().toMultimap(), resp.body().string(),
-                String.valueOf(resp.request().url()));
+        Map<String, List<String>> headerMap = resp.headers().entrySet().stream()
+                .collect(Object2ObjectOpenHashMap::new, (m, e) -> m.put(e.getKey(), List.of(e.getValue())), Map::putAll);
 
-        resp.close();
-
-        return response;
+        return new Response(resp.status(), null, headerMap, new String(resp.body()),
+                resp.finalUrl());
     }
 }

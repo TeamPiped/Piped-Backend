@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 public class Constants {
 
-    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0";
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0";
 
     public static final int PORT;
     public static final String HTTP_WORKERS;
