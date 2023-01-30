@@ -37,7 +37,7 @@ jobs:
         run: ./gradlew shadowJar
       - run: mv build/libs/piped-*-all.jar piped.jar
       - name: Build Image Locally
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           load: true
