@@ -96,6 +96,10 @@ curl ${CURLOPTS[@]} $HOST/unsubscribe -X POST -H "Content-Type: application/json
 # Resubscribe to the Channel
 curl ${CURLOPTS[@]} $HOST/subscribe -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d $(jq -n --compact-output --arg channelId "UCfdNM3NAhaBOXCafH7krzrA" '{"channelId": $channelId}') || exit 1
 
+# Import subscriptions Test
+CHANNEL_IDS='[UCsXVk37bltHxD1rDPwtNM8Q,UCXuqSBlHAE6Xw-yeJA0Tunw]'
+curl ${CURLOPTS[@]} $HOST/import -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$CHANNEL_IDS" || exit 1
+
 # Wait 2s to allow the subscription request to be processed
 sleep 2
 
@@ -146,5 +150,5 @@ curl ${CURLOPTS[@]} $HOST/subscriptions/unauthenticated -G --data-urlencode "cha
 
 # Unauthenticated subscription tests POST
 CHANNEL_IDS='[UCsXVk37bltHxD1rDPwtNM8Q,UCXuqSBlHAE6Xw-yeJA0Tunw]'
-curl ${CURLOPTS[@]} $HOST/feed/unauthenticated -X POST -d "$CHANNEL_IDS" || exit 1
-curl ${CURLOPTS[@]} $HOST/subscriptions/unauthenticated -X POST -d "$CHANNEL_IDS" || exit 1
+curl ${CURLOPTS[@]} $HOST/feed/unauthenticated -X POST -H "Content-Type: application/json" -d "$CHANNEL_IDS" || exit 1
+curl ${CURLOPTS[@]} $HOST/subscriptions/unauthenticated -X POST -H "Content-Type: application/json" -d "$CHANNEL_IDS" || exit 1
