@@ -7,11 +7,10 @@ import com.grack.nanojson.JsonWriter;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.SimpleErrorMessage;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class SponsorBlockUtils {
@@ -22,7 +21,7 @@ public class SponsorBlockUtils {
         if (StringUtils.isEmpty(categories))
             return Constants.mapper.writeValueAsString(new InvalidRequestResponse());
 
-        String hash = toSha256(id);
+        String hash = DigestUtils.sha256Hex(id);
 
         for (String url : Constants.SPONSORBLOCK_SERVERS) {
             try {
@@ -46,21 +45,4 @@ public class SponsorBlockUtils {
         return null;
     }
 
-    private static String toSha256(final String videoId) throws NoSuchAlgorithmException {
-        final MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        final byte[] bytes = digest.digest(videoId.getBytes(StandardCharsets.UTF_8));
-        final StringBuilder sb = new StringBuilder();
-
-        for (final byte b : bytes) {
-            final String hex = Integer.toHexString(0xff & b);
-
-            if (hex.length() == 1) {
-                sb.append('0');
-            }
-
-            sb.append(hex);
-        }
-
-        return sb.toString();
-    }
 }
