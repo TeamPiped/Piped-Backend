@@ -16,6 +16,12 @@
     },
     {
       "matchPackagePrefixes": [
+        "com.fasterxml.jackson"
+      ],
+      "groupName": "jackson"
+    },
+    {
+      "matchPackagePrefixes": [
         "com.github.firemasterk."
       ],
       "groupName": "Personal Forks",
