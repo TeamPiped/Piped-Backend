@@ -2,7 +2,7 @@ package me.kavin.piped.utils;
 
 import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
+SuppressWarnings
 public class WaitingListener {
 
     private final long maxWaitTime;

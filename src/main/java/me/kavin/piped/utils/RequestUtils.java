@@ -1,16 +1,16 @@
 package me.kavin.piped.utils;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static me.kavin.piped.consts.Constants.mapper;
+
 import com.fasterxml.jackson.databind.JsonNode;
+import java.io.IOException;
+import java.util.Map;
 import me.kavin.piped.consts.Constants;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import rocks.kavin.reqwest4j.ReqwestUtils;
 import rocks.kavin.reqwest4j.Response;
-
-import java.io.IOException;
-import java.util.Map;
-
-import static me.kavin.piped.consts.Constants.mapper;
 
 public class RequestUtils {
 
@@ -21,14 +21,14 @@ public class RequestUtils {
     public static String sendGet(String url) throws IOException {
         return new String(
                 ReqwestUtils.fetch(url, "GET", null, Map.of())
-                        .body()
+                        .body(), UTF_8
         );
     }
 
     public static String sendGet(String url, String ua) throws IOException {
         return new String(
                 ReqwestUtils.fetch(url, "GET", null, Map.of("User-Agent", ua))
-                        .body()
+                        .body(), UTF_8
         );
     }
 

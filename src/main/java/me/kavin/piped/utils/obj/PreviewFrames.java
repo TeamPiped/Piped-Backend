@@ -5,8 +5,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-@AllArgsConstructor
-@NoArgsConstructor
+SuppressWarnings
+SuppressWarnings
 public class PreviewFrames {
 
     public List<String> urls;

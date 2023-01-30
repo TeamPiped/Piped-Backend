@@ -2,7 +2,7 @@ package me.kavin.piped.utils.obj;
 
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
+SuppressWarnings
 public class PlaylistItem extends ContentItem {
 
     public final String type = "playlist";

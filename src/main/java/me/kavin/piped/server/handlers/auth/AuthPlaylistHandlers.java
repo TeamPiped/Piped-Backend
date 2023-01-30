@@ -1,6 +1,13 @@
 package me.kavin.piped.server.handlers.auth;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
+import static me.kavin.piped.consts.Constants.mapper;
+import static me.kavin.piped.utils.URLUtils.rewriteURL;
+import static me.kavin.piped.utils.URLUtils.substringYouTube;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.errorprone.annotations.Var;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndEntryImpl;
 import com.rometools.rome.feed.synd.SyndFeed;
@@ -10,6 +17,9 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import jakarta.persistence.criteria.JoinType;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.ContentItem;
@@ -29,16 +39,6 @@ import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
-import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
-import static me.kavin.piped.utils.URLUtils.substringYouTube;
-
 public class AuthPlaylistHandlers {
     public static byte[] playlistPipedResponse(String playlistId) throws Exception {
 
@@ -56,7 +56,7 @@ public class AuthPlaylistHandlers {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "Playlist not found"));
 
-            final List<ContentItem> relatedStreams = new ObjectArrayList<>();
+             List<ContentItem> relatedStreams = new ObjectArrayList<>();
 
             var videos = playlistVideosCompletableFuture.get();
 
@@ -67,7 +67,7 @@ public class AuthPlaylistHandlers {
                         video.getDuration(), -1, -1, channel.isVerified(), false));
             }
 
-            final Playlist playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), null, null, pl.getOwner().getUsername(),
+             var playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), null, null, pl.getOwner().getUsername(),
                     null, null, videos.size(), relatedStreams);
 
             return mapper.writeValueAsBytes(playlist);
@@ -86,7 +86,7 @@ public class AuthPlaylistHandlers {
 
             var pl = playlistCompletableFuture.get();
 
-            final List<SyndEntry> entries = new ObjectArrayList<>();
+             List<SyndEntry> entries = new ObjectArrayList<>();
 
             SyndFeed feed = new SyndFeedImpl();
             feed.setFeedType("rss_2.0");
@@ -199,7 +199,7 @@ public class AuthPlaylistHandlers {
         return mapper.writeValueAsBytes(new AcceptedResponse());
     }
 
-    public static byte[] addToPlaylistResponse(String session, String playlistId, List<String> videoIds) throws IOException, ExtractionException {
+    public static byte[] addToPlaylistResponse(String session, String playlistId, @Var List<String> videoIds) throws IOException, ExtractionException {
 
         videoIds = videoIds.stream()
                 .filter(StringUtils::isNotBlank)
@@ -232,12 +232,12 @@ public class AuthPlaylistHandlers {
 
             var videos = playlist.getVideos();
 
-            boolean added = false;
+            @Var boolean added = false;
 
             for (String videoId : videoIds) {
                 if (StringUtils.isEmpty(videoId)) continue;
 
-                var video = playlistVideos.stream().filter(v -> v.getId().equals(videoId))
+                @Var var video = playlistVideos.stream().filter(v -> v.getId().equals(videoId))
                         .findFirst()
                         .orElse(null);
 
@@ -247,7 +247,7 @@ public class AuthPlaylistHandlers {
 
                         String channelId = StringUtils.substringAfter(info.getUploaderUrl(), "/channel/");
 
-                        var channel = DatabaseHelper.getChannelFromId(s, channelId);
+                        @Var var channel = DatabaseHelper.getChannelFromId(s, channelId);
 
                         if (channel == null) {
                             channel = DatabaseHelper.saveChannel(channelId);
@@ -358,7 +358,7 @@ public class AuthPlaylistHandlers {
         if (user == null)
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
-        final String url = "https://www.youtube.com/playlist?list=" + playlistId;
+         String url = "https://www.youtube.com/playlist?list=" + playlistId;
 
         PlaylistInfo info = PlaylistInfo.getInfo(url);
 
@@ -366,7 +366,7 @@ public class AuthPlaylistHandlers {
 
         List<StreamInfoItem> videos = new ObjectArrayList<>(info.getRelatedItems());
 
-        Page nextpage = info.getNextPage();
+        @Var Page nextpage = info.getNextPage();
 
         while (nextpage != null) {
             var page = PlaylistInfo.getMoreItems(YOUTUBE_SERVICE, url, nextpage);

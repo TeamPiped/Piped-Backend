@@ -1,6 +1,15 @@
 package me.kavin.piped.utils;
 
+import static me.kavin.piped.utils.URLUtils.rewriteURL;
+
+import com.google.errorprone.annotations.Var;
 import com.rometools.rome.feed.synd.*;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.db.Video;
@@ -8,15 +17,6 @@ import okhttp3.Request;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.hibernate.StatelessSession;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
 
 public class ChannelHelpers {
 
@@ -26,7 +26,7 @@ public class ChannelHelpers {
 
     public static void updateChannel(StatelessSession s, Channel channel, String name, String avatarUrl, boolean uploaderVerified) {
 
-        boolean changed = false;
+        @Var boolean changed = false;
 
         if (name != null && !name.equals(channel.getUploader())) {
             channel.setUploader(name);

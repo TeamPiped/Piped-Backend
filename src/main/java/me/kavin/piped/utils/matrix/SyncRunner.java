@@ -1,6 +1,14 @@
 package me.kavin.piped.utils.matrix;
 
+import static me.kavin.piped.consts.Constants.mapper;
+import static me.kavin.piped.utils.obj.MatrixHelper.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.errorprone.annotations.Var;
+import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.MatrixHelper;
@@ -15,14 +23,6 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
-
-import java.io.IOException;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.obj.MatrixHelper.*;
 
 public class SyncRunner implements Runnable {
 
@@ -45,7 +45,7 @@ public class SyncRunner implements Runnable {
     public void run() {
 
         try {
-            String user_id = null;
+            @Var String user_id = null;
 
             if (!UNAUTHENTICATED) {
                 // whoami to get the user id
@@ -62,7 +62,7 @@ public class SyncRunner implements Runnable {
             // Join room and get the room id
             System.out.println("Room ID: " + ROOM_ID);
 
-            String filter_id = null;
+            @Var String filter_id = null;
 
             // We have to filter on client-side if unauthenticated
             if (!UNAUTHENTICATED) {
@@ -72,12 +72,12 @@ public class SyncRunner implements Runnable {
 
             System.out.println("Filter ID: " + filter_id);
 
-            String next_batch = null;
+            @Var String next_batch = null;
 
             //noinspection InfiniteLoopStatement
             while (true) {
                 try {
-                    String url;
+                    @Var String url;
 
                     if (UNAUTHENTICATED) {
                         url = this.url + "/_matrix/client/v3/events?room_id=" + URLUtils.silentEncode(ROOM_ID);
@@ -141,7 +141,7 @@ public class SyncRunner implements Runnable {
 
                                                     Streams streams = CollectionUtils.collectStreamInfo(info);
 
-                                                    FederatedGeoBypassResponse bypassResponse = new FederatedGeoBypassResponse(bypassRequest.getVideoId(), Constants.YOUTUBE_COUNTRY, streams);
+                                                    var bypassResponse = new FederatedGeoBypassResponse(bypassRequest.getVideoId(), Constants.YOUTUBE_COUNTRY, streams);
 
                                                     MatrixHelper.sendEvent("video.piped.stream.bypass.response", bypassResponse);
 

@@ -1,9 +1,16 @@
 package me.kavin.piped.server.handlers.auth;
 
+import static me.kavin.piped.consts.Constants.mapper;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Splitter;
+import com.google.errorprone.annotations.Var;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
+import java.io.IOException;
+import java.util.Set;
+import java.util.UUID;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.DatabaseSessionFactory;
@@ -18,17 +25,11 @@ import org.hibernate.StatelessSession;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.io.IOException;
-import java.util.Set;
-import java.util.UUID;
-
-import static me.kavin.piped.consts.Constants.mapper;
-
 public class UserHandlers {
     private static final Argon2PasswordEncoder argon2PasswordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
 
-    public static byte[] registerResponse(String user, String pass) throws IOException {
+    public static byte[] registerResponse(@Var String user, String pass) throws IOException {
 
         if (Constants.DISABLE_REGISTRATION)
             ExceptionHandler.throwErrorResponse(new DisabledRegistrationResponse());
@@ -55,15 +56,14 @@ public class UserHandlers {
                 String sha1Hash = DigestUtils.sha1Hex(pass).toUpperCase();
                 String prefix = sha1Hash.substring(0, 5);
                 String suffix = sha1Hash.substring(5);
-                String[] entries = RequestUtils
-                        .sendGet("https://api.pwnedpasswords.com/range/" + prefix, "github.com/TeamPiped/Piped-Backend")
-                        .split("\n");
+                Iterable<String> entries = Splitter.on('\n').split(RequestUtils
+                        .sendGet("https://api.pwnedpasswords.com/range/" + prefix, "github.com/TeamPiped/Piped-Backend"));
                 for (String entry : entries)
                     if (StringUtils.substringBefore(entry, ":").equals(suffix))
                         ExceptionHandler.throwErrorResponse(new CompromisedPasswordResponse());
             }
 
-            User newuser = new User(user, argon2PasswordEncoder.encode(pass), Set.of());
+            var newuser = new User(user, argon2PasswordEncoder.encode(pass), Set.of());
 
             var tr = s.beginTransaction();
             s.persist(newuser);
@@ -80,7 +80,7 @@ public class UserHandlers {
                 bcryptPasswordEncoder.matches(pass, hash);
     }
 
-    public static byte[] loginResponse(String user, String pass)
+    public static byte[] loginResponse(@Var String user, String pass)
             throws IOException {
 
         if (user == null || pass == null)

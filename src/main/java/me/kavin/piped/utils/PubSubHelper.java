@@ -1,5 +1,11 @@
 package me.kavin.piped.utils;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import com.google.errorprone.annotations.Var;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.PubSub;
 import okhttp3.FormBody;
@@ -7,17 +13,13 @@ import okio.Buffer;
 import org.hibernate.StatelessSession;
 import rocks.kavin.reqwest4j.ReqwestUtils;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 public class PubSubHelper {
     public static void subscribePubSub(String channelId) throws IOException {
 
         if (!ChannelHelpers.isValidId(channelId))
             return;
 
-        PubSub pubsub = DatabaseHelper.getPubSubFromId(channelId);
+        @Var PubSub pubsub = DatabaseHelper.getPubSubFromId(channelId);
 
         if (pubsub == null || System.currentTimeMillis() - pubsub.getSubbedAt() > TimeUnit.DAYS.toMillis(4)) {
 
@@ -47,13 +49,13 @@ public class PubSubHelper {
             var resp = ReqwestUtils.fetch(callback, "POST", buffer.readByteArray(), Map.of());
 
             if (resp.status() != 202)
-                System.out.println("Failed to subscribe: " + resp.status() + "\n" + new String(resp.body()));
+                System.out.println("Failed to subscribe: " + resp.status() + "\n" + new String(resp.body(), UTF_8));
 
         }
     }
 
     public static void updatePubSub(String channelId) {
-        var pubsub = DatabaseHelper.getPubSubFromId(channelId);
+        @Var var pubsub = DatabaseHelper.getPubSubFromId(channelId);
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             s.beginTransaction();
             if (pubsub == null) {

@@ -173,7 +173,7 @@ public class FeedHandlers {
                         )
                         .orderBy(cb.desc(root.get("uploaded")));
 
-                final List<SyndEntry> entries = s.createQuery(criteria)
+                 List<SyndEntry> entries = s.createQuery(criteria)
                         .setTimeout(20)
                         .setMaxResults(100)
                         .stream()
@@ -270,7 +270,7 @@ public class FeedHandlers {
             feed.setUri(Constants.FRONTEND_URL + "/feed");
             feed.setPublishedDate(new Date());
 
-            final List<SyndEntry> entries = new ObjectArrayList<>();
+             List<SyndEntry> entries = new ObjectArrayList<>();
 
             for (Video video : videos) {
                 var channel = video.getChannel();
@@ -342,7 +342,7 @@ public class FeedHandlers {
 
                 {
                     var query = cb.createQuery();
-                    var root = query.from(me.kavin.piped.utils.obj.db.Channel.class);
+                    var root = query.from(Channel.class);
                     query.select(root.get("id"))
                             .where(root.get("id").in(channelIds));
 

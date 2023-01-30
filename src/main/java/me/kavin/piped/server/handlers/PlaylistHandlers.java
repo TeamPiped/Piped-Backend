@@ -1,5 +1,13 @@
 package me.kavin.piped.server.handlers;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
+import static me.kavin.piped.consts.Constants.mapper;
+import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
+import static me.kavin.piped.utils.URLUtils.rewriteURL;
+import static me.kavin.piped.utils.URLUtils.substringYouTube;
+
+import com.google.errorprone.annotations.Var;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndEntryImpl;
 import com.rometools.rome.feed.synd.SyndFeed;
@@ -8,6 +16,9 @@ import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
 import io.sentry.Sentry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
 import me.kavin.piped.utils.ExceptionHandler;
@@ -21,17 +32,6 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
-import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
-import static me.kavin.piped.utils.URLUtils.substringYouTube;
 
 public class PlaylistHandlers {
     public static byte[] playlistResponse(String playlistId) throws Exception {
@@ -50,17 +50,17 @@ public class PlaylistHandlers {
 
         Sentry.setExtra("playlistId", playlistId);
 
-        final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
+         PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
 
-        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
+         List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);
         }
 
-        final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
+         var playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
                 rewriteURL(info.getBannerUrl()), nextpage,
                 info.getUploaderName().isEmpty() ? null : info.getUploaderName(),
                 substringYouTube(info.getUploaderUrl()), rewriteURL(info.getUploaderAvatarUrl()),
@@ -84,15 +84,15 @@ public class PlaylistHandlers {
         ListExtractor.InfoItemsPage<StreamInfoItem> info = PlaylistInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://www.youtube.com/playlist?list=" + playlistId, prevpage);
 
-        final List<ContentItem> relatedStreams = collectRelatedItems(info.getItems());
+         List<ContentItem> relatedStreams = collectRelatedItems(info.getItems());
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);
         }
 
-        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
+         var streamspage = new StreamsPage(nextpage, relatedStreams);
 
         return mapper.writeValueAsBytes(streamspage);
 
@@ -112,9 +112,9 @@ public class PlaylistHandlers {
     private static byte[] playlistYouTubeRSSResponse(String playlistId)
             throws IOException, ExtractionException, FeedException {
 
-        final PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
+         PlaylistInfo info = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=" + playlistId);
 
-        final List<SyndEntry> entries = new ObjectArrayList<>();
+         List<SyndEntry> entries = new ObjectArrayList<>();
 
         SyndFeed feed = new SyndFeedImpl();
         feed.setFeedType("rss_2.0");

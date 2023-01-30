@@ -5,13 +5,13 @@ import lombok.NoArgsConstructor;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.Streams;
 
-@NoArgsConstructor
+SuppressWarnings
 @Getter
 public class FederatedGeoBypassResponse {
-    private String videoId;
-    private String country;
-    private String videoProxyUrl;
-    private Streams data;
+    private String SuppressWarnings
+    private String SuppressWarnings
+    private String SuppressWarnings
+    private Streams SuppressWarnings
 
     public FederatedGeoBypassResponse(String videoId, String country, Streams data) {
         this.videoId = videoId;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
+SuppressWarnings
 @JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "stream", value = StreamItem.class),

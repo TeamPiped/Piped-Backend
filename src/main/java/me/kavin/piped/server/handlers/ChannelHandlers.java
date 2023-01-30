@@ -1,7 +1,18 @@
 package me.kavin.piped.server.handlers;
 
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
+import static me.kavin.piped.consts.Constants.mapper;
+import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
+import static me.kavin.piped.utils.URLUtils.rewriteURL;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.errorprone.annotations.Var;
 import io.sentry.Sentry;
+import java.io.IOException;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.*;
@@ -20,25 +31,14 @@ import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
-import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
-
 public class ChannelHandlers {
     public static byte[] channelResponse(String channelPath) throws Exception {
 
         Sentry.setExtra("channelPath", channelPath);
 
-        final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/" + channelPath);
+         ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/" + channelPath);
 
-        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
+         List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
         Multithreading.runAsync(() -> info.getRelatedItems().forEach(infoItem -> {
             if (
@@ -117,7 +117,7 @@ public class ChannelHandlers {
             }
         });
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);
@@ -133,7 +133,7 @@ public class ChannelHandlers {
                     }
                 }).toList();
 
-        final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
+         var channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
                 rewriteURL(info.getBannerUrl()), info.getDescription(), info.getSubscriberCount(), info.isVerified(),
                 nextpage, relatedStreams, tabs);
 
@@ -155,15 +155,15 @@ public class ChannelHandlers {
         ListExtractor.InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(YOUTUBE_SERVICE,
                 "https://youtube.com/channel/" + channelId, prevpage);
 
-        final List<ContentItem> relatedStreams = collectRelatedItems(info.getItems());
+         List<ContentItem> relatedStreams = collectRelatedItems(info.getItems());
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);
         }
 
-        final StreamsPage streamspage = new StreamsPage(nextpage, relatedStreams);
+         var streamspage = new StreamsPage(nextpage, relatedStreams);
 
         return mapper.writeValueAsBytes(streamspage);
 
@@ -181,7 +181,7 @@ public class ChannelHandlers {
 
         List<ContentItem> items = collectRelatedItems(info.getRelatedItems());
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);
@@ -204,7 +204,7 @@ public class ChannelHandlers {
 
         var info = ChannelTabInfo.getMoreItems(YOUTUBE_SERVICE, tabHandler, prevPage);
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);

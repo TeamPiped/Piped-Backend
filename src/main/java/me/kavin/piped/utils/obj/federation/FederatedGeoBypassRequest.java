@@ -6,10 +6,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-@NoArgsConstructor
-@AllArgsConstructor
+SuppressWarnings
+SuppressWarnings
 @Getter
 public class FederatedGeoBypassRequest {
-    private String videoId;
-    private List<String> allowedCountries;
+    private String SuppressWarnings
+    private List<String> SuppressWarnings
 }

@@ -29,7 +29,7 @@ public class TrendingHandlers {
         extractor.fetchPage();
         KioskInfo info = KioskInfo.getInfo(extractor);
 
-        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
+         List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
         return mapper.writeValueAsBytes(relatedStreams);
     }

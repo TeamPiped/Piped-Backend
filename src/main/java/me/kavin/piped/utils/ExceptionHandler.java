@@ -1,15 +1,15 @@
 package me.kavin.piped.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.errorprone.annotations.Var;
 import io.sentry.Sentry;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
-
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 
 public class ExceptionHandler {
 
@@ -17,7 +17,7 @@ public class ExceptionHandler {
         return handle(e, null);
     }
 
-    public static Exception handle(Exception e, String path) {
+    public static Exception handle(@Var Exception e, String path) {
 
         if (e.getCause() != null && (e instanceof ExecutionException || e instanceof CompletionException))
             e = (Exception) e.getCause();

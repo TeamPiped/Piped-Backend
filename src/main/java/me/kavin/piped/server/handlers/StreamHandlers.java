@@ -1,11 +1,28 @@
 package me.kavin.piped.server.handlers;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
+import static me.kavin.piped.consts.Constants.mapper;
+import static me.kavin.piped.utils.URLUtils.rewriteURL;
+import static me.kavin.piped.utils.URLUtils.substringYouTube;
+import static org.schabi.newpipe.extractor.NewPipe.getPreferredContentCountry;
+import static org.schabi.newpipe.extractor.NewPipe.getPreferredLocalization;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getJsonPostResponse;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.errorprone.annotations.Var;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
 import io.sentry.ITransaction;
 import io.sentry.Sentry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.*;
@@ -26,29 +43,12 @@ import org.schabi.newpipe.extractor.stream.Description;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.utils.JsonUtils;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
-import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
-import static me.kavin.piped.utils.URLUtils.substringYouTube;
-import static org.schabi.newpipe.extractor.NewPipe.getPreferredContentCountry;
-import static org.schabi.newpipe.extractor.NewPipe.getPreferredLocalization;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getJsonPostResponse;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
-
 public class StreamHandlers {
     public static byte[] streamsResponse(String videoId) throws Exception {
 
         Sentry.setExtra("videoId", videoId);
 
-        final var futureStream = Multithreading.supplyAsync(() -> {
+         var futureStream = Multithreading.supplyAsync(() -> {
             Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("StreamInfo fetch", "fetch");
             try {
@@ -65,7 +65,7 @@ public class StreamHandlers {
             return null;
         });
 
-        final var futureLbryId = Multithreading.supplyAsync(() -> {
+         var futureLbryId = Multithreading.supplyAsync(() -> {
             Sentry.setExtra("videoId", videoId);
             try {
                 return LbryHelper.getLBRYId(videoId);
@@ -75,7 +75,7 @@ public class StreamHandlers {
             return null;
         });
 
-        final var futureLBRY = Multithreading.supplyAsync(() -> {
+         var futureLBRY = Multithreading.supplyAsync(() -> {
             Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("LBRY Stream fetch", "fetch");
             try {
@@ -94,7 +94,7 @@ public class StreamHandlers {
             return null;
         });
 
-        final var futureDislikeRating = Multithreading.supplyAsync(() -> {
+         var futureDislikeRating = Multithreading.supplyAsync(() -> {
             Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("Dislike Rating", "fetch");
             try {
@@ -107,8 +107,8 @@ public class StreamHandlers {
             return null;
         });
 
-        StreamInfo info = null;
-        Throwable exception = null;
+        @Var StreamInfo info = null;
+        @Var Throwable exception = null;
 
         try {
             info = futureStream.get(10, TimeUnit.SECONDS);
@@ -174,7 +174,7 @@ public class StreamHandlers {
                 streams.thumbnailUrl = rewriteURL(streams.thumbnailUrl);
                 streams.uploaderAvatar = rewriteURL(streams.uploaderAvatar);
 
-                String lbryId;
+                @Var String lbryId;
 
                 try {
                     lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
@@ -186,7 +186,7 @@ public class StreamHandlers {
                     streams.lbryId = lbryId;
                 }
 
-                String lbryURL;
+                @Var String lbryURL;
 
                 try {
                     lbryURL = futureLBRY.get(3, TimeUnit.SECONDS);
@@ -199,7 +199,7 @@ public class StreamHandlers {
 
                 // Attempt to get dislikes calculating with the RYD API rating
                 if (streams.dislikes < 0 && streams.likes >= 0) {
-                    double rating;
+                    @Var double rating;
                     try {
                         rating = futureDislikeRating.get(3, TimeUnit.SECONDS);
                     } catch (Exception e) {
@@ -224,7 +224,7 @@ public class StreamHandlers {
 
         Streams streams = CollectionUtils.collectStreamInfo(info);
 
-        String lbryURL = null;
+        @Var String lbryURL = null;
 
         try {
             lbryURL = futureLBRY.get(3, TimeUnit.SECONDS);
@@ -254,7 +254,7 @@ public class StreamHandlers {
             });
         }
 
-        String lbryId;
+        @Var String lbryId;
 
         try {
             lbryId = futureLbryId.get(2, TimeUnit.SECONDS);
@@ -266,7 +266,7 @@ public class StreamHandlers {
 
         // Attempt to get dislikes calculating with the RYD API rating
         if (streams.dislikes < 0 && streams.likes >= 0) {
-            double rating;
+            @Var double rating;
             try {
                 rating = futureDislikeRating.get(3, TimeUnit.SECONDS);
             } catch (Exception e) {
@@ -284,16 +284,16 @@ public class StreamHandlers {
 
     public static byte[] resolveClipId(String clipId) throws Exception {
 
-        final byte[] body = JsonWriter.string(prepareDesktopJsonBuilder(
+         byte[] body = JsonWriter.string(prepareDesktopJsonBuilder(
                         getPreferredLocalization(), getPreferredContentCountry())
                         .value("url", "https://www.youtube.com/clip/" + clipId)
                         .done())
                 .getBytes(UTF_8);
 
-        final JsonObject jsonResponse = getJsonPostResponse("navigation/resolve_url",
+         JsonObject jsonResponse = getJsonPostResponse("navigation/resolve_url",
                 body, getPreferredLocalization());
 
-        final String videoId = JsonUtils.getString(jsonResponse, "endpoint.watchEndpoint.videoId");
+         String videoId = JsonUtils.getString(jsonResponse, "endpoint.watchEndpoint.videoId");
 
         return mapper.writeValueAsBytes(new VideoResolvedResponse(videoId));
     }
@@ -308,7 +308,7 @@ public class StreamHandlers {
 
         info.getRelatedItems().forEach(comment -> {
             try {
-                String repliespage = null;
+                @Var String repliespage = null;
                 if (comment.getReplies() != null)
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
@@ -321,13 +321,13 @@ public class StreamHandlers {
             }
         });
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);
         }
 
-        CommentsPage commentsItem = new CommentsPage(comments, nextpage, info.isCommentsDisabled());
+        var commentsItem = new CommentsPage(comments, nextpage, info.isCommentsDisabled());
 
         return mapper.writeValueAsBytes(commentsItem);
 
@@ -346,7 +346,7 @@ public class StreamHandlers {
 
         info.getItems().forEach(comment -> {
             try {
-                String repliespage = null;
+                @Var String repliespage = null;
                 if (comment.getReplies() != null)
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
@@ -359,13 +359,13 @@ public class StreamHandlers {
             }
         });
 
-        String nextpage = null;
+        @Var String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
             nextpage = mapper.writeValueAsString(page);
         }
 
-        CommentsPage commentsItem = new CommentsPage(comments, nextpage, false);
+        var commentsItem = new CommentsPage(comments, nextpage, false);
 
         return mapper.writeValueAsBytes(commentsItem);
 

@@ -53,7 +53,7 @@ public class SearchHandlers {
 
         Sentry.setExtra("query", q);
 
-        final SearchInfo info = SearchInfo.getInfo(YOUTUBE_SERVICE,
+         SearchInfo info = SearchInfo.getInfo(YOUTUBE_SERVICE,
                 YOUTUBE_SERVICE.getSearchQHFactory().fromQuery(q, Collections.singletonList(filter), null));
 
         List<ContentItem> items = collectRelatedItems(info.getRelatedItems());
