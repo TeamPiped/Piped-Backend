@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import io.activej.config.Config;
-import io.activej.http.AsyncServlet;
-import io.activej.http.HttpMethod;
-import io.activej.http.HttpResponse;
-import io.activej.http.RoutingServlet;
+import io.activej.http.*;
 import io.activej.inject.annotation.Provides;
 import io.activej.inject.module.AbstractModule;
 import io.activej.inject.module.Module;
@@ -18,6 +15,7 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.*;
 import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
 import me.kavin.piped.server.handlers.auth.FeedHandlers;
+import me.kavin.piped.server.handlers.auth.StorageHandlers;
 import me.kavin.piped.server.handlers.auth.UserHandlers;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.MatrixHelper;
@@ -42,8 +40,13 @@ import static io.activej.http.HttpHeaders.*;
 import static io.activej.http.HttpMethod.GET;
 import static io.activej.http.HttpMethod.POST;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static me.kavin.piped.consts.Constants.mapper;
 
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
+
+    private static final HttpHeader FILE_NAME = HttpHeaders.of("x-file-name");
+    private static final HttpHeader LAST_ETAG = HttpHeaders.of("x-last-etag");
+
 
     @Provides
     Executor executor() {
@@ -265,7 +268,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/register", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        LoginRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                        LoginRequest body = mapper.readValue(request.loadBody().getResult().asArray(),
                                 LoginRequest.class);
                         return getJsonResponse(UserHandlers.registerResponse(body.username, body.password),
                                 "private");
@@ -274,7 +277,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/login", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        LoginRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                        LoginRequest body = mapper.readValue(request.loadBody().getResult().asArray(),
                                 LoginRequest.class);
                         return getJsonResponse(UserHandlers.loginResponse(body.username, body.password), "private");
                     } catch (Exception e) {
@@ -282,7 +285,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/subscribe", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        SubscriptionUpdateRequest body = Constants.mapper
+                        SubscriptionUpdateRequest body = mapper
                                 .readValue(request.loadBody().getResult().asArray(), SubscriptionUpdateRequest.class);
                         return getJsonResponse(
                                 FeedHandlers.subscribeResponse(request.getHeader(AUTHORIZATION), body.channelId),
@@ -292,7 +295,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/unsubscribe", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        SubscriptionUpdateRequest body = Constants.mapper
+                        SubscriptionUpdateRequest body = mapper
                                 .readValue(request.loadBody().getResult().asArray(), SubscriptionUpdateRequest.class);
                         return getJsonResponse(
                                 FeedHandlers.unsubscribeResponse(request.getHeader(AUTHORIZATION), body.channelId),
@@ -331,7 +334,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/feed/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                        String[] subscriptions = mapper.readValue(request.loadBody().getResult().asArray(),
                                 String[].class);
                         return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(subscriptions), "public, s-maxage=120");
                     } catch (Exception e) {
@@ -347,7 +350,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/import", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                        String[] subscriptions = mapper.readValue(request.loadBody().getResult().asArray(),
                                 String[].class);
                         return getJsonResponse(FeedHandlers.importResponse(request.getHeader(AUTHORIZATION),
                                 subscriptions, Boolean.parseBoolean(request.getQueryParameter("override"))), "private");
@@ -356,7 +359,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/import/playlist", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.importPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
                     } catch (Exception e) {
@@ -379,7 +382,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/subscriptions/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        String[] subscriptions = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                        String[] subscriptions = mapper.readValue(request.loadBody().getResult().asArray(),
                                 String[].class);
                         return getJsonResponse(FeedHandlers.unauthenticatedSubscriptionsResponse(subscriptions), "public, s-maxage=120");
                     } catch (Exception e) {
@@ -387,7 +390,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/playlists/create", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var name = Constants.mapper.readTree(request.loadBody().getResult().asArray()).get("name").textValue();
+                        var name = mapper.readTree(request.loadBody().getResult().asArray()).get("name").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.createPlaylist(request.getHeader(AUTHORIZATION), name), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -400,7 +403,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/playlists/add", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         var videoIds = new ObjectArrayList<String>();
                         // backwards compatibility
@@ -421,7 +424,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/playlists/remove", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         var index = json.get("index").intValue();
                         return getJsonResponse(AuthPlaylistHandlers.removeFromPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, index), "private");
@@ -430,7 +433,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/playlists/clear", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.clearPlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
                     } catch (Exception e) {
@@ -438,7 +441,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/playlists/rename", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         var newName = json.get("newName").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.renamePlaylistResponse(request.getHeader(AUTHORIZATION), playlistId, newName), "private");
@@ -447,7 +450,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/playlists/delete", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var json = Constants.mapper.readTree(request.loadBody().getResult().asArray());
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.deletePlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
                     } catch (Exception e) {
@@ -462,7 +465,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(POST, "/user/delete", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        DeleteUserRequest body = Constants.mapper.readValue(request.loadBody().getResult().asArray(),
+                        DeleteUserRequest body = mapper.readValue(request.loadBody().getResult().asArray(),
                                 DeleteUserRequest.class);
                         return getJsonResponse(UserHandlers.deleteUserResponse(request.getHeader(AUTHORIZATION), body.password),
                                 "private");
@@ -475,7 +478,33 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
-                })).map(GET, "/", AsyncServlet.ofBlocking(executor, request -> HttpResponse.redirect302(Constants.FRONTEND_URL)));
+                })).map(GET, "/storage/stat", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var file = request.getQueryParameter("file");
+                        return getJsonResponse(StorageHandlers.statFile(request.getHeader(AUTHORIZATION), file), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/storage/put", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var data = request.loadBody().getResult().asArray();
+
+                        String fileName = request.getHeader(FILE_NAME);
+                        String etag = request.getHeader(LAST_ETAG);
+
+                        return getJsonResponse(StorageHandlers.putFile(request.getHeader(AUTHORIZATION), fileName, etag, data), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/storage/get", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var file = request.getQueryParameter("file");
+                        return getRawResponse(StorageHandlers.getFile(request.getHeader(AUTHORIZATION), file), "application/octet-stream", "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                }))
+                .map(GET, "/", AsyncServlet.ofBlocking(executor, request -> HttpResponse.redirect302(Constants.FRONTEND_URL)));
 
         return new CustomServletDecorator(router);
     }
@@ -540,7 +569,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
         }
 
         try {
-            return getJsonResponse(500, Constants.mapper
+            return getJsonResponse(500, mapper
                     .writeValueAsBytes(new StackTraceResponse(ExceptionUtils.getStackTrace(e), e.getMessage())), "private");
         } catch (JsonProcessingException ex) {
             return HttpResponse.ofCode(500);

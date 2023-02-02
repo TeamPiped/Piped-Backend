@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.minio.MinioClient;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
 import me.kavin.piped.utils.RequestUtils;
@@ -77,6 +78,16 @@ public class Constants {
 
     public static final String SENTRY_DSN;
 
+    public static final String S3_ENDPOINT;
+
+    public static final String S3_ACCESS_KEY;
+
+    public static final String S3_SECRET_KEY;
+
+    public static final String S3_BUCKET;
+
+    public static final MinioClient S3_CLIENT;
+
     public static final String MATRIX_ROOM = "#piped-events:matrix.org";
 
     public static final String MATRIX_SERVER;
@@ -132,6 +143,18 @@ public class Constants {
             DISABLE_LBRY = Boolean.parseBoolean(getProperty(prop, "DISABLE_LBRY", "false"));
             SUBSCRIPTIONS_EXPIRY = Integer.parseInt(getProperty(prop, "SUBSCRIPTIONS_EXPIRY", "30"));
             SENTRY_DSN = getProperty(prop, "SENTRY_DSN", "");
+            S3_ENDPOINT = getProperty(prop, "S3_ENDPOINT");
+            S3_ACCESS_KEY = getProperty(prop, "S3_ACCESS_KEY");
+            S3_SECRET_KEY = getProperty(prop, "S3_SECRET_KEY");
+            S3_BUCKET = getProperty(prop, "S3_BUCKET");
+            if (S3_ENDPOINT != null) {
+                S3_CLIENT = MinioClient.builder()
+                        .endpoint(S3_ENDPOINT)
+                        .credentials(S3_ACCESS_KEY, S3_SECRET_KEY)
+                        .build();
+            } else {
+                S3_CLIENT = null;
+            }
             System.getenv().forEach((key, value) -> {
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
@@ -151,6 +174,7 @@ public class Constants {
                     YOUTUBE_SERVICE.getSupportedCountries().stream().map(ContentCountry::getCountryCode)
                             .map(JsonNodeFactory.instance::textNode).toList()
             );
+            frontendProperties.put("s3Enabled", S3_CLIENT != null);
 
             // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",
