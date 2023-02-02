@@ -21,6 +21,9 @@ public class StorageHandlers {
 
     public static byte[] statFile(String session, String name) throws Exception {
 
+        if (Constants.S3_CLIENT == null)
+            ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Storage is not configured on this instance!"));
+
         if (!StringUtils.isAlphanumeric(name) || name.length() > 32)
             ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Invalid path provided!"));
 
@@ -55,6 +58,9 @@ public class StorageHandlers {
     }
 
     public static byte[] putFile(String session, String name, String etag, byte[] content) throws Exception {
+
+        if (Constants.S3_CLIENT == null)
+            ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Storage is not configured on this instance!"));
 
         if (!StringUtils.isAlphanumeric(name) || name.length() > 32)
             ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Invalid path provided!"));
@@ -102,6 +108,10 @@ public class StorageHandlers {
     }
 
     public static byte[] getFile(String session, String name) throws Exception {
+
+        if (Constants.S3_CLIENT == null)
+            ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Storage is not configured on this instance!"));
+
         if (!StringUtils.isAlphanumeric(name) || name.length() > 32)
             ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Invalid path provided!"));
 

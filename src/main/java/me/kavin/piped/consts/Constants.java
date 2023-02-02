@@ -174,6 +174,7 @@ public class Constants {
                     YOUTUBE_SERVICE.getSupportedCountries().stream().map(ContentCountry::getCountryCode)
                             .map(JsonNodeFactory.instance::textNode).toList()
             );
+            frontendProperties.put("s3Enabled", S3_CLIENT != null);
 
             // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",
