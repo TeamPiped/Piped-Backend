@@ -1,5 +1,6 @@
 package me.kavin.piped.server.handlers.auth;
 
+import io.minio.GetObjectArgs;
 import io.minio.PutObjectArgs;
 import io.minio.StatObjectArgs;
 import io.minio.errors.ErrorResponseException;
@@ -8,6 +9,7 @@ import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.resp.SimpleErrorMessage;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -97,5 +99,22 @@ public class StorageHandlers {
                 mapper.createObjectNode()
                         .put("status", "ok")
         );
+    }
+
+    public static byte[] getFile(String session, String name) throws Exception {
+        if (!StringUtils.isAlphanumeric(name) || name.length() > 32)
+            ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Invalid path provided!"));
+
+        User user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            ExceptionHandler.throwErrorResponse(new SimpleErrorMessage("Invalid session provided!"));
+
+        try (var stream = Constants.S3_CLIENT.getObject(GetObjectArgs.builder()
+                .bucket(Constants.S3_BUCKET)
+                .object(user.getId() + "/" + name)
+                .build())) {
+            return IOUtils.toByteArray(stream);
+        }
     }
 }

@@ -480,8 +480,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/storage/stat", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var json = mapper.readTree(request.loadBody().getResult().asArray());
-                        return getJsonResponse(StorageHandlers.statFile(request.getHeader(AUTHORIZATION), json.get("file").textValue()), "private");
+                        var file = request.getQueryParameter("file");
+                        return getJsonResponse(StorageHandlers.statFile(request.getHeader(AUTHORIZATION), file), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
@@ -493,6 +493,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         String etag = request.getHeader(LAST_ETAG);
 
                         return getJsonResponse(StorageHandlers.putFile(request.getHeader(AUTHORIZATION), fileName, etag, data), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/storage/get", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var file = request.getQueryParameter("file");
+                        return getRawResponse(StorageHandlers.getFile(request.getHeader(AUTHORIZATION), file), "application/octet-stream", "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
