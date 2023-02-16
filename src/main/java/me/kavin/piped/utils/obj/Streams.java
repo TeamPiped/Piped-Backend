@@ -33,7 +33,7 @@ public class Streams {
                    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes, long uploaderSubscriberCount,
                    boolean uploaderVerified, List<PipedStream> audioStreams, List<PipedStream> videoStreams,
                    List<ContentItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
-                   String lbryId, List<ChapterSegment> chapters, List<PreviewFrames> previewFrames, String category) {
+                   String lbryId, String category, List<ChapterSegment> chapters, List<PreviewFrames> previewFrames) {
         this.title = title;
         this.description = description;
         this.uploadDate = uploadDate;
