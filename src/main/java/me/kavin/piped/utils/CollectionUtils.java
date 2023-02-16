@@ -62,7 +62,7 @@ public class CollectionUtils {
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl()),
-                rewriteVideoURL(info.getDashMpdUrl()), null, chapters, previewFrames);
+                rewriteVideoURL(info.getDashMpdUrl()), null, chapters, previewFrames, info.getCategory());
     }
 
     public static List<ContentItem> collectRelatedItems(List<? extends InfoItem> items) {
