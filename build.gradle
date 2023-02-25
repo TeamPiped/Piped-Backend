@@ -1,7 +1,7 @@
 plugins {
     id "com.github.johnrengelman.shadow" version "8.0.0"
     id "java"
-    id "io.freefair.lombok" version "6.6.2"
+    id "io.freefair.lombok" version "6.6.3"
     id "eclipse"
 }
 
