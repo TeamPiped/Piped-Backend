@@ -94,6 +94,25 @@ public class StreamHandlers {
             return null;
         });
 
+        final var futureLBRYHls = Multithreading.supplyAsync(() -> {
+            Sentry.setExtra("videoId", videoId);
+            ITransaction transaction = Sentry.startTransaction("LBRY HLS fetch", "fetch");
+            try {
+                var childTask = transaction.startChild("fetch", "LBRY Stream URL fetch");
+                String lbryUrl = futureLBRY.get(2, TimeUnit.SECONDS);
+                Sentry.setExtra("lbryUrl", lbryUrl);
+                childTask.finish();
+
+                return LbryHelper.getLBRYHlsUrl(lbryUrl);
+            } catch (TimeoutException ignored) {
+            } catch (Exception e) {
+                ExceptionHandler.handle(e);
+            } finally {
+                transaction.finish();
+            }
+            return null;
+        });
+
         final var futureDislikeRating = Multithreading.supplyAsync(() -> {
             Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("Dislike Rating", "fetch");
@@ -231,6 +250,17 @@ public class StreamHandlers {
         } catch (Exception e) {
             // ignored
         }
+
+        String lbryHlsURL = null;
+
+        try {
+            lbryHlsURL = futureLBRYHls.get(4, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            // ignored
+        }
+
+        if (lbryHlsURL != null)
+            streams.videoStreams.add(0, new PipedStream(lbryHlsURL, "HLS", "LBRY HLS", "application/x-mpegurl", false));
 
         if (lbryURL != null)
             streams.videoStreams.add(0, new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
