@@ -1,7 +1,6 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
-import okhttp3.Request;
 import org.apache.commons.lang3.StringUtils;
 import rocks.kavin.reqwest4j.ReqwestUtils;
 
@@ -54,18 +53,16 @@ public class LbryHelper {
 
     public static String getLBRYHlsUrl(String streamUrl) throws Exception {
 
-        try (var resp = Constants.h2_no_redir_client
-                .newCall(
-                        new Request.Builder()
-                                .url(streamUrl)
-                                .method("HEAD", null)
-                                .header("User-Agent", Constants.USER_AGENT)
-                                .header("Origin", "https://odysee.com")
-                                .header("Referer", "https://odysee.com/")
-                                .build()
-                )
-                .execute()) {
-            return resp.header("Location");
-        }
+        if (StringUtils.isEmpty(streamUrl))
+            return null;
+
+        var resp = ReqwestUtils.fetch(streamUrl, "HEAD", null, Map.of(
+                "Origin", "https://odysee.com",
+                "Referer", "https://odysee.com/"
+        ));
+
+        final String lastLocation = resp.finalUrl();
+
+        return streamUrl.equals(lastLocation) ? null : lastLocation;
     }
 }
