@@ -8,4 +8,4 @@ COPY VERSION .
 
 EXPOSE 8080
 
-CMD java -server -Xmx1G -Xaggressive -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -Xgcpolicy:gencon -Xshareclasses:allowClasspaths -Xtune:virtualized -jar /app/piped.jar
+CMD java -server -Xmx1G -Xaggressive -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+IdleTuningGcOnIdle -Xgcpolicy:gencon -Xshareclasses:allowClasspaths -Xtune:virtualized -jar /app/piped.jar
