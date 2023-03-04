@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 import static me.kavin.piped.consts.Constants.mapper;
@@ -55,6 +56,9 @@ public class LbryHelper {
 
         if (StringUtils.isEmpty(streamUrl))
             return null;
+
+        // LBRY provides non UTF-8 characters in the URL, which causes issues
+        streamUrl = new URI(streamUrl).toASCIIString();
 
         var resp = ReqwestUtils.fetch(streamUrl, "HEAD", null, Map.of(
                 "Origin", "https://odysee.com",
