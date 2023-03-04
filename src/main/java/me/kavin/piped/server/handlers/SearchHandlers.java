@@ -28,6 +28,9 @@ public class SearchHandlers {
         if (StringUtils.isEmpty(query))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query is a required parameter"));
 
+        if (query.length() > 100)
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query is too long"));
+
         return mapper.writeValueAsBytes(YOUTUBE_SERVICE.getSuggestionExtractor().suggestionList(query));
 
     }
@@ -37,6 +40,9 @@ public class SearchHandlers {
 
         if (StringUtils.isEmpty(query))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query is a required parameter"));
+
+        if (query.length() > 100)
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("query is too long"));
 
         return mapper.writeValueAsBytes(Arrays.asList(
                 query,
