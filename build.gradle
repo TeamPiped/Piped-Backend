@@ -40,7 +40,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:okhttp-brotli'
     implementation 'io.sentry:sentry:6.14.0'
-    implementation 'rocks.kavin:reqwest4j:1.0'
+    implementation 'rocks.kavin:reqwest4j:1.0.1'
     implementation 'io.minio:minio:8.5.2'
 }
 
