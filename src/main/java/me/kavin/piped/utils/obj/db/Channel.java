@@ -10,7 +10,7 @@ public class Channel {
     @Column(name = "uploader_id", unique = true, nullable = false, length = 30)
     private String uploader_id;
 
-    @Column(name = "uploader", length = 80)
+    @Column(name = "uploader", length = 100)
     private String uploader;
 
     @Column(name = "uploader_avatar", length = 150)
