@@ -18,7 +18,7 @@ dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:85bff7662e56f5570dd0e5f8b666b4ffaf57a3b0'
-    implementation 'com.github.FireMasterK:nanojson:885effc25ad9ff920d43a4b09849719926ed89b2'
+    implementation 'com.github.FireMasterK:nanojson:2431d2d6335a5b9795f0efdd3610e71540bfb93e'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.14.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
