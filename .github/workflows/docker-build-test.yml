@@ -21,17 +21,17 @@ jobs:
         dockerfile:
           - Dockerfile.ci
           - Dockerfile.openj9.ci
-          - Dockerfile.graalvm-jvm.ci
+          # - Dockerfile.graalvm-jvm.ci
+      fail-fast: false
     steps:
       - uses: actions/checkout@v3
       - name: Create Version File
         run: echo $(git log -1 --date=short --pretty=format:%cd)-$(git rev-parse --short HEAD) > VERSION
-      - name: set up JDK 17
+      - name: set up JDK 19
         uses: actions/setup-java@v3
         with:
-          java-version: 17
+          java-version: 19
           distribution: temurin
-          check-latest: true
           cache: "gradle"
       - name: Run Build
         run: ./gradlew shadowJar

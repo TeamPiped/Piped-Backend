@@ -1,4 +1,4 @@
-FROM ibm-semeru-runtimes:open-17-jdk AS build
+FROM 1337kavin/openj9-19 AS build
 
 WORKDIR /app/
 
@@ -7,7 +7,7 @@ COPY . /app/
 RUN --mount=type=cache,target=/root/.gradle/caches/ \
  ./gradlew shadowJar
 
-FROM ibm-semeru-runtimes:open-17-jre
+FROM 1337kavin/openj9-19:latest-jre
 
 WORKDIR /app/
 
@@ -17,4 +17,4 @@ COPY VERSION .
 
 EXPOSE 8080
 
-CMD java -server -Xmx1G -Xaggressive -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+IdleTuningGcOnIdle -Xgcpolicy:gencon -Xshareclasses:allowClasspaths -Xtune:virtualized -jar /app/piped.jar
+CMD java -server -Xmx1G -Xaggressive -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+IdleTuningGcOnIdle -Xgcpolicy:gencon -Xshareclasses:allowClasspaths -Xtune:virtualized --enable-preview -jar /app/piped.jar

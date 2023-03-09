@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:19-jdk AS build
 
 WORKDIR /app/
 
@@ -7,7 +7,7 @@ COPY . /app/
 RUN --mount=type=cache,target=/root/.gradle/caches/ \
  ./gradlew shadowJar
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:19-jre
 
 WORKDIR /app/
 
@@ -17,4 +17,4 @@ COPY VERSION .
 
 EXPOSE 8080
 
-CMD java -jar /app/piped.jar
+CMD ["java", "--enable-preview", "-jar", "/app/piped.jar"]
