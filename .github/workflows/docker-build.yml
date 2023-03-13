@@ -13,12 +13,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - image: 1337kavin/piped:latest,1337kavin/piped:openj9
+          - image: 1337kavin/piped:openj9
             dockerfile: ./Dockerfile.openj9.ci
-          - image: 1337kavin/piped:hotspot
+          - image: 1337kavin/piped:latest,1337kavin/piped:hotspot
             dockerfile: ./Dockerfile.ci
-          - image: 1337kavin/piped:graalvm-jvm
-            dockerfile: ./Dockerfile.graalvm-jvm.ci
+          # - image: 1337kavin/piped:graalvm-jvm
+          #   dockerfile: ./Dockerfile.graalvm-jvm.ci
     steps:
       - uses: actions/checkout@v3
       - name: Create Version File
