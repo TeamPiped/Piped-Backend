@@ -38,7 +38,8 @@ public class ChannelHelpers {
             URL url;
             try {
                 url = new URL(avatarUrl);
-                if (!url.getHost().endsWith(".ggpht.com"))
+                final var host = url.getHost();
+                if (!host.endsWith(".ggpht.com") && !host.endsWith(".googleusercontent.com"))
                     return;
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
