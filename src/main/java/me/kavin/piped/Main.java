@@ -74,6 +74,9 @@ public class Main {
             System.exit(1);
         }
 
+        // Close the HikariCP connection pool
+        Runtime.getRuntime().addShutdownHook(new Thread(DatabaseSessionFactory::close));
+
         if (Constants.DISABLE_TIMERS)
             return;
 
