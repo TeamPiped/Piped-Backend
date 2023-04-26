@@ -109,14 +109,14 @@ public class FeedHandlers {
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
                 var root = criteria.from(Video.class);
                 root.fetch("channel", JoinType.RIGHT);
-                var subquery = criteria.subquery(User.class);
+                var subquery = criteria.subquery(String.class);
                 var subroot = subquery.from(User.class);
                 subquery.select(subroot.get("subscribed_ids"))
                         .where(cb.equal(subroot.get("id"), user.getId()));
 
                 criteria.select(root)
                         .where(
-                                root.get("channel").in(subquery)
+                                root.get("channel").get("uploader_id").in(subquery)
                         )
                         .orderBy(cb.desc(root.get("uploaded")));
 
@@ -162,14 +162,14 @@ public class FeedHandlers {
                 CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
                 var root = criteria.from(Video.class);
                 root.fetch("channel", JoinType.RIGHT);
-                var subquery = criteria.subquery(User.class);
+                var subquery = criteria.subquery(String.class);
                 var subroot = subquery.from(User.class);
                 subquery.select(subroot.get("subscribed_ids"))
                         .where(cb.equal(subroot.get("id"), user.getId()));
 
                 criteria.select(root)
                         .where(
-                                root.get("channel").in(subquery)
+                                root.get("channel").get("uploader_id").in(subquery)
                         )
                         .orderBy(cb.desc(root.get("uploaded")));
 
