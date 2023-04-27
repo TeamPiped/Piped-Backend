@@ -16,6 +16,7 @@ curl "${CURLOPTS[@]}" $HOST/trending?region=US || exit 1
 curl "${CURLOPTS[@]}" $HOST/channel/UCsXVk37bltHxD1rDPwtNM8Q || exit 1
 curl "${CURLOPTS[@]}" $HOST/c/inanutshell || exit 1
 curl "${CURLOPTS[@]}" $HOST/user/Kurzgesagt || exit 1
+curl "${CURLOPTS[@]}" $HOST/@/kurzgesagt || exit 1
 
 # Channel Nextpage
 CHANNEL_NEXTPAGE=$(curl -s -o - -f $HOST/channel/UCsXVk37bltHxD1rDPwtNM8Q | jq -r .nextpage)

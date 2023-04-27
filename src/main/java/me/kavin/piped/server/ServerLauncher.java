@@ -170,6 +170,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/@/:handle", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(
+                                ChannelHandlers.channelResponse("@" + request.getPathParameter("handle")),
+                                "public, max-age=600", true);
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(GET, "/nextpage/channel/:channelId", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(ChannelHandlers.channelPageResponse(request.getPathParameter("channelId"),
@@ -526,6 +534,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 return Config.create()
                         .with("http.listenAddresses",
                                 Config.ofValue(ofInetSocketAddress(), new InetSocketAddress(Constants.PORT)))
+                        .with("bytebuf.useWatchdog", String.valueOf(true))
                         .with("workers", Constants.HTTP_WORKERS);
             }
         };
