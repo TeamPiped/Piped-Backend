@@ -1,4 +1,4 @@
-FROM 1337kavin/openj9-19:latest-jre
+FROM ibm-semeru-runtimes:open-17-jre
 
 WORKDIR /app/
 
