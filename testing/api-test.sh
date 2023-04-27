@@ -104,6 +104,9 @@ curl "${CURLOPTS[@]}" $HOST/import -X POST -H "Content-Type: application/json" -
 # Wait 2s to allow the subscription request to be processed
 sleep 2
 
+# Check Subscriptions
+curl "${CURLOPTS[@]}" $HOST/subscriptions -H "Authorization: $AUTH_TOKEN" || exit 1
+
 # Check Feed
 curl "${CURLOPTS[@]}" $HOST/feed -G --data-urlencode "authToken=$AUTH_TOKEN" || exit 1
 
