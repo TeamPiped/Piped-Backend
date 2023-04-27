@@ -424,7 +424,7 @@ public class FeedHandlers {
                 CriteriaBuilder cb = s.getCriteriaBuilder();
                 var query = cb.createQuery(Channel.class);
                 var root = query.from(Channel.class);
-                var subquery = query.subquery(User.class);
+                var subquery = query.subquery(String.class);
                 var subroot = subquery.from(User.class);
 
                 subquery.select(subroot.get("subscribed_ids"))
