@@ -97,12 +97,11 @@ public class DatabaseHelper {
     }
 
     public static boolean doesVideoExist(SharedSessionContract s, String id) {
-        CriteriaBuilder cb = s.getCriteriaBuilder();
-        CriteriaQuery<String> cr = cb.createQuery(String.class);
-        Root<Video> root = cr.from(Video.class);
-        cr.select(root.get("id")).where(cb.equal(root.get("id"), id));
-
-        return s.createQuery(cr).uniqueResult() != null;
+        return s.createQuery("SELECT 1 FROM Video WHERE id = :id", Integer.class)
+                .setParameter("id", id)
+                .setMaxResults(1)
+                .uniqueResultOptional()
+                .isPresent();
     }
 
     public static PlaylistVideo getPlaylistVideoFromId(SharedSessionContract s, String id) {
