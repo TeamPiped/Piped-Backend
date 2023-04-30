@@ -177,7 +177,7 @@ public class Main {
                     var pvQuery = cb.createCriteriaDelete(PlaylistVideo.class);
                     var pvRoot = pvQuery.from(PlaylistVideo.class);
 
-                    var subQuery = pvQuery.subquery(me.kavin.piped.utils.obj.db.Playlist.class);
+                    var subQuery = pvQuery.subquery(String.class);
                     var subRoot = subQuery.from(me.kavin.piped.utils.obj.db.Playlist.class);
 
                     subQuery.select(subRoot.join("videos").get("id")).distinct(true);
