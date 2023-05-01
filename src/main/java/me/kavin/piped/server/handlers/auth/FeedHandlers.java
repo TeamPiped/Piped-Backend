@@ -93,7 +93,7 @@ public class FeedHandlers {
         }
     }
 
-    public static byte[] feedResponse(String session) throws IOException {
+    public static byte[] feedResponse(String session, String start) throws IOException {
 
         if (StringUtils.isBlank(session))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
@@ -114,13 +114,20 @@ public class FeedHandlers {
                 subquery.select(subroot.get("subscribed_ids"))
                         .where(cb.equal(subroot.get("id"), user.getId()));
 
+                var channelPredicate = root.get("channel").get("uploader_id").in(subquery);
+
                 criteria.select(root)
                         .where(
-                                root.get("channel").get("uploader_id").in(subquery)
+                                start == null ? channelPredicate : cb.and(
+                                        channelPredicate,
+                                        cb.lessThan(root.get("uploaded"), Long.parseLong(start))
+                                )
                         )
                         .orderBy(cb.desc(root.get("uploaded")));
 
-                List<StreamItem> feedItems = s.createQuery(criteria).setTimeout(20).stream()
+                List<StreamItem> feedItems = s.createQuery(criteria)
+                        .setMaxResults(100)
+                        .setTimeout(20).stream()
                         .parallel().map(video -> {
                             var channel = video.getChannel();
 
@@ -193,7 +200,7 @@ public class FeedHandlers {
         return null;
     }
 
-    public static byte[] unauthenticatedFeedResponse(String[] channelIds) throws Exception {
+    public static byte[] unauthenticatedFeedResponse(String[] channelIds, String start) throws Exception {
 
         Set<String> filtered = Arrays.stream(channelIds)
                 .filter(ChannelHelpers::isValidId)
@@ -211,13 +218,20 @@ public class FeedHandlers {
             var root = criteria.from(Video.class);
             root.fetch("channel", JoinType.RIGHT);
 
+            var channelPredicate = root.get("channel").get("id").in(filtered);
+
             criteria.select(root)
-                    .where(cb.and(
-                            root.get("channel").get("id").in(filtered)
-                    ))
+                    .where(
+                            start == null ? channelPredicate : cb.and(
+                                    channelPredicate,
+                                    cb.lessThan(root.get("uploaded"), Long.parseLong(start))
+                            )
+                    )
                     .orderBy(cb.desc(root.get("uploaded")));
 
-            List<StreamItem> feedItems = s.createQuery(criteria).setTimeout(20).stream()
+            List<StreamItem> feedItems = s.createQuery(criteria)
+                    .setMaxResults(100)
+                    .setTimeout(20).stream()
                     .parallel().map(video -> {
                         var channel = video.getChannel();
 
@@ -334,6 +348,7 @@ public class FeedHandlers {
 
                     var tr = s.beginTransaction();
                     channelIds.stream()
+                            .filter(ChannelHelpers::isValidId)
                             .filter(id -> !existing.contains(id))
                             .map(UnauthenticatedSubscription::new)
                             .forEach(s::insert);

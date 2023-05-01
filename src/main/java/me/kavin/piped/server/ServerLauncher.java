@@ -320,7 +320,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/feed", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getJsonResponse(FeedHandlers.feedResponse(request.getQueryParameter("authToken")),
+                        return getJsonResponse(FeedHandlers.feedResponse(request.getQueryParameter("authToken"), request.getQueryParameter("start")),
                                 "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -335,7 +335,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/feed/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(
-                                getArray(request.getQueryParameter("channels"))
+                                getArray(request.getQueryParameter("channels")), request.getQueryParameter("start")
                         ), "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -344,7 +344,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         String[] subscriptions = mapper.readValue(request.loadBody().getResult().asArray(),
                                 String[].class);
-                        return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(subscriptions), "public, s-maxage=120");
+                        return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(subscriptions, request.getQueryParameter("start")), "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
