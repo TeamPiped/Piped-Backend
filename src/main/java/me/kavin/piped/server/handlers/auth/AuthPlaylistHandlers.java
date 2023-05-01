@@ -255,7 +255,15 @@ public class AuthPlaylistHandlers {
 
                         video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
 
-                        s.persist(video);
+                        var tr = s.beginTransaction();
+                        try {
+                            s.persist(video);
+                            tr.commit();
+                        } catch (Exception e) {
+                            tr.rollback();
+                            ExceptionHandler.handle(e);
+                            continue;
+                        }
                     } catch (Exception e) {
                         ExceptionHandler.handle(e);
                         continue;
