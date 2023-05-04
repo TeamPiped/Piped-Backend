@@ -10,6 +10,7 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
 
 import java.util.List;
+import java.util.Optional;
 
 import static me.kavin.piped.utils.URLUtils.*;
 
@@ -52,7 +53,9 @@ public class CollectionUtils {
                     .forEach(stream -> audioStreams.add(new PipedStream(rewriteVideoURL(stream.getContent()),
                             String.valueOf(stream.getFormat()), stream.getAverageBitrate() + " kbps",
                             stream.getFormat().getMimeType(), false, stream.getBitrate(), stream.getInitStart(),
-                            stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec(), stream.getAudioTrackId(), stream.getAudioTrackName())));
+                            stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec(), stream.getAudioTrackId(), stream.getAudioTrackName(),
+                            Optional.ofNullable(stream.getAudioTrackType()).map(Enum::name).orElse(null)
+                    )));
         }
 
         final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
