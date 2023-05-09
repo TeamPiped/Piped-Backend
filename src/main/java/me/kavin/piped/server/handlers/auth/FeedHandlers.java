@@ -93,7 +93,7 @@ public class FeedHandlers {
         }
     }
 
-    public static byte[] feedResponse(String session, String start) throws IOException {
+    public static byte[] feedResponse(String session, String start, int limit) throws IOException {
 
         if (StringUtils.isBlank(session))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
@@ -126,7 +126,7 @@ public class FeedHandlers {
                         .orderBy(cb.desc(root.get("uploaded")));
 
                 List<StreamItem> feedItems = s.createQuery(criteria)
-                        .setMaxResults(100)
+                        .setMaxResults(limit)
                         .setTimeout(20).stream()
                         .parallel().map(video -> {
                             var channel = video.getChannel();
@@ -200,7 +200,7 @@ public class FeedHandlers {
         return null;
     }
 
-    public static byte[] unauthenticatedFeedResponse(String[] channelIds, String start) throws Exception {
+    public static byte[] unauthenticatedFeedResponse(String[] channelIds, String start, int limit) throws Exception {
 
         Set<String> filtered = Arrays.stream(channelIds)
                 .filter(ChannelHelpers::isValidId)
@@ -230,7 +230,7 @@ public class FeedHandlers {
                     .orderBy(cb.desc(root.get("uploaded")));
 
             List<StreamItem> feedItems = s.createQuery(criteria)
-                    .setMaxResults(100)
+                    .setMaxResults(limit)
                     .setTimeout(20).stream()
                     .parallel().map(video -> {
                         var channel = video.getChannel();
