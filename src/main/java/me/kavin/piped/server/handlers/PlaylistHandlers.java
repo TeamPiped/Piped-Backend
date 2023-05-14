@@ -61,7 +61,7 @@ public class PlaylistHandlers {
         }
 
         final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
-                rewriteURL(info.getBannerUrl()), nextpage,
+                info.getDescription().getContent(), rewriteURL(info.getBannerUrl()), nextpage,
                 info.getUploaderName().isEmpty() ? null : info.getUploaderName(),
                 substringYouTube(info.getUploaderUrl()), rewriteURL(info.getUploaderAvatarUrl()),
                 (int) info.getStreamCount(), relatedStreams);
