@@ -18,6 +18,7 @@ import org.schabi.newpipe.extractor.channel.ChannelInfo;
 import org.schabi.newpipe.extractor.channel.ChannelTabInfo;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.linkhandler.ChannelTabs;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
@@ -138,6 +139,7 @@ public class ChannelHandlers {
 
         List<ChannelTab> tabs = info.getTabs()
                 .stream()
+                .filter(tab -> !tab.getContentFilters().contains(ChannelTabs.VIDEOS))
                 .map(tab -> {
                     try {
                         return new ChannelTab(tab.getContentFilters().get(0), mapper.writeValueAsString(tab));
