@@ -9,7 +9,9 @@ import me.kavin.piped.utils.obj.db.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.StatelessSession;
+import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
+import org.schabi.newpipe.extractor.channel.ChannelTabInfo;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
@@ -18,6 +20,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 
 public class DatabaseHelper {
 
@@ -207,13 +211,25 @@ public class DatabaseHelper {
         });
 
         Multithreading.runAsync(() -> {
-            for (StreamInfoItem item : info.getRelatedItems()) {
-                long time = item.getUploadDate() != null
-                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                        : System.currentTimeMillis();
-                if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                    VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
-            }
+            CollectionUtils.collectPreloadedTabs(info.getTabs())
+                    .stream()
+                    .parallel()
+                    .map(tab -> {
+                        try {
+                            return ChannelTabInfo.getInfo(YOUTUBE_SERVICE, tab).getRelatedItems();
+                        } catch (ExtractionException | IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .filter(StreamInfoItem.class::isInstance)
+                    .map(StreamInfoItem.class::cast)
+                    .forEach(item -> {
+                            long time = item.getUploadDate() != null
+                                    ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                    : System.currentTimeMillis();
+                            if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                                VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
+                    });
         });
 
         return channel;

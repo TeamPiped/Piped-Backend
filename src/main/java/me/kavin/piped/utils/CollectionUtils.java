@@ -4,6 +4,9 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.utils.obj.*;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
+import org.schabi.newpipe.extractor.channel.ChannelTabInfo;
+import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
+import org.schabi.newpipe.extractor.linkhandler.ReadyChannelTabListLinkHandler;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
@@ -13,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.utils.URLUtils.*;
 
 public class CollectionUtils {
@@ -121,5 +125,13 @@ public class CollectionUtils {
                 rewriteURL(item.getThumbnailUrl()),
                 item.getDescription(), item.getSubscriberCount(), item.getStreamCount(),
                 item.isVerified());
+    }
+
+    public static List<ReadyChannelTabListLinkHandler> collectPreloadedTabs(List<ListLinkHandler> tabs) {
+        return tabs
+                .stream()
+                .filter(ReadyChannelTabListLinkHandler.class::isInstance)
+                .map(ReadyChannelTabListLinkHandler.class::cast)
+                .toList();
     }
 }

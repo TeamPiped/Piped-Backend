@@ -67,7 +67,7 @@ public class AuthPlaylistHandlers {
                         video.getDuration(), -1, -1, channel.isVerified(), false));
             }
 
-            final Playlist playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), null, null, pl.getOwner().getUsername(),
+            final Playlist playlist = new Playlist(pl.getName(), rewriteURL(pl.getThumbnail()), pl.getShortDescription(), null, null, pl.getOwner().getUsername(),
                     null, null, videos.size(), relatedStreams);
 
             return mapper.writeValueAsBytes(playlist);
