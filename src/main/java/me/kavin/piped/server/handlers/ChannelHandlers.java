@@ -11,6 +11,7 @@ import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
+import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.consts.Constants.mapper;
+import static me.kavin.piped.utils.CollectionUtils.collectPreloadedTabs;
 import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
 import static me.kavin.piped.utils.URLUtils.rewriteURL;
 
@@ -38,24 +40,30 @@ public class ChannelHandlers {
 
         final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/" + channelPath);
 
-        final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
+        final ChannelTabInfo tabInfo = ChannelTabInfo.getInfo(YOUTUBE_SERVICE, collectPreloadedTabs(info.getTabs()).get(0));
 
-        Multithreading.runAsync(() -> info.getRelatedItems().forEach(infoItem -> {
-            if (
-                    infoItem.getUploadDate() != null &&
-                            System.currentTimeMillis() - infoItem.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                    < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)
-            )
-                try {
-                    MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
-                            StringUtils.substring(infoItem.getUrl(), -11), StringUtils.substring(infoItem.getUploaderUrl(), -24),
-                            infoItem.getName(),
-                            infoItem.getDuration(), infoItem.getViewCount())
-                    );
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-        }));
+        final List<ContentItem> relatedStreams = collectRelatedItems(tabInfo.getRelatedItems());
+
+        Multithreading.runAsync(() -> tabInfo.getRelatedItems()
+                .stream().filter(StreamInfoItem.class::isInstance)
+                .map(StreamInfoItem.class::cast)
+                .forEach(infoItem -> {
+                    if (
+                            infoItem.getUploadDate() != null &&
+                                    System.currentTimeMillis() - infoItem.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                            < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)
+                    )
+                        try {
+                            MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
+                                    StringUtils.substring(infoItem.getUrl(), -11), StringUtils.substring(infoItem.getUploaderUrl(), -24),
+                                    infoItem.getName(),
+                                    infoItem.getDuration(), infoItem.getViewCount())
+                            );
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                })
+        );
 
         Multithreading.runAsync(() -> {
             try {
@@ -75,8 +83,10 @@ public class ChannelHandlers {
 
                     ChannelHelpers.updateChannel(s, channel, info.getName(), info.getAvatarUrl(), info.isVerified());
 
-                    Set<String> ids = info.getRelatedItems()
+                    Set<String> ids = tabInfo.getRelatedItems()
                             .stream()
+                            .filter(StreamInfoItem.class::isInstance)
+                            .map(StreamInfoItem.class::cast)
                             .filter(item -> {
                                 long time = item.getUploadDate() != null
                                         ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
@@ -94,32 +104,35 @@ public class ChannelHandlers {
 
                     List<Video> videos = DatabaseHelper.getVideosFromIds(s, ids);
 
-                    for (StreamInfoItem item : info.getRelatedItems()) {
-                        long time = item.getUploadDate() != null
-                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                : System.currentTimeMillis();
-                        if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                            try {
-                                String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
-                                var video = videos.stream()
-                                        .filter(v -> v.getId().equals(id))
-                                        .findFirst();
-                                if (video.isPresent()) {
-                                    VideoHelpers.updateVideo(id, item);
-                                } else {
-                                    VideoHelpers.handleNewVideo("https://youtube.com/watch?v=" + id, time, channel);
-                                }
-                            } catch (Exception e) {
-                                ExceptionHandler.handle(e);
-                            }
-                    }
+                    tabInfo.getRelatedItems()
+                            .stream()
+                            .filter(StreamInfoItem.class::isInstance)
+                            .map(StreamInfoItem.class::cast).forEach(item -> {
+                                long time = item.getUploadDate() != null
+                                        ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                        : System.currentTimeMillis();
+                                if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                                    try {
+                                        String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
+                                        var video = videos.stream()
+                                                .filter(v -> v.getId().equals(id))
+                                                .findFirst();
+                                        if (video.isPresent()) {
+                                            VideoHelpers.updateVideo(id, item);
+                                        } else {
+                                            VideoHelpers.handleNewVideo("https://youtube.com/watch?v=" + id, time, channel);
+                                        }
+                                    } catch (Exception e) {
+                                        ExceptionHandler.handle(e);
+                                    }
+                            });
                 }
             }
         });
 
         String nextpage = null;
-        if (info.hasNextPage()) {
-            Page page = info.getNextPage();
+        if (tabInfo.hasNextPage()) {
+            Page page = tabInfo.getNextPage();
             nextpage = mapper.writeValueAsString(page);
         }
 
@@ -152,8 +165,11 @@ public class ChannelHandlers {
         if (prevpage == null)
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("nextpage is a required parameter"));
 
-        ListExtractor.InfoItemsPage<StreamInfoItem> info = ChannelInfo.getMoreItems(YOUTUBE_SERVICE,
-                "https://youtube.com/channel/" + channelId, prevpage);
+        String channelUrl = "https://youtube.com/channel/" + channelId;
+        String url = channelUrl + "/videos";
+
+        ListExtractor.InfoItemsPage<InfoItem> info = ChannelTabInfo.getMoreItems(YOUTUBE_SERVICE,
+                new ListLinkHandler(url, url, channelId, List.of("videos"), ""), prevpage);
 
         final List<ContentItem> relatedStreams = collectRelatedItems(info.getItems());
 
