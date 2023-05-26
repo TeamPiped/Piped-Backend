@@ -48,18 +48,18 @@ public class CollectionUtils {
             info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteVideoURL(stream.getContent()),
                     String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType(), true,
                     stream.getBitrate(), stream.getInitStart(), stream.getInitEnd(), stream.getIndexStart(),
-                    stream.getIndexEnd(), stream.getCodec(), stream.getWidth(), stream.getHeight(), 30)));
+                    stream.getIndexEnd(), stream.getCodec(), stream.getWidth(), stream.getHeight(), stream.getFps(), stream.getItagItem().getContentLength())));
             info.getVideoStreams()
                     .forEach(stream -> videoStreams
                             .add(new PipedStream(rewriteVideoURL(stream.getContent()), String.valueOf(stream.getFormat()),
-                                    stream.getResolution(), stream.getFormat().getMimeType(), false)));
+                                    stream.getResolution(), stream.getFormat().getMimeType(), false, stream.getItagItem().getContentLength())));
 
             info.getAudioStreams()
                     .forEach(stream -> audioStreams.add(new PipedStream(rewriteVideoURL(stream.getContent()),
                             String.valueOf(stream.getFormat()), stream.getAverageBitrate() + " kbps",
                             stream.getFormat().getMimeType(), false, stream.getBitrate(), stream.getInitStart(),
-                            stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getCodec(), stream.getAudioTrackId(), stream.getAudioTrackName(),
-                            Optional.ofNullable(stream.getAudioTrackType()).map(Enum::name).orElse(null),
+                            stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getItagItem().getContentLength(), stream.getCodec(), stream.getAudioTrackId(),
+                            stream.getAudioTrackName(), Optional.ofNullable(stream.getAudioTrackType()).map(Enum::name).orElse(null),
                             Optional.ofNullable(stream.getAudioLocale()).map(Locale::toLanguageTag).orElse(null)
                     )));
         }
