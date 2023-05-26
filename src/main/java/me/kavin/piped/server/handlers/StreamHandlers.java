@@ -214,7 +214,7 @@ public class StreamHandlers {
                 }
 
                 if (lbryURL != null)
-                    streams.videoStreams.add(0, new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
+                    streams.videoStreams.add(0, new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false, -1));
 
                 // Attempt to get dislikes calculating with the RYD API rating
                 if (streams.dislikes < 0 && streams.likes >= 0) {
@@ -260,10 +260,10 @@ public class StreamHandlers {
         }
 
         if (lbryHlsURL != null)
-            streams.videoStreams.add(0, new PipedStream(lbryHlsURL, "HLS", "LBRY HLS", "application/x-mpegurl", false));
+            streams.videoStreams.add(0, new PipedStream(lbryHlsURL, "HLS", "LBRY HLS", "application/x-mpegurl", false, -1));
 
         if (lbryURL != null)
-            streams.videoStreams.add(0, new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false));
+            streams.videoStreams.add(0, new PipedStream(lbryURL, "MP4", "LBRY", "video/mp4", false, -1));
 
         long time = info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
                 : System.currentTimeMillis();
