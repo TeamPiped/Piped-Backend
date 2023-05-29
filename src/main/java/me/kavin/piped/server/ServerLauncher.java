@@ -47,7 +47,6 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
     private static final HttpHeader FILE_NAME = HttpHeaders.of("x-file-name");
     private static final HttpHeader LAST_ETAG = HttpHeaders.of("x-last-etag");
 
-
     @Provides
     Executor executor() {
         return Multithreading.getCachedExecutor();
@@ -400,6 +399,18 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         var name = mapper.readTree(request.loadBody().getResult().asArray()).get("name").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.createPlaylist(request.getHeader(AUTHORIZATION), name), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/playlists/description/change", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").textValue();
+                        var description = json.get("description").textValue();
+                        return getJsonResponse(
+                                AuthPlaylistHandlers.editPlaylistDescriptionResponse(request.getHeader(AUTHORIZATION),
+                                        playlistId, description),
+                                "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

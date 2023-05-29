@@ -148,17 +148,46 @@ public class AuthPlaylistHandlers {
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
-
-            if (playlist == null)
+            var playlistResult = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
+            if (playlistResult.getError() != null) {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "Playlist not found"));
-
-            if (playlist.getOwner().getId() != user.getId())
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "You do not own this playlist"));
+                        .put("error", playlistResult.getError()));
+            }
+            var playlist = playlistResult.getPlaylist();
 
             playlist.setName(newName);
+
+            var tr = s.beginTransaction();
+            s.merge(playlist);
+            tr.commit();
+
+        }
+
+        return mapper.writeValueAsBytes(new AcceptedResponse());
+    }
+
+    public static byte[] editPlaylistDescriptionResponse(String session, String playlistId, String newDescription)
+            throws IOException {
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || StringUtils.isBlank(newDescription))
+            ExceptionHandler
+                    .throwErrorResponse(
+                            new InvalidRequestResponse("session, playlistId and description are required parameters"));
+
+        User user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var playlistResult = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
+            if (playlistResult.getError() != null) {
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", playlistResult.getError()));
+            }
+            var playlist = playlistResult.getPlaylist();
+
+            playlist.setShortDescription(newDescription);
 
             var tr = s.beginTransaction();
             s.merge(playlist);
@@ -180,15 +209,12 @@ public class AuthPlaylistHandlers {
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
-
-            if (playlist == null)
+            var playlistResult = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
+            if (playlistResult.getError() != null) {
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "Playlist not found"));
-
-            if (playlist.getOwner().getId() != user.getId())
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "You do not own this playlist"));
+                        .put("error", playlistResult.getError()));
+            }
+            var playlist = playlistResult.getPlaylist();
 
             var tr = s.beginTransaction();
             s.remove(playlist);
