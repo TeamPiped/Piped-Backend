@@ -23,6 +23,7 @@ import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
+import org.hibernate.internal.util.ExceptionHelper;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
@@ -148,22 +149,43 @@ public class AuthPlaylistHandlers {
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
-
-            if (playlist == null)
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "Playlist not found"));
-
-            if (playlist.getOwner().getId() != user.getId())
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "You do not own this playlist"));
-
+            var playlist = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
             playlist.setName(newName);
 
             var tr = s.beginTransaction();
             s.merge(playlist);
             tr.commit();
 
+        } catch (IllegalArgumentException e) {
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse(e.getMessage()));
+        }
+
+        return mapper.writeValueAsBytes(new AcceptedResponse());
+    }
+
+    public static byte[] editPlaylistDescriptionResponse(String session, String playlistId, String newDescription)
+            throws IOException {
+
+        if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId) || StringUtils.isBlank(newDescription))
+            ExceptionHandler
+                    .throwErrorResponse(
+                            new InvalidRequestResponse("session, playlistId and description are required parameters"));
+
+        User user = DatabaseHelper.getUserFromSession(session);
+
+        if (user == null)
+            ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
+
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var playlist = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
+            playlist.setShortDescription(newDescription);
+
+            var tr = s.beginTransaction();
+            s.merge(playlist);
+            tr.commit();
+
+        } catch (IllegalArgumentException e) {
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse(e.getMessage()));
         }
 
         return mapper.writeValueAsBytes(new AcceptedResponse());
@@ -180,20 +202,14 @@ public class AuthPlaylistHandlers {
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
-
-            if (playlist == null)
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "Playlist not found"));
-
-            if (playlist.getOwner().getId() != user.getId())
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "You do not own this playlist"));
+            var playlist = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
 
             var tr = s.beginTransaction();
             s.remove(playlist);
             tr.commit();
 
+        } catch (IllegalArgumentException e) {
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse(e.getMessage()));
         }
 
         return mapper.writeValueAsBytes(new AcceptedResponse());

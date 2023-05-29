@@ -37,8 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
-import static io.activej.http.HttpMethod.GET;
-import static io.activej.http.HttpMethod.POST;
+import static io.activej.http.HttpMethod.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.mapper;
 
@@ -46,7 +45,6 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     private static final HttpHeader FILE_NAME = HttpHeaders.of("x-file-name");
     private static final HttpHeader LAST_ETAG = HttpHeaders.of("x-last-etag");
-
 
     @Provides
     Executor executor() {
@@ -400,6 +398,18 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         var name = mapper.readTree(request.loadBody().getResult().asArray()).get("name").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.createPlaylist(request.getHeader(AUTHORIZATION), name), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(PATCH, "/user/playlists/description", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").textValue();
+                        var description = json.get("description").textValue();
+                        return getJsonResponse(
+                                AuthPlaylistHandlers.editPlaylistDescriptionResponse(request.getHeader(AUTHORIZATION),
+                                        playlistId, description),
+                                "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
