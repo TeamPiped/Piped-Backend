@@ -23,6 +23,7 @@ import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
+import org.hibernate.internal.util.ExceptionHelper;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
@@ -148,19 +149,15 @@ public class AuthPlaylistHandlers {
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var playlistResult = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
-            if (playlistResult.getError() != null) {
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", playlistResult.getError()));
-            }
-            var playlist = playlistResult.getPlaylist();
-
+            var playlist = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
             playlist.setName(newName);
 
             var tr = s.beginTransaction();
             s.merge(playlist);
             tr.commit();
 
+        } catch (IllegalArgumentException e) {
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse(e.getMessage()));
         }
 
         return mapper.writeValueAsBytes(new AcceptedResponse());
@@ -180,19 +177,15 @@ public class AuthPlaylistHandlers {
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var playlistResult = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
-            if (playlistResult.getError() != null) {
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", playlistResult.getError()));
-            }
-            var playlist = playlistResult.getPlaylist();
-
+            var playlist = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
             playlist.setShortDescription(newDescription);
 
             var tr = s.beginTransaction();
             s.merge(playlist);
             tr.commit();
 
+        } catch (IllegalArgumentException e) {
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse(e.getMessage()));
         }
 
         return mapper.writeValueAsBytes(new AcceptedResponse());
@@ -209,17 +202,14 @@ public class AuthPlaylistHandlers {
             ExceptionHandler.throwErrorResponse(new AuthenticationFailureResponse());
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-            var playlistResult = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
-            if (playlistResult.getError() != null) {
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", playlistResult.getError()));
-            }
-            var playlist = playlistResult.getPlaylist();
+            var playlist = PlaylistHelpers.getUserPlaylist(s, user, playlistId);
 
             var tr = s.beginTransaction();
             s.remove(playlist);
             tr.commit();
 
+        } catch (IllegalArgumentException e) {
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse(e.getMessage()));
         }
 
         return mapper.writeValueAsBytes(new AcceptedResponse());

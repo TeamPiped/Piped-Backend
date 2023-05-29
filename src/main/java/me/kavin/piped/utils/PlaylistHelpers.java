@@ -1,19 +1,20 @@
 package me.kavin.piped.utils;
 
+import me.kavin.piped.utils.obj.db.Playlist;
 import org.hibernate.Session;
 
 import me.kavin.piped.utils.obj.db.User;
 
 public class PlaylistHelpers {
-    public static PlaylistResult getUserPlaylist(Session s, User user, String playlistId) {
+    public static Playlist getUserPlaylist(Session s, User user, String playlistId) throws IllegalArgumentException {
         var playlist = DatabaseHelper.getPlaylistFromId(s, playlistId);
 
         if (playlist == null)
-            return new PlaylistResult(null, "Playlist not found");
+            throw new IllegalArgumentException("Playlist not found");
 
         if (playlist.getOwner().getId() != user.getId())
-            return new PlaylistResult(null, "You do not own this playlist");
+            throw  new IllegalArgumentException("You do not own this playlist");
 
-        return new PlaylistResult(playlist, null);
+        return playlist;
     }
 }

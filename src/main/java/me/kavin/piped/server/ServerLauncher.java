@@ -37,8 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
-import static io.activej.http.HttpMethod.GET;
-import static io.activej.http.HttpMethod.POST;
+import static io.activej.http.HttpMethod.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.mapper;
 
@@ -402,7 +401,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
-                })).map(POST, "/user/playlists/description/change", AsyncServlet.ofBlocking(executor, request -> {
+                })).map(PATCH, "/user/playlists/description", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
