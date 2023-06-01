@@ -56,10 +56,6 @@ jar {
     }
 }
 
-tasks.withType(JavaCompile).each {
-    it.options.compilerArgs.add('--enable-preview')
-}
-
 group = 'me.kavin.piped'
 version = '1.0'
 sourceCompatibility = JavaVersion.VERSION_17
