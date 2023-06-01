@@ -1,4 +1,4 @@
-FROM azul/zulu-openjdk:17-jre-headless-latest
+FROM azul/zulu-openjdk:20-jre-headless-latest
 
 WORKDIR /app/
 
