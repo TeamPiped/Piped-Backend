@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre
+FROM azul/zulu-openjdk:17-jre-headless-latest
 
 WORKDIR /app/
 
