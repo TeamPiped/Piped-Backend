@@ -17,4 +17,4 @@ COPY VERSION .
 
 EXPOSE 8080
 
-CMD java -server -Xmx1G -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+UseG1GC -Xshare:on --enable-preview -jar /app/piped.jar
+CMD java -server -Xmx1G -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+UseG1GC -Xshare:on -jar /app/piped.jar
