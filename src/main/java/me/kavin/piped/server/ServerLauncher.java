@@ -10,6 +10,7 @@ import io.activej.inject.annotation.Provides;
 import io.activej.inject.module.AbstractModule;
 import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
+import io.sentry.Sentry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.*;
@@ -87,12 +88,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         Multithreading.runAsync(() -> {
                             for (var entry : feed.getEntries()) {
                                 String url = entry.getLinks().get(0).getHref();
+                                String videoId = StringUtils.substring(url, -11);
                                 try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                                    if (DatabaseHelper.doesVideoExist(s, StringUtils.substring(url, -11)))
+                                    if (DatabaseHelper.doesVideoExist(s, videoId))
                                         continue;
                                 }
                                 Multithreading.runAsync(() -> {
                                     try {
+                                        Sentry.setExtra("videoId", videoId);
                                         StreamInfo info = StreamInfo.getInfo(url);
 
                                         Multithreading.runAsync(() -> {
