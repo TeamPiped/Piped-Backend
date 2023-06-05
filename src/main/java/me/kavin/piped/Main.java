@@ -69,8 +69,8 @@ public class Main {
 
         try (Session ignored = DatabaseSessionFactory.createSession()) {
             System.out.println("Database connection is ready!");
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
             System.exit(1);
         }
 
