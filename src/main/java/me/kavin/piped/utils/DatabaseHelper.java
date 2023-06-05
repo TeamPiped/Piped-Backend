@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.*;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.StatelessSession;
@@ -191,7 +192,7 @@ public class DatabaseHelper {
             return null;
         }
 
-        var channel = new Channel(channelId, info.getName(),
+        var channel = new Channel(channelId, StringUtils.abbreviate(info.getName(), 100),
                 info.getAvatarUrl(), info.isVerified());
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {

@@ -76,7 +76,9 @@ public class ChannelHandlers {
 
         Multithreading.runAsync(() -> {
             try {
-                MatrixHelper.sendEvent("video.piped.channel.info", new FederatedChannelInfo(info.getId(), info.getName(), info.getAvatarUrl(), info.isVerified()));
+                MatrixHelper.sendEvent("video.piped.channel.info", new FederatedChannelInfo(
+                        info.getId(), StringUtils.abbreviate(info.getName(), 100), info.getAvatarUrl(), info.isVerified())
+                );
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
