@@ -93,7 +93,7 @@ public class ChannelHandlers {
 
                     if (channel != null) {
 
-                        ChannelHelpers.updateChannel(s, channel, info.getName(), info.getAvatarUrl(), info.isVerified());
+                        ChannelHelpers.updateChannel(s, channel, StringUtils.abbreviate(info.getName(), 100), info.getAvatarUrl(), info.isVerified());
 
                         Set<String> ids = tabInfo.getRelatedItems()
                                 .stream()
