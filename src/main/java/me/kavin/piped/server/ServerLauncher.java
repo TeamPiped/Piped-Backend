@@ -27,7 +27,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.jetbrains.annotations.NotNull;
-import org.schabi.newpipe.extractor.stream.StreamInfo;
+import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.xml.sax.InputSource;
 
 import java.io.ByteArrayInputStream;
@@ -40,6 +41,7 @@ import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
 import static io.activej.http.HttpMethod.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.consts.Constants.mapper;
 
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
@@ -96,15 +98,25 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                 Multithreading.runAsync(() -> {
                                     try {
                                         Sentry.setExtra("videoId", videoId);
-                                        StreamInfo info = StreamInfo.getInfo(url);
+                                        var extractor = YOUTUBE_SERVICE.getStreamExtractor(videoId);
+                                        extractor.fetchPage();
 
                                         Multithreading.runAsync(() -> {
-                                            if (info.getUploadDate() != null && System.currentTimeMillis() - info.getUploadDate().offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
+
+                                            DateWrapper uploadDate;
+
+                                            try {
+                                                uploadDate = extractor.getUploadDate();
+                                            } catch (ParsingException e) {
+                                                throw new RuntimeException(e);
+                                            }
+
+                                            if (uploadDate != null && System.currentTimeMillis() - uploadDate.offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
                                                 try {
                                                     MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
-                                                            StringUtils.substring(info.getUrl(), -11), StringUtils.substring(info.getUploaderUrl(), -24),
-                                                            info.getName(),
-                                                            info.getDuration(), info.getViewCount())
+                                                            StringUtils.substring(extractor.getUrl(), -11), StringUtils.substring(extractor.getUploaderUrl(), -24),
+                                                            extractor.getName(),
+                                                            extractor.getLength(), extractor.getViewCount())
                                                     );
                                                 } catch (Exception e) {
                                                     ExceptionHandler.handle(e);
@@ -112,7 +124,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                             }
                                         });
 
-                                        VideoHelpers.handleNewVideo(info, entry.getPublishedDate().getTime(), null);
+                                        VideoHelpers.handleNewVideo(extractor, entry.getPublishedDate().getTime(), null);
                                     } catch (Exception e) {
                                         ExceptionHandler.handle(e);
                                     }
