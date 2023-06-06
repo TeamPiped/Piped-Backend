@@ -6,9 +6,12 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Video;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
+import org.schabi.newpipe.extractor.exceptions.ParsingException;
+import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -61,6 +64,40 @@ public class VideoHelpers {
             updateVideo(info.getId(), info, time);
 
         }
+    }
+
+    public static void handleNewVideo(StreamExtractor extractor, long time, me.kavin.piped.utils.obj.db.Channel channel) throws ParsingException {
+
+        if (channel == null)
+            channel = DatabaseHelper.getChannelFromId(
+                    extractor.getUploaderUrl().substring("https://www.youtube.com/channel/".length()));
+
+        long infoTime = Optional.ofNullable(extractor.getUploadDate())
+                .map(date -> date.offsetDateTime().toInstant().toEpochMilli())
+                .orElseGet(System::currentTimeMillis);
+
+        if (channel != null
+                && (System.currentTimeMillis() - infoTime) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
+
+            try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                if (!DatabaseHelper.doesVideoExist(s, extractor.getId())) {
+
+                    Video video = new Video(extractor.getId(), extractor.getName(), extractor.getViewCount(), extractor.getLength(),
+                            Math.max(infoTime, time), extractor.getThumbnailUrl(), extractor.isShortFormContent(), channel);
+
+                    var tr = s.beginTransaction();
+                    try {
+                        s.insert(video);
+                        tr.commit();
+                    } catch (Exception e) {
+                        tr.rollback();
+                        ExceptionHandler.handle(e);
+                    }
+
+                }
+            }
+        }
+
     }
 
     public static boolean isShort(String videoId) throws Exception {
