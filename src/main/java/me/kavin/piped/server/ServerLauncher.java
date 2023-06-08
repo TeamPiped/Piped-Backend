@@ -98,7 +98,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                 Multithreading.runAsync(() -> {
                                     try {
                                         Sentry.setExtra("videoId", videoId);
-                                        var extractor = YOUTUBE_SERVICE.getStreamExtractor(videoId);
+                                        var extractor = YOUTUBE_SERVICE.getStreamExtractor("https://youtube.com/watch?v=" + videoId);
                                         extractor.fetchPage();
 
                                         Multithreading.runAsync(() -> {
