@@ -8,11 +8,12 @@ public class PipedStream {
     public String url, format, quality, mimeType, codec, audioTrackId, audioTrackName, audioTrackType, audioTrackLocale;
     public boolean videoOnly;
 
-    public int bitrate, initStart, initEnd, indexStart, indexEnd, width, height, fps;
+    public int itag, bitrate, initStart, initEnd, indexStart, indexEnd, width, height, fps;
 
     public long contentLength;
 
-    public PipedStream(String url, String format, String quality, String mimeType, boolean videoOnly, long contentLength) {
+    public PipedStream(int itag, String url, String format, String quality, String mimeType, boolean videoOnly, long contentLength) {
+        this.itag = itag;
         this.url = url;
         this.format = format;
         this.quality = quality;
@@ -21,9 +22,10 @@ public class PipedStream {
         this.contentLength = contentLength;
     }
 
-    public PipedStream(String url, String format, String quality, String mimeType, boolean videoOnly, int bitrate,
+    public PipedStream(int itag, String url, String format, String quality, String mimeType, boolean videoOnly, int bitrate,
                        int initStart, int initEnd, int indexStart, int indexEnd, long contentLength, String codec,
                        String audioTrackId, String audioTrackName, String audioTrackType, String audioTrackLocale) {
+        this.itag = itag;
         this.url = url;
         this.format = format;
         this.quality = quality;
@@ -42,8 +44,9 @@ public class PipedStream {
         this.audioTrackLocale = audioTrackLocale;
     }
 
-    public PipedStream(String url, String format, String quality, String mimeType, boolean videoOnly, int bitrate,
+    public PipedStream(int itag, String url, String format, String quality, String mimeType, boolean videoOnly, int bitrate,
                        int initStart, int initEnd, int indexStart, int indexEnd, String codec, int width, int height, int fps, long contentLength) {
+        this.itag = itag;
         this.url = url;
         this.format = format;
         this.quality = quality;
