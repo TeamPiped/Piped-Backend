@@ -45,17 +45,17 @@ public class CollectionUtils {
         boolean livestream = info.getStreamType() == StreamType.LIVE_STREAM;
 
         if (!livestream) {
-            info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(rewriteVideoURL(stream.getContent()),
+            info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent()),
                     String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType(), true,
                     stream.getBitrate(), stream.getInitStart(), stream.getInitEnd(), stream.getIndexStart(),
                     stream.getIndexEnd(), stream.getCodec(), stream.getWidth(), stream.getHeight(), stream.getFps(), stream.getItagItem().getContentLength())));
             info.getVideoStreams()
                     .forEach(stream -> videoStreams
-                            .add(new PipedStream(rewriteVideoURL(stream.getContent()), String.valueOf(stream.getFormat()),
+                            .add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent()), String.valueOf(stream.getFormat()),
                                     stream.getResolution(), stream.getFormat().getMimeType(), false, stream.getItagItem().getContentLength())));
 
             info.getAudioStreams()
-                    .forEach(stream -> audioStreams.add(new PipedStream(rewriteVideoURL(stream.getContent()),
+                    .forEach(stream -> audioStreams.add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent()),
                             String.valueOf(stream.getFormat()), stream.getAverageBitrate() + " kbps",
                             stream.getFormat().getMimeType(), false, stream.getBitrate(), stream.getInitStart(),
                             stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getItagItem().getContentLength(), stream.getCodec(), stream.getAudioTrackId(),
