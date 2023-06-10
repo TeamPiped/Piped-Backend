@@ -66,7 +66,7 @@ public class VideoHelpers {
         }
     }
 
-    public static void handleNewVideo(StreamExtractor extractor, long time, me.kavin.piped.utils.obj.db.Channel channel) throws ParsingException {
+    public static void handleNewVideo(StreamExtractor extractor, long time, me.kavin.piped.utils.obj.db.Channel channel) throws Exception {
 
         if (channel == null)
             channel = DatabaseHelper.getChannelFromId(
@@ -82,8 +82,10 @@ public class VideoHelpers {
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
                 if (!DatabaseHelper.doesVideoExist(s, extractor.getId())) {
 
+                    boolean isShort = extractor.isShortFormContent() || isShort(extractor.getId());
+
                     Video video = new Video(extractor.getId(), extractor.getName(), extractor.getViewCount(), extractor.getLength(),
-                            Math.max(infoTime, time), extractor.getThumbnailUrl(), extractor.isShortFormContent(), channel);
+                            Math.max(infoTime, time), extractor.getThumbnailUrl(), isShort, channel);
 
                     var tr = s.beginTransaction();
                     try {
