@@ -107,11 +107,36 @@ public class UserHandlers {
             return null;
         }
     }
+    public static String oidcCallbackResponse(String provider, String uid) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+                String dbName = provider + "-" + uid;
+                System.out.println(dbName); //TODO:
+                CriteriaBuilder cb = s.getCriteriaBuilder();
+                CriteriaQuery<User> cr = cb.createQuery(User.class);
+                Root<User> root = cr.from(User.class);
+                cr.select(root).where(root.get("username").in(
+                        dbName
+                ));
 
+                User dbuser = s.createQuery(cr).uniqueResult();
+
+                if (dbuser == null) {
+                        User newuser = new User(dbName, "", Set.of());
+
+                        var tr = s.beginTransaction();
+                        s.persist(newuser);
+                        tr.commit();
+
+
+                        return newuser.getSessionId();
+                }
+                return dbuser.getSessionId();
+            }
+
+    }
     public static byte[] deleteUserResponse(String session, String pass) throws IOException {
-
-        if (StringUtils.isBlank(session) || StringUtils.isBlank(pass))
-            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and password are required parameters"));
+        if (StringUtils.isBlank(session))
+            ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             User user = DatabaseHelper.getUserFromSession(session);
@@ -121,6 +146,13 @@ public class UserHandlers {
 
             String hash = user.getPassword();
 
+            if (hash.equals("")) {
+                //TODO: Authorize against oidc provider before deletion
+                var tr = s.beginTransaction();
+                s.remove(user);
+                tr.commit();
+                return mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
+            }
             if (!hashMatch(hash, pass))
                 ExceptionHandler.throwErrorResponse(new IncorrectCredentialsResponse());
 

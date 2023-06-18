@@ -3,12 +3,14 @@ package me.kavin.piped.consts;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.minio.MinioClient;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
 import me.kavin.piped.utils.RequestUtils;
+import me.kavin.piped.utils.obj.OidcProvider;
 import me.kavin.piped.utils.resp.ListLinkHandlerMixin;
 import okhttp3.OkHttpClient;
 import okhttp3.brotli.BrotliInterceptor;
@@ -24,6 +26,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -99,6 +102,7 @@ public class Constants {
     public static final String YOUTUBE_COUNTRY;
 
     public static final String VERSION;
+    public static final LinkedList<OidcProvider> OIDC_PROVIDERS;
 
     public static final ObjectMapper mapper = JsonMapper.builder()
             .addMixIn(Page.class, PageMixin.class)
@@ -162,12 +166,34 @@ public class Constants {
             MATRIX_SERVER = getProperty(prop, "MATRIX_SERVER", "https://matrix-client.matrix.org");
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
             GEO_RESTRICTION_CHECKER_URL = getProperty(prop, "GEO_RESTRICTION_CHECKER_URL");
+
+            OIDC_PROVIDERS = new LinkedList<>();
+            ArrayNode providerNames = frontendProperties.putArray("oidcProviders");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
                 else if (key.startsWith("frontend."))
                     frontendProperties.put(StringUtils.substringAfter(key, "frontend."), value);
+                else if (key.startsWith("oidc.provider")) {
+                   String[] split = key.split("\\.");
+                   if (split.length != 4 || !split[3].equals("name")) return;
+
+                   try {
+                       OIDC_PROVIDERS.add(new OidcProvider(
+                                value,
+                                getProperty(prop, "oidc.provider." + value + ".clientId"),
+                                getProperty(prop, "oidc.provider." + value + ".clientSecret"),
+                                getProperty(prop, "oidc.provider." + value + ".authUrl"),
+                                getProperty(prop, "oidc.provider." + value + ".tokenUrl"),
+                                getProperty(prop, "oidc.provider." + value + ".userinfoUrl")
+                        ));
+                    } catch (Exception e) {
+                        System.err.println("Error while getting properties for oidc provider '" + value + "'");
+                        throw new RuntimeException(e);
+                    }
+                    providerNames.add(value);
+                }
             });
             frontendProperties.put("imageProxyUrl", IMAGE_PROXY_PART);
             frontendProperties.putArray("countries").addAll(

@@ -42,6 +42,7 @@ dependencies {
     implementation 'io.sentry:sentry:6.23.0'
     implementation 'rocks.kavin:reqwest4j:1.0.4'
     implementation 'io.minio:minio:8.5.3'
+    implementation 'com.nimbusds:oauth2-oidc-sdk:10.9.1'
 }
 
 shadowJar {

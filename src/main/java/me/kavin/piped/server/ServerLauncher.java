@@ -2,6 +2,9 @@ package me.kavin.piped.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import io.activej.config.Config;
@@ -19,7 +22,9 @@ import me.kavin.piped.server.handlers.auth.FeedHandlers;
 import me.kavin.piped.server.handlers.auth.StorageHandlers;
 import me.kavin.piped.server.handlers.auth.UserHandlers;
 import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.ErrorResponse;
 import me.kavin.piped.utils.obj.MatrixHelper;
+import me.kavin.piped.utils.obj.OidcProvider;
 import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.lang3.StringUtils;
@@ -30,12 +35,18 @@ import org.jetbrains.annotations.NotNull;
 import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.xml.sax.InputSource;
+import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.openid.connect.sdk.*;
+import com.nimbusds.oauth2.sdk.id.*;
 
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.LinkedList;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
@@ -296,6 +307,88 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/oidc/:provider/:function", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String function = request.getPathParameter("function");
+
+                        OidcProvider provider = findOidcProvider(request.getPathParameter("provider"), Constants.OIDC_PROVIDERS);
+                        if(provider == null)
+                            return HttpResponse.ofCode(500).withHtml("Can't find the provider on the server.");
+
+                        URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/callback");
+
+                        switch (function) {
+                            case "login" -> {
+
+                                State state = new State();
+                                Nonce nonce = new Nonce();
+
+                                AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
+                                        new ResponseType("code"),
+                                        new Scope("openid"),
+                                        provider.clientID,
+                                        callback)
+                                        .endpointURI(provider.authUri)
+                                        .state(state)
+                                        .nonce(nonce)
+                                        .build();
+
+                                return HttpResponse.redirect302(oidcRequest.toURI().toString());
+                            }
+                            case "callback" -> {
+                                ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
+
+                                AuthenticationResponse response = AuthenticationResponseParser.parse(
+                                        URI.create(request.getFullUrl())
+                                );
+
+                                if (response instanceof AuthenticationErrorResponse) {
+                                    // The OpenID provider returned an error
+                                    System.err.println(response.toErrorResponse().getErrorObject());
+                                    return HttpResponse.ofCode(500).withHtml("OpenID provider returned an error:\n\n" + response.toErrorResponse().getErrorObject().toString());
+                                }
+                                AuthenticationSuccessResponse sr = response.toSuccessResponse();
+
+                                AuthorizationCode code = sr.getAuthorizationCode();
+                                AuthorizationGrant codeGrant = new AuthorizationCodeGrant(
+                                        code, callback
+                                );
+
+                                TokenRequest tr = new TokenRequest(provider.tokenUri, clientAuth, codeGrant);
+                                TokenResponse tokenResponse = OIDCTokenResponseParser.parse(tr.toHTTPRequest().send());
+
+                                if (! tokenResponse.indicatesSuccess()) {
+                                    TokenErrorResponse errorResponse = tokenResponse.toErrorResponse();
+                                    return HttpResponse.ofCode(500).withHtml("Failure while trying to request token:\n\n" + errorResponse.getErrorObject().getDescription());
+                                }
+
+                                OIDCTokenResponse successResponse = (OIDCTokenResponse)tokenResponse.toSuccessResponse();
+
+
+                                UserInfoRequest ur = new UserInfoRequest(provider.userinfoUri, successResponse.getOIDCTokens().getBearerAccessToken());
+                                UserInfoResponse userInfoResponse = UserInfoResponse.parse(ur.toHTTPRequest().send());
+
+                                if (! userInfoResponse.indicatesSuccess()) {
+                                    System.out.println(userInfoResponse.toErrorResponse().getErrorObject().getCode());
+                                    System.out.println(userInfoResponse.toErrorResponse().getErrorObject().getDescription());
+                                    return HttpResponse.ofCode(500).withHtml("Failed to query userInfo:\n\n" + userInfoResponse.toErrorResponse().getErrorObject().getDescription());
+                                }
+
+                                UserInfo userInfo = userInfoResponse.toSuccessResponse().getUserInfo();
+
+                                String sessionId = UserHandlers.oidcCallbackResponse(provider.name, userInfo.getSubject().toString());
+
+                                return HttpResponse.redirect302(Constants.FRONTEND_URL + "/login?session=" + sessionId);
+                            }
+                            default -> {
+                                return HttpResponse.ofCode(500).withHtml("Invalid function `" + function + "`.");
+                            }
+                        }
+
+
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(POST, "/login", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         LoginRequest body = mapper.readValue(request.loadBody().getResult().asArray(),
@@ -542,6 +635,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
         return new CustomServletDecorator(router);
     }
 
+    private static OidcProvider findOidcProvider(String provider, LinkedList<OidcProvider> list){
+        for(int i = 0; i < list.size(); i++) {
+            OidcProvider curr = list.get(i);
+            if(curr == null || !curr.name.equals(provider)) continue;
+            return curr;
+        }
+        return null;
+    }
     private static String[] getArray(String s) {
 
         if (s == null) {
