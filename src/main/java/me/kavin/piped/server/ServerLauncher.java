@@ -42,11 +42,9 @@ import com.nimbusds.oauth2.sdk.id.*;
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.LinkedList;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
@@ -310,8 +308,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/oidc/:provider/:function", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         String function = request.getPathParameter("function");
-
-                        OidcProvider provider = findOidcProvider(request.getPathParameter("provider"), Constants.OIDC_PROVIDERS);
+                        OidcProvider provider = getOidcProvider(request.getPathParameter("provider"));
                         if(provider == null)
                             return HttpResponse.ofCode(500).withHtml("Can't find the provider on the server.");
 
@@ -319,8 +316,9 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
                         switch (function) {
                             case "login" -> {
+                                String redirectUri = request.getQueryParameter("redirect");
 
-                                State state = new State();
+                                State state = new State(new Identifier(24) + "." + redirectUri);
                                 Nonce nonce = new Nonce();
 
                                 AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
@@ -378,7 +376,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
                                 String sessionId = UserHandlers.oidcCallbackResponse(provider.name, userInfo.getSubject().toString());
 
-                                return HttpResponse.redirect302(Constants.FRONTEND_URL + "/login?session=" + sessionId);
+                                return HttpResponse.redirect302(sr.getState().toString().split("\\.", 2)[1] + "?session=" + sessionId);
                             }
                             default -> {
                                 return HttpResponse.ofCode(500).withHtml("Invalid function `" + function + "`.");
@@ -635,9 +633,9 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
         return new CustomServletDecorator(router);
     }
 
-    private static OidcProvider findOidcProvider(String provider, LinkedList<OidcProvider> list){
-        for(int i = 0; i < list.size(); i++) {
-            OidcProvider curr = list.get(i);
+    private static OidcProvider getOidcProvider(String provider){
+        for(int i = 0; i < Constants.OIDC_PROVIDERS.size(); i++) {
+            OidcProvider curr = Constants.OIDC_PROVIDERS.get(i);
             if(curr == null || !curr.name.equals(provider)) continue;
             return curr;
         }

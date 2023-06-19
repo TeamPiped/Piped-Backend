@@ -110,7 +110,6 @@ public class UserHandlers {
     public static String oidcCallbackResponse(String provider, String uid) {
         try (Session s = DatabaseSessionFactory.createSession()) {
                 String dbName = provider + "-" + uid;
-                System.out.println(dbName); //TODO:
                 CriteriaBuilder cb = s.getCriteriaBuilder();
                 CriteriaQuery<User> cr = cb.createQuery(User.class);
                 Root<User> root = cr.from(User.class);
