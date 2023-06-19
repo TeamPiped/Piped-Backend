@@ -331,7 +331,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                         .nonce(nonce)
                                         .build();
 
-                                return HttpResponse.redirect302(oidcRequest.toURI().toString());
+                                return HttpResponse.ok200().withHtml(
+                                        "<!DOCTYPE html><html style= \"color: white;background: #0f0f0f;\"><body>"
+                                                + "<h3>Warning:</h3> You are trying to give <pre style=\"font-size: 1.2rem;\">"
+                                                + redirectUri
+                                                + "</pre> access to your Piped account. If you wish to continue click <a style=\"text-decoration: underline;color: inherit;\"href=\""
+                                                + oidcRequest.toURI().toString()
+                                                + "\">here</a></body></html>");
                             }
                             case "callback" -> {
                                 ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
