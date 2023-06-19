@@ -14,12 +14,17 @@ public class OidcProvider {
     public URI tokenUri;
     public URI userinfoUri;
 
-    public OidcProvider(String name, String clientID, String clientSecret, String authUri, String tokenUri, String userinfoUri) throws URISyntaxException {
+    public OidcProvider(String name, String clientID, String clientSecret, String authUri, String tokenUri, String userinfoUri) {
         this.name = name;
         this.clientID = new ClientID(clientID);
         this.clientSecret = new Secret(clientSecret);
-        this.authUri = new URI(authUri);
-        this.tokenUri = new URI(tokenUri);
-        this.userinfoUri = new URI(userinfoUri);
+        try {
+            this.authUri = new URI(authUri);
+            this.tokenUri = new URI(tokenUri);
+            this.userinfoUri = new URI(userinfoUri);
+        } catch(URISyntaxException e) {
+            System.err.println("Malformed URI for oidc provider '" + name + "' found.");
+            System.exit(1);
+        }
     }
 }

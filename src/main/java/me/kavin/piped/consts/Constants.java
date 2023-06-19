@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -102,7 +102,7 @@ public class Constants {
     public static final String YOUTUBE_COUNTRY;
 
     public static final String VERSION;
-    public static final LinkedList<OidcProvider> OIDC_PROVIDERS;
+    public static final ArrayList<OidcProvider> OIDC_PROVIDERS;
 
     public static final ObjectMapper mapper = JsonMapper.builder()
             .addMixIn(Page.class, PageMixin.class)
@@ -167,7 +167,7 @@ public class Constants {
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
             GEO_RESTRICTION_CHECKER_URL = getProperty(prop, "GEO_RESTRICTION_CHECKER_URL");
 
-            OIDC_PROVIDERS = new LinkedList<>();
+            OIDC_PROVIDERS = new ArrayList<>();
             ArrayNode providerNames = frontendProperties.putArray("oidcProviders");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
@@ -178,21 +178,15 @@ public class Constants {
                 else if (key.startsWith("oidc.provider")) {
                    String[] split = key.split("\\.");
                    if (split.length != 4 || !split[3].equals("name")) return;
-
-                   try {
-                       OIDC_PROVIDERS.add(new OidcProvider(
-                                value,
-                                getProperty(prop, "oidc.provider." + value + ".clientId"),
-                                getProperty(prop, "oidc.provider." + value + ".clientSecret"),
-                                getProperty(prop, "oidc.provider." + value + ".authUrl"),
-                                getProperty(prop, "oidc.provider." + value + ".tokenUrl"),
-                                getProperty(prop, "oidc.provider." + value + ".userinfoUrl")
-                        ));
-                    } catch (Exception e) {
-                        System.err.println("Error while getting properties for oidc provider '" + value + "'");
-                        throw new RuntimeException(e);
-                    }
-                    providerNames.add(value);
+                   OIDC_PROVIDERS.add(new OidcProvider(
+                           value,
+                           getRequiredOidcProperty(prop, value, "clientId"),
+                           getRequiredOidcProperty(prop, value, "clientSecret"),
+                           getRequiredOidcProperty(prop, value, "authUri"),
+                           getRequiredOidcProperty(prop, value, "tokenUri"),
+                           getRequiredOidcProperty(prop, value, "userinfoUri"))
+                   );
+                   providerNames.add(value);
                 }
             });
             frontendProperties.put("imageProxyUrl", IMAGE_PROXY_PART);
@@ -255,5 +249,14 @@ public class Constants {
             return envVal;
 
         return prop.getProperty(key, def);
+    }
+
+    private static String getRequiredOidcProperty(final Properties prop, String provider, String key) {
+        String value = getProperty(prop, "oidc.provider." + provider + "." + key);
+        if(value == null || value.equals("")){
+            System.err.println("Missing " + key + " for oidc provider '" + provider + "'");
+            System.exit(1);
+        }
+        return value;
     }
 }
