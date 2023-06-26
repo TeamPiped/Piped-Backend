@@ -357,7 +357,7 @@ public class StreamHandlers {
             nextpage = mapper.writeValueAsString(page);
         }
 
-        CommentsPage commentsItem = new CommentsPage(comments, nextpage, info.isCommentsDisabled());
+        CommentsPage commentsItem = new CommentsPage(comments, nextpage, info.isCommentsDisabled(), info.getCommentsCount());
 
         return mapper.writeValueAsBytes(commentsItem);
 
@@ -395,7 +395,7 @@ public class StreamHandlers {
             nextpage = mapper.writeValueAsString(page);
         }
 
-        CommentsPage commentsItem = new CommentsPage(comments, nextpage, false);
+        CommentsPage commentsItem = new CommentsPage(comments, nextpage, false, -1);
 
         return mapper.writeValueAsBytes(commentsItem);
 
