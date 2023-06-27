@@ -318,6 +318,9 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                             case "login" -> {
                                 String redirectUri = request.getQueryParameter("redirect");
 
+                                if (redirectUri == null || redirectUri.equals("")) {
+                                    return HttpResponse.ofCode(400).withHtml("Missing redirect parameter");
+                                }
                                 State state = new State(new Identifier(24) + "." + redirectUri);
                                 Nonce nonce = new Nonce();
 
@@ -331,6 +334,9 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                         .nonce(nonce)
                                         .build();
 
+                                if(redirectUri.equals(Constants.FRONTEND_URL + "/login")) {
+                                    return HttpResponse.redirect302(oidcRequest.toURI().toString());
+                                }
                                 return HttpResponse.ok200().withHtml(
                                         "<!DOCTYPE html><html style= \"color: white;background: #0f0f0f;\"><body>"
                                                 + "<h3>Warning:</h3> You are trying to give <pre style=\"font-size: 1.2rem;\">"
