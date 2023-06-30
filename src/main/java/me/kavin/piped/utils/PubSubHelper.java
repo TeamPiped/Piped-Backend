@@ -48,6 +48,10 @@ public class PubSubHelper {
                     .thenAccept(resp -> {
                         if (resp.status() != 202)
                             System.out.println("Failed to subscribe: " + resp.status() + "\n" + new String(resp.body()));
+                    })
+                    .exceptionally(e -> {
+                        ExceptionHandler.handle((Exception) e);
+                        return null;
                     });
         }
     }
