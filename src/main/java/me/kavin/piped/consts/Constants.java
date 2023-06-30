@@ -199,7 +199,7 @@ public class Constants {
             h2_no_redir_client = builder_noredir.build();
             String temp = null;
             try {
-                var html = RequestUtils.sendGet("https://www.youtube.com/");
+                var html = RequestUtils.sendGet("https://www.youtube.com/").get();
                 var regex = Pattern.compile("GL\":\"([A-Z]{2})\"", Pattern.MULTILINE);
                 var matcher = regex.matcher(html);
                 if (matcher.find()) {

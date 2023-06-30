@@ -24,7 +24,7 @@ public class SponsorBlockUtils {
             try {
 
                 var resp = RequestUtils.sendGetRaw(url + "/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
-                        + "?categories=" + URLUtils.silentEncode(categories));
+                        + "?categories=" + URLUtils.silentEncode(categories)).get();
 
                 if (resp.status() == 200) {
                     var any = mapper.readTree(resp.body());

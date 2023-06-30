@@ -150,7 +150,7 @@ public class StreamHandlers {
                 List<String> allowedCountries = new ObjectArrayList<>();
 
                 {
-                    var restrictedTree = RequestUtils.sendGetJson(Constants.GEO_RESTRICTION_CHECKER_URL + "/api/region/check?video_id=" + videoId);
+                    var restrictedTree = RequestUtils.sendGetJson(Constants.GEO_RESTRICTION_CHECKER_URL + "/api/region/check?video_id=" + videoId).get();
                     if (!restrictedTree.get("restricted").asBoolean()) {
                         assert exception != null;
                         throw (Exception) exception;

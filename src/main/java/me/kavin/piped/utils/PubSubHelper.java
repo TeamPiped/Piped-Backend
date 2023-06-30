@@ -44,11 +44,11 @@ public class PubSubHelper {
             var buffer = new Buffer();
             formBuilder.build().writeTo(buffer);
 
-            var resp = ReqwestUtils.fetch(Constants.PUBSUB_HUB_URL, "POST", buffer.readByteArray(), Map.of());
-
-            if (resp.status() != 202)
-                System.out.println("Failed to subscribe: " + resp.status() + "\n" + new String(resp.body()));
-
+            ReqwestUtils.fetch(Constants.PUBSUB_HUB_URL, "POST", buffer.readByteArray(), Map.of())
+                    .thenAccept(resp -> {
+                        if (resp.status() != 202)
+                            System.out.println("Failed to subscribe: " + resp.status() + "\n" + new String(resp.body()));
+                    });
         }
     }
 
