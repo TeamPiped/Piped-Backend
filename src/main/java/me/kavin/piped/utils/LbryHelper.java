@@ -3,8 +3,8 @@ package me.kavin.piped.utils;
 import me.kavin.piped.consts.Constants;
 import org.apache.commons.lang3.StringUtils;
 import rocks.kavin.reqwest4j.ReqwestUtils;
+import rocks.kavin.reqwest4j.Response;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
@@ -13,19 +13,20 @@ import static me.kavin.piped.utils.URLUtils.silentEncode;
 
 public class LbryHelper {
 
-    public static String getLBRYId(String videoId) throws IOException {
+    public static String getLBRYId(String videoId) throws Exception {
 
         if (Constants.DISABLE_LBRY)
             return null;
 
         return RequestUtils.sendGetJson("https://api.lbry.com/yt/resolve?video_ids=" + silentEncode(videoId))
-                .at("/data/videos")
-                .path(videoId)
-                .asText(null);
+                .thenApplyAsync(json -> json.at("/data/videos")
+                        .path(videoId)
+                        .asText(null)
+                ).get();
     }
 
     public static String getLBRYStreamURL(String lbryId)
-            throws IOException {
+            throws Exception {
 
         if (StringUtils.isEmpty(lbryId))
             return null;
@@ -41,7 +42,7 @@ public class LbryHelper {
                                                 .put("uri", "lbry://" + lbryId)
                                                 .put("save_file", true)
                                 )
-                ), Map.of("Content-Type", "application/json"));
+                ), Map.of("Content-Type", "application/json")).get();
         if (resp.status() / 100 == 2) {
             return mapper.readTree(resp.body())
                     .at("/result/streaming_url")
@@ -60,12 +61,12 @@ public class LbryHelper {
         // LBRY provides non UTF-8 characters in the URL, which causes issues
         streamUrl = new URI(streamUrl).toASCIIString();
 
-        var resp = ReqwestUtils.fetch(streamUrl, "HEAD", null, Map.of(
-                "Origin", "https://odysee.com",
-                "Referer", "https://odysee.com/"
-        ));
-
-        final String lastLocation = resp.finalUrl();
+        final String lastLocation = ReqwestUtils.fetch(streamUrl, "HEAD", null, Map.of(
+                        "Origin", "https://odysee.com",
+                        "Referer", "https://odysee.com/"
+                ))
+                .thenApply(Response::finalUrl)
+                .get();
 
         return streamUrl.equals(lastLocation) ? null : lastLocation;
     }

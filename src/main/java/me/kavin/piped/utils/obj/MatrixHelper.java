@@ -66,7 +66,7 @@ public class MatrixHelper {
                         .asText();
             }
 
-            AUTHORIZED_USERS = (ArrayNode) mapper.readTree(RequestUtils.sendGet("https://raw.githubusercontent.com/TeamPiped/piped-federation/main/authorized-users.json"));
+            AUTHORIZED_USERS = (ArrayNode) RequestUtils.sendGetJson("https://raw.githubusercontent.com/TeamPiped/piped-federation/main/authorized-users.json").get();
 
         } catch (Exception e) {
             ExceptionHandler.handle(e);
