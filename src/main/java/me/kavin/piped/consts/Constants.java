@@ -52,7 +52,7 @@ public class Constants {
 
     public static final String PUBSUB_HUB_URL;
 
-    public static final String HTTP_PROXY;
+    public static final String REQWEST_PROXY;
 
     public static final String FRONTEND_URL;
 
@@ -133,7 +133,7 @@ public class Constants {
             PUBLIC_URL = getProperty(prop, "API_URL");
             PUBSUB_URL = getProperty(prop, "PUBSUB_URL", PUBLIC_URL);
             PUBSUB_HUB_URL = getProperty(prop, "PUBSUB_HUB_URL", "https://pubsubhubbub.appspot.com/subscribe");
-            HTTP_PROXY = getProperty(prop, "HTTP_PROXY");
+            REQWEST_PROXY = getProperty(prop, "REQWEST_PROXY");
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.video");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
@@ -208,18 +208,11 @@ public class Constants {
             OkHttpClient.Builder builder_noredir = new OkHttpClient.Builder()
                     .followRedirects(false)
                     .addInterceptor(BrotliInterceptor.INSTANCE);
-            if (HTTP_PROXY != null && HTTP_PROXY.contains(":")) {
-                String host = StringUtils.substringBefore(HTTP_PROXY, ":");
-                String port = StringUtils.substringAfter(HTTP_PROXY, ":");
-                InetSocketAddress sa = new InetSocketAddress(host, Integer.parseInt(port));
-                ProxySelector ps = ProxySelector.of(sa);
-                ProxySelector.setDefault(ps);
-            }
             h2client = builder.build();
             h2_no_redir_client = builder_noredir.build();
             String temp = null;
             try {
-                var html = RequestUtils.sendGet("https://www.youtube.com/");
+                var html = RequestUtils.sendGet("https://www.youtube.com/").get();
                 var regex = Pattern.compile("GL\":\"([A-Z]{2})\"", Pattern.MULTILINE);
                 var matcher = regex.matcher(html);
                 if (matcher.find()) {

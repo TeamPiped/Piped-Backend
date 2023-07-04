@@ -1,7 +1,7 @@
 plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1"
     id "java"
-    id "io.freefair.lombok" version "8.0.1"
+    id "io.freefair.lombok" version "8.1.0"
     id "eclipse"
 }
 
@@ -15,9 +15,9 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.10.0'
     implementation 'commons-io:commons-io:2.12.0'
     implementation 'it.unimi.dsi:fastutil-core:8.5.12'
-    implementation 'commons-codec:commons-codec:1.15'
+    implementation 'commons-codec:commons-codec:1.16.0'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:4ab4bf51ca6e924945a071d359b1ee5cdf9c7605'
+    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:bdd1366285614f56a245e3baceb26fb8864bda27'
     implementation 'com.github.FireMasterK:nanojson:01934924442edda6952f3bedf80ba9e969cba8bc'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
@@ -34,15 +34,15 @@ dependencies {
     implementation 'org.hibernate:hibernate-core:6.2.5.Final'
     implementation 'org.hibernate:hibernate-hikaricp:6.2.5.Final'
     implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'org.springframework.security:spring-security-crypto:6.1.0'
+    implementation 'org.springframework.security:spring-security-crypto:6.1.1'
     implementation 'commons-logging:commons-logging:1.2'
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.11.0"))
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:okhttp-brotli'
-    implementation 'io.sentry:sentry:6.23.0'
-    implementation 'rocks.kavin:reqwest4j:1.0.4'
-    implementation 'io.minio:minio:8.5.3'
     implementation 'com.nimbusds:oauth2-oidc-sdk:10.9.1'
+    implementation 'io.sentry:sentry:6.25.0'
+    implementation 'rocks.kavin:reqwest4j:1.0.6'
+    implementation 'io.minio:minio:8.5.4'
 }
 
 shadowJar {

@@ -1,7 +1,6 @@
 package me.kavin.piped.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import me.kavin.piped.consts.Constants;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import rocks.kavin.reqwest4j.ReqwestUtils;
@@ -9,27 +8,26 @@ import rocks.kavin.reqwest4j.Response;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static me.kavin.piped.consts.Constants.mapper;
 
 public class RequestUtils {
 
-    public static Response sendGetRaw(String url) throws IOException {
+    public static CompletableFuture<Response> sendGetRaw(String url) throws Exception {
         return ReqwestUtils.fetch(url, "GET", null, Map.of());
     }
 
-    public static String sendGet(String url) throws IOException {
-        return new String(
-                ReqwestUtils.fetch(url, "GET", null, Map.of())
-                        .body()
-        );
+    public static CompletableFuture<String> sendGet(String url) throws Exception {
+        return ReqwestUtils.fetch(url, "GET", null, Map.of())
+                .thenApply(Response::body)
+                .thenApplyAsync(String::new);
     }
 
-    public static String sendGet(String url, String ua) throws IOException {
-        return new String(
-                ReqwestUtils.fetch(url, "GET", null, Map.of("User-Agent", ua))
-                        .body()
-        );
+    public static CompletableFuture<String> sendGet(String url, String ua) throws Exception {
+        return ReqwestUtils.fetch(url, "GET", null, Map.of("User-Agent", ua))
+                .thenApply(Response::body)
+                .thenApplyAsync(String::new);
     }
 
     public static JsonNode getJsonNode(OkHttpClient client, Request request) throws IOException {
@@ -44,13 +42,13 @@ public class RequestUtils {
         }
     }
 
-    public static JsonNode sendGetJson(String url, String ua) throws IOException {
-        return getJsonNode(Constants.h2client, new Request.Builder().header("User-Agent", ua).url(url).build());
-    }
-
-    public static JsonNode sendGetJson(String url) throws IOException {
-
-        return mapper.readTree(ReqwestUtils.fetch(url, "GET", null, Map.of()).body());
-
+    public static CompletableFuture<JsonNode> sendGetJson(String url) throws Exception {
+        return ReqwestUtils.fetch(url, "GET", null, Map.of()).thenApply(Response::body).thenApplyAsync(resp -> {
+            try {
+                return mapper.readTree(resp);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse JSON", e);
+            }
+        }, Multithreading.getCachedExecutor());
     }
 }

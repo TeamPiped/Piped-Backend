@@ -28,7 +28,7 @@ public class UserHandlers {
     private static final Argon2PasswordEncoder argon2PasswordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
 
-    public static byte[] registerResponse(String user, String pass) throws IOException {
+    public static byte[] registerResponse(String user, String pass) throws Exception {
 
         if (Constants.DISABLE_REGISTRATION)
             ExceptionHandler.throwErrorResponse(new DisabledRegistrationResponse());
@@ -57,7 +57,8 @@ public class UserHandlers {
                 String suffix = sha1Hash.substring(5);
                 String[] entries = RequestUtils
                         .sendGet("https://api.pwnedpasswords.com/range/" + prefix, "github.com/TeamPiped/Piped-Backend")
-                        .split("\n");
+                        .thenApplyAsync(str -> str.split("\n"))
+                        .get();
                 for (String entry : entries)
                     if (StringUtils.substringBefore(entry, ":").equals(suffix))
                         ExceptionHandler.throwErrorResponse(new CompromisedPasswordResponse());

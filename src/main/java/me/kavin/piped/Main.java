@@ -20,6 +20,7 @@ import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
+import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +35,8 @@ public class Main {
         NewPipe.init(new DownloaderImpl(), new Localization("en", "US"), ContentCountry.DEFAULT, Multithreading.getCachedExecutor());
         YoutubeStreamExtractor.forceFetchAndroidClient(true);
         YoutubeStreamExtractor.forceFetchIosClient(true);
+
+        ReqwestUtils.init(Constants.REQWEST_PROXY);
 
         Sentry.init(options -> {
             options.setDsn(Constants.SENTRY_DSN);
