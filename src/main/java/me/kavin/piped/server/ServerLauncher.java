@@ -76,18 +76,21 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 .map(GET, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
                     var topic = request.getQueryParameter("hub.topic");
                     if (topic != null)
-                        Multithreading.runAsync(() -> {
+                        Multithreading.runAsyncLimited(() -> {
                             String channelId = StringUtils.substringAfter(topic, "channel_id=");
                             PubSubHelper.updatePubSub(channelId);
                         });
-                    return HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge")));
+
+                    var challenge = request.getQueryParameter("hub.challenge");
+                    return HttpResponse.ok200()
+                            .withPlainText(Objects.requireNonNullElse(challenge, "ok"));
                 })).map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
                     try {
 
                         SyndFeed feed = new SyndFeedInput().build(
                                 new InputSource(new ByteArrayInputStream(request.loadBody().getResult().asArray())));
 
-                        Multithreading.runAsync(() -> {
+                        Multithreading.runAsyncLimited(() -> {
                             for (var entry : feed.getEntries()) {
                                 String url = entry.getLinks().get(0).getHref();
                                 String videoId = StringUtils.substring(url, -11);
@@ -95,7 +98,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                     if (DatabaseHelper.doesVideoExist(s, videoId))
                                         continue;
                                 }
-                                Multithreading.runAsync(() -> {
+                                Multithreading.runAsyncLimited(() -> {
                                     try {
                                         Sentry.setExtra("videoId", videoId);
                                         var extractor = YOUTUBE_SERVICE.getStreamExtractor("https://youtube.com/watch?v=" + videoId);
