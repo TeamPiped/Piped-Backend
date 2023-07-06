@@ -57,17 +57,14 @@ public class PubSubHelper {
     }
 
     public static void updatePubSub(String channelId) {
-        var pubsub = DatabaseHelper.getPubSubFromId(channelId);
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-            s.beginTransaction();
-            if (pubsub == null) {
-                pubsub = new PubSub(channelId, System.currentTimeMillis());
-                s.insert(pubsub);
-            } else {
-                pubsub.setSubbedAt(System.currentTimeMillis());
-                s.update(pubsub);
-            }
-            s.getTransaction().commit();
+            var tr = s.beginTransaction();
+            s.createNativeMutationQuery("INSERT INTO pubsub (id, subbed_at) VALUES (?, ?) " +
+                            "ON CONFLICT (id) DO UPDATE SET subbed_at = excluded.subbed_at")
+                    .setParameter(1, channelId)
+                    .setParameter(2, System.currentTimeMillis())
+                    .executeUpdate();
+            tr.commit();
         }
     }
 }
