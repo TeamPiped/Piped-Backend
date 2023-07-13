@@ -175,6 +175,7 @@ public class Constants {
                             .map(JsonNodeFactory.instance::textNode).toList()
             );
             frontendProperties.put("s3Enabled", S3_CLIENT != null);
+            frontendProperties.put("registrationDisabled", DISABLE_REGISTRATION);
 
             // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",
