@@ -33,6 +33,7 @@ import org.xml.sax.InputSource;
 
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -145,6 +146,23 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         return getJsonResponse(
                                 SponsorBlockUtils.getSponsors(request.getPathParameter("videoId"),
                                         request.getQueryParameter("category")).getBytes(UTF_8),
+                                "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/dearrow", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var videoIds = getArray(request.getQueryParameter("videoIds"));
+
+                        return getJsonResponse(
+                                SponsorBlockUtils.getDeArrowedInfo(List.of(videoIds))
+                                        .thenApplyAsync(json -> {
+                                            try {
+                                                return mapper.writeValueAsBytes(json);
+                                            } catch (JsonProcessingException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                        }).get(),
                                 "public, max-age=3600");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
