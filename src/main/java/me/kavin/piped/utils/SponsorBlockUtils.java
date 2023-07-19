@@ -81,7 +81,8 @@ public class SponsorBlockUtils {
                     optional.ifPresent(jsonNode -> {
                         ArrayNode nodes = (ArrayNode) jsonNode.get("thumbnails");
                         for (JsonNode node : nodes) {
-                            ((ObjectNode) node).set("thumbnail", new TextNode(URLUtils.rewriteURL("https://dearrow-thumb.ajay.app/api/v1/getThumbnail?videoID=" + videoId + "&time=" + node.get("timestamp").asText())));
+                            if (!node.get("original").booleanValue())
+                                ((ObjectNode) node).set("thumbnail", new TextNode(URLUtils.rewriteURL("https://dearrow-thumb.ajay.app/api/v1/getThumbnail?videoID=" + videoId + "&time=" + node.get("timestamp").asText())));
                         }
                     });
 
