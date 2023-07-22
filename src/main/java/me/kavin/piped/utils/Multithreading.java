@@ -1,8 +1,6 @@
 package me.kavin.piped.utils;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 public class Multithreading {
@@ -12,9 +10,14 @@ public class Multithreading {
             .newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 8);
     private static final ExecutorService esLimitedPubSub = Executors
             .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private static final ForkJoinPool forkJoinPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
     public static void runAsync(final Runnable runnable) {
         es.submit(runnable);
+    }
+
+    public static void runAsyncTask(final ForkJoinTask<?> task) {
+        forkJoinPool.submit(task);
     }
 
     public static void runAsyncLimited(final Runnable runnable) {

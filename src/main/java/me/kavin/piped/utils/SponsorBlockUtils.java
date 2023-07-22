@@ -12,10 +12,12 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinTask;
 
+import static me.kavin.piped.consts.Constants.SPONSORBLOCK_SERVERS;
 import static me.kavin.piped.consts.Constants.mapper;
 
 public class SponsorBlockUtils {
@@ -54,47 +56,58 @@ public class SponsorBlockUtils {
         return null;
     }
 
-    public static CompletableFuture<ObjectNode> getDeArrowedInfo(List<String> videoIds) {
+    public static CompletableFuture<ObjectNode> getDeArrowedInfo(String[] videoIds) {
         ObjectNode objectNode = mapper.createObjectNode();
 
-        var futures = videoIds.stream()
-                .map(id -> getDeArrowedInfo(id).thenAcceptAsync(jsonNode -> objectNode.set(id, jsonNode.orElse(NullNode.getInstance()))))
+        var futures = Arrays.stream(videoIds)
+                .map(id -> getDeArrowedInfo(id, SPONSORBLOCK_SERVERS.toArray(new String[0]))
+                        .thenAcceptAsync(jsonNode -> objectNode.set(id, jsonNode.orElse(NullNode.getInstance())))
+                )
                 .toArray(CompletableFuture[]::new);
 
         return CompletableFuture.allOf(futures)
                 .thenApplyAsync(v -> objectNode, Multithreading.getCachedExecutor());
     }
 
-    private static CompletableFuture<Optional<JsonNode>> getDeArrowedInfo(String videoId) {
+    private static CompletableFuture<Optional<JsonNode>> getDeArrowedInfo(String videoId, String[] servers) {
 
         String hash = DigestUtils.sha256Hex(videoId);
 
         CompletableFuture<Optional<JsonNode>> future = new CompletableFuture<>();
 
-        Multithreading.runAsync(() -> {
-            for (String url : Constants.SPONSORBLOCK_SERVERS)
-                try {
-                    Optional<JsonNode> optional = RequestUtils.sendGetJson(url + "/api/branding/" + URLUtils.silentEncode(hash.substring(0, 4)))
-                            .thenApplyAsync(json -> json.has(videoId) ? Optional.of(json.get(videoId)) : Optional.<JsonNode>empty())
-                            .get();
-
-                    optional.ifPresent(jsonNode -> {
-                        ArrayNode nodes = (ArrayNode) jsonNode.get("thumbnails");
-                        for (JsonNode node : nodes) {
-                            if (!node.get("original").booleanValue())
-                                ((ObjectNode) node).set("thumbnail", new TextNode(URLUtils.rewriteURL("https://dearrow-thumb.ajay.app/api/v1/getThumbnail?videoID=" + videoId + "&time=" + node.get("timestamp").asText())));
-                        }
-                    });
-
-
-                    future.complete(optional);
-                    return;
-                } catch (Exception ignored) {
-                }
-            future.completeExceptionally(new Exception("All SponsorBlock servers are down"));
+        var task = ForkJoinTask.adapt(() -> {
+            fetchDeArrowedCf(future, videoId, hash, servers);
         });
+
+        Multithreading.runAsyncTask(task);
 
         return future;
 
+    }
+
+    private static void fetchDeArrowedCf(CompletableFuture<Optional<JsonNode>> future, String videoId, String hash, String[] servers) {
+
+        var completableFuture = RequestUtils.sendGetJson(servers[0] + "/api/branding/" + URLUtils.silentEncode(hash.substring(0, 4)))
+                .thenApplyAsync(json -> json.has(videoId) ? Optional.of(json.get(videoId)) : Optional.<JsonNode>empty());
+
+        completableFuture.thenAcceptAsync(optional -> optional.ifPresent(jsonNode -> {
+            ArrayNode nodes = (ArrayNode) jsonNode.get("thumbnails");
+            for (JsonNode node : nodes) {
+                if (!node.get("original").booleanValue())
+                    ((ObjectNode) node).set("thumbnail", new TextNode(URLUtils.rewriteURL("https://dearrow-thumb.ajay.app/api/v1/getThumbnail?videoID=" + videoId + "&time=" + node.get("timestamp").asText())));
+            }
+        }));
+
+
+        completableFuture.whenComplete((optional, throwable) -> {
+            if (throwable == null)
+                future.complete(optional);
+            else {
+                if (servers.length == 1)
+                    future.completeExceptionally(new Exception("All SponsorBlock servers are down"));
+                else
+                    fetchDeArrowedCf(future, videoId, hash, Arrays.copyOfRange(servers, 1, servers.length));
+            }
+        });
     }
 }

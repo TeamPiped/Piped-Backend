@@ -155,7 +155,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         var videoIds = getArray(request.getQueryParameter("videoIds"));
 
                         return getJsonResponse(
-                                SponsorBlockUtils.getDeArrowedInfo(List.of(videoIds))
+                                SponsorBlockUtils.getDeArrowedInfo(videoIds)
                                         .thenApplyAsync(json -> {
                                             try {
                                                 return mapper.writeValueAsBytes(json);
