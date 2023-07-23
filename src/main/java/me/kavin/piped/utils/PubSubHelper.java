@@ -6,16 +6,21 @@ import okhttp3.FormBody;
 import okio.Buffer;
 import org.hibernate.StatelessSession;
 import rocks.kavin.reqwest4j.ReqwestUtils;
+import rocks.kavin.reqwest4j.Response;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class PubSubHelper {
-    public static void subscribePubSub(String channelId) throws IOException {
+
+    @Nullable
+    public static CompletableFuture<Response> subscribePubSub(String channelId) throws IOException {
 
         if (!ChannelHelpers.isValidId(channelId))
-            return;
+            return null;
 
         PubSub pubsub = DatabaseHelper.getPubSubFromId(channelId);
 
@@ -44,16 +49,21 @@ public class PubSubHelper {
             var buffer = new Buffer();
             formBuilder.build().writeTo(buffer);
 
-            ReqwestUtils.fetch(Constants.PUBSUB_HUB_URL, "POST", buffer.readByteArray(), Map.of())
-                    .thenAccept(resp -> {
-                        if (resp.status() != 202)
+            var completableFuture = ReqwestUtils.fetch(Constants.PUBSUB_HUB_URL, "POST", buffer.readByteArray(), Map.of());
+
+            completableFuture
+                    .whenComplete((resp, e) -> {
+                        if (e != null) {
+                            ExceptionHandler.handle((Exception) e);
+                            return;
+                        }
+                        if (resp != null && resp.status() != 202)
                             System.out.println("Failed to subscribe: " + resp.status() + "\n" + new String(resp.body()));
-                    })
-                    .exceptionally(e -> {
-                        ExceptionHandler.handle((Exception) e);
-                        return null;
                     });
+
+            return completableFuture;
         }
+        return null;
     }
 
     public static void updatePubSub(String channelId) {
