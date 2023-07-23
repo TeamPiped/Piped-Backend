@@ -23,6 +23,8 @@ import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExt
 import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -102,15 +104,39 @@ public class Main {
 
                     Collections.shuffle(channelIds);
 
-                    channelIds.stream()
-                            .parallel()
-                            .forEach(id -> Multithreading.runAsyncLimitedPubSub(() -> {
+                    var queue = new ConcurrentLinkedQueue<>(channelIds);
+
+                    System.out.println("PubSub: queue size - " + queue.size() + " channels");
+
+                    for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+                        new Thread(() -> {
+
+                            Object o = new Object();
+
+                            String channelId;
+                            while ((channelId = queue.poll()) != null) {
                                 try {
-                                    PubSubHelper.subscribePubSub(id);
+                                    CompletableFuture<?> future = PubSubHelper.subscribePubSub(channelId);
+
+                                    if (future == null)
+                                        continue;
+
+                                    future.whenComplete((resp, throwable) -> {
+                                        synchronized (o) {
+                                            o.notify();
+                                        }
+                                    });
+
+                                    synchronized (o) {
+                                        o.wait();
+                                    }
+
                                 } catch (Exception e) {
                                     ExceptionHandler.handle(e);
                                 }
-                            }));
+                            }
+                        }, "PubSub-" + i).start();
+                    }
 
                 } catch (Exception e) {
                     e.printStackTrace();
