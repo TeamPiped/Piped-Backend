@@ -85,6 +85,15 @@ public class SponsorBlockUtils {
 
     }
 
+    private static final ObjectNode EMPTY_DEARROWED_INFO;
+
+    static {
+        EMPTY_DEARROWED_INFO = mapper.createObjectNode();
+        EMPTY_DEARROWED_INFO.putArray("titles");
+        EMPTY_DEARROWED_INFO.putArray("thumbnails");
+        EMPTY_DEARROWED_INFO.set("videoDuration", NullNode.getInstance());
+    }
+
     private static void fetchDeArrowedCf(CompletableFuture<Optional<JsonNode>> future, String videoId, String hash, String[] servers) {
 
         var completableFuture = RequestUtils.sendGetJson(servers[0] + "/api/branding/" + URLUtils.silentEncode(hash.substring(0, 4)))
@@ -97,6 +106,15 @@ public class SponsorBlockUtils {
                     ((ObjectNode) node).set("thumbnail", new TextNode(URLUtils.rewriteURL("https://dearrow-thumb.ajay.app/api/v1/getThumbnail?videoID=" + videoId + "&time=" + node.get("timestamp").asText())));
             }
         }));
+
+        completableFuture = completableFuture.thenApplyAsync(optional -> {
+            if (optional.isEmpty()) {
+                var clone = EMPTY_DEARROWED_INFO.deepCopy();
+                clone.put("randomTime", new Alea(videoId).next());
+                return Optional.of(clone);
+            } else
+                return optional;
+        });
 
 
         completableFuture.whenComplete((optional, throwable) -> {
