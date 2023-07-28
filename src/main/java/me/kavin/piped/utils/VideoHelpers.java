@@ -159,8 +159,13 @@ public class VideoHelpers {
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var tr = s.beginTransaction();
             try {
-                s.createNativeMutationQuery("INSERT INTO videos (uploader_id,duration,is_short,thumbnail,title,uploaded,views,id) values " +
-                                "(:uploader_id,:duration,:is_short,:thumbnail,:title,:uploaded,:views,:id) ON CONFLICT DO NOTHING")
+                s.createNativeMutationQuery(
+                                "INSERT INTO videos (uploader_id,duration,is_short,thumbnail,title,uploaded,views,id) values " +
+                                        "(:uploader_id,:duration,:is_short,:thumbnail,:title,:uploaded,:views,:id) ON CONFLICT (id) DO UPDATE SET " +
+                                        "duration = :duration," +
+                                        "title = :title," +
+                                        "views = :views"
+                        )
                         .setParameter("uploader_id", video.getChannel())
                         .setParameter("duration", video.getDuration())
                         .setParameter("is_short", video.isShort())
