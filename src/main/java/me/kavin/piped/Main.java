@@ -38,8 +38,6 @@ public class Main {
         YoutubeStreamExtractor.forceFetchAndroidClient(true);
         YoutubeStreamExtractor.forceFetchIosClient(true);
 
-        ReqwestUtils.init(Constants.REQWEST_PROXY);
-
         Sentry.init(options -> {
             options.setDsn(Constants.SENTRY_DSN);
             options.setRelease(Constants.VERSION);
