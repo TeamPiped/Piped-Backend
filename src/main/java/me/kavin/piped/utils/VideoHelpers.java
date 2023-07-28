@@ -164,14 +164,15 @@ public class VideoHelpers {
                                         "(:uploader_id,:duration,:is_short,:thumbnail,:title,:uploaded,:views,:id) ON CONFLICT (id) DO UPDATE SET " +
                                         "duration = excluded.duration, title = excluded.title, views = excluded.views"
                         )
-                        .setParameter("uploader_id", video.getChannel())
+                        .setParameter("uploader_id", video.getChannel().getUploaderId())
                         .setParameter("duration", video.getDuration())
                         .setParameter("is_short", video.isShort())
                         .setParameter("thumbnail", video.getThumbnail())
                         .setParameter("title", video.getTitle())
                         .setParameter("uploaded", video.getUploaded())
                         .setParameter("views", video.getViews())
-                        .setParameter("id", video.getId()).executeUpdate();
+                        .setParameter("id", video.getId())
+                        .executeUpdate();
                 tr.commit();
             } catch (Exception e) {
                 tr.rollback();
