@@ -162,9 +162,7 @@ public class VideoHelpers {
                 s.createNativeMutationQuery(
                                 "INSERT INTO videos (uploader_id,duration,is_short,thumbnail,title,uploaded,views,id) values " +
                                         "(:uploader_id,:duration,:is_short,:thumbnail,:title,:uploaded,:views,:id) ON CONFLICT (id) DO UPDATE SET " +
-                                        "duration = :duration," +
-                                        "title = :title," +
-                                        "views = :views"
+                                        "duration = excluded.duration, title = excluded.title, views = excluded.views"
                         )
                         .setParameter("uploader_id", video.getChannel())
                         .setParameter("duration", video.getDuration())
