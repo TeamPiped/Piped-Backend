@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.utils.obj.*;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
-import org.schabi.newpipe.extractor.channel.ChannelTabInfo;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.linkhandler.ReadyChannelTabListLinkHandler;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
@@ -16,7 +15,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.utils.URLUtils.*;
 
 public class CollectionUtils {
@@ -71,7 +69,8 @@ public class CollectionUtils {
                 rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl()),
-                rewriteVideoURL(info.getDashMpdUrl()), null, info.getCategory(), chapters, previewFrames);
+                rewriteVideoURL(info.getDashMpdUrl()), null, info.getCategory(), info.getLicence(),
+                info.getPrivacy().name().toLowerCase(), info.getTags(), chapters, previewFrames);
     }
 
     public static List<ContentItem> collectRelatedItems(List<? extends InfoItem> items) {
