@@ -9,7 +9,9 @@ import java.util.List;
 public class Streams {
 
     public String title, description, uploadDate, uploader, uploaderUrl, uploaderAvatar, thumbnailUrl, hls, dash,
-            lbryId, category;
+            lbryId, category, license, visibility;
+
+    public List<String> tags;
 
     public boolean uploaderVerified;
 
@@ -33,7 +35,7 @@ public class Streams {
                    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes, long uploaderSubscriberCount,
                    boolean uploaderVerified, List<PipedStream> audioStreams, List<PipedStream> videoStreams,
                    List<ContentItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
-                   String lbryId, String category, List<ChapterSegment> chapters, List<PreviewFrames> previewFrames) {
+                   String lbryId, String category, String license, String visibility, List<String> tags, List<ChapterSegment> chapters, List<PreviewFrames> previewFrames) {
         this.title = title;
         this.description = description;
         this.uploadDate = uploadDate;
@@ -58,5 +60,8 @@ public class Streams {
         this.chapters = chapters;
         this.previewFrames = previewFrames;
         this.category = category;
+        this.license = license;
+        this.tags = tags;
+        this.visibility = visibility;
     }
 }
