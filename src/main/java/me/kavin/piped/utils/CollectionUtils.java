@@ -65,9 +65,9 @@ public class CollectionUtils {
         final List<ContentItem> relatedStreams = collectRelatedItems(info.getRelatedItems());
 
         final List<MetaInfo> metaInfo = new ObjectArrayList<>();
-        info.getMetaInfo().forEach(metaInfoItem -> {
-            metaInfo.add(new MetaInfo(metaInfoItem.getTitle(), metaInfoItem.getContent().getContent(), metaInfoItem.getUrls(), metaInfoItem.getUrlTexts()));
-        });
+        info.getMetaInfo().forEach(metaInfoItem -> metaInfo.add(new MetaInfo(metaInfoItem.getTitle(), metaInfoItem.getContent().getContent(),
+                metaInfoItem.getUrls(), metaInfoItem.getUrlTexts()
+        )));
 
         return new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
