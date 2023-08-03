@@ -39,6 +39,9 @@ curl "${CURLOPTS[@]}" $HOST/clips/Ugkx71jS31nwsms_Cc65oi7yXF1mILflhhrO || exit 1
 # Streams
 curl "${CURLOPTS[@]}" $HOST/streams/BtN-goy9VOY || exit 1
 
+# Streams with meta info
+curl "${CURLOPTS[@]}" $HOST/streams/cJ9to6EmElQ || exit 1
+
 # Comments
 curl "${CURLOPTS[@]}" $HOST/comments/BtN-goy9VOY || exit 1
 
