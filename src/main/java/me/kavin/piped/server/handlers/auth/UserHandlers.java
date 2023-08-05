@@ -108,32 +108,34 @@ public class UserHandlers {
             return null;
         }
     }
+
     public static String oidcCallbackResponse(String provider, String uid) {
         try (Session s = DatabaseSessionFactory.createSession()) {
-                String dbName = provider + "-" + uid;
-                CriteriaBuilder cb = s.getCriteriaBuilder();
-                CriteriaQuery<User> cr = cb.createQuery(User.class);
-                Root<User> root = cr.from(User.class);
-                cr.select(root).where(root.get("username").in(
-                        dbName
-                ));
+            String dbName = provider + "-" + uid;
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<User> cr = cb.createQuery(User.class);
+            Root<User> root = cr.from(User.class);
+            cr.select(root).where(root.get("username").in(
+                    dbName
+            ));
 
-                User dbuser = s.createQuery(cr).uniqueResult();
+            User dbuser = s.createQuery(cr).uniqueResult();
 
-                if (dbuser == null) {
-                        User newuser = new User(dbName, "", Set.of());
+            if (dbuser == null) {
+                User newuser = new User(dbName, "", Set.of());
 
-                        var tr = s.beginTransaction();
-                        s.persist(newuser);
-                        tr.commit();
+                var tr = s.beginTransaction();
+                s.persist(newuser);
+                tr.commit();
 
 
-                        return newuser.getSessionId();
-                }
-                return dbuser.getSessionId();
+                return newuser.getSessionId();
             }
+            return dbuser.getSessionId();
+        }
 
     }
+
     public static byte[] deleteUserResponse(String session, String pass) throws IOException {
         if (StringUtils.isBlank(session))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));

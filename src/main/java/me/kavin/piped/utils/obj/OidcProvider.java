@@ -22,7 +22,7 @@ public class OidcProvider {
             this.authUri = new URI(authUri);
             this.tokenUri = new URI(tokenUri);
             this.userinfoUri = new URI(userinfoUri);
-        } catch(URISyntaxException e) {
+        } catch (URISyntaxException e) {
             System.err.println("Malformed URI for oidc provider '" + name + "' found.");
             System.exit(1);
         }
