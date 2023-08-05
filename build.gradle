@@ -11,14 +11,14 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'org.apache.commons:commons-lang3:3.13.0'
     implementation 'org.apache.commons:commons-text:1.10.0'
     implementation 'commons-io:commons-io:2.12.0'
     implementation 'it.unimi.dsi:fastutil-core:8.5.12'
     implementation 'commons-codec:commons-codec:1.16.0'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:bdd1366285614f56a245e3baceb26fb8864bda27'
-    implementation 'com.github.FireMasterK:nanojson:01934924442edda6952f3bedf80ba9e969cba8bc'
+    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:88ceba0da4a48b5f4ffecb3b5b2f36f95ec53afe'
+    implementation 'com.github.FireMasterK:nanojson:9f4af3b739cc13f3d0d9d4b758bbe2b2ae7119d7'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
@@ -31,17 +31,17 @@ dependencies {
     implementation 'io.activej:activej-launchers-http:5.5'
     implementation 'org.hsqldb:hsqldb:2.7.2'
     implementation 'org.postgresql:postgresql:42.6.0'
-    implementation 'org.hibernate:hibernate-core:6.2.5.Final'
-    implementation 'org.hibernate:hibernate-hikaricp:6.2.5.Final'
+    implementation 'org.hibernate:hibernate-core:6.2.7.Final'
+    implementation 'org.hibernate:hibernate-hikaricp:6.2.7.Final'
     implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'org.springframework.security:spring-security-crypto:6.1.1'
+    implementation 'org.springframework.security:spring-security-crypto:6.1.2'
     implementation 'commons-logging:commons-logging:1.2'
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.11.0"))
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:okhttp-brotli'
     implementation 'com.nimbusds:oauth2-oidc-sdk:10.9.1'
-    implementation 'io.sentry:sentry:6.25.0'
-    implementation 'rocks.kavin:reqwest4j:1.0.6'
+    implementation 'io.sentry:sentry:6.28.0'
+    implementation 'rocks.kavin:reqwest4j:1.0.7'
     implementation 'io.minio:minio:8.5.4'
 }
 

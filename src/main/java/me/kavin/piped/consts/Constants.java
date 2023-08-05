@@ -21,6 +21,7 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
+import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.io.File;
 import java.io.FileReader;
@@ -134,6 +135,7 @@ public class Constants {
             PUBSUB_URL = getProperty(prop, "PUBSUB_URL", PUBLIC_URL);
             PUBSUB_HUB_URL = getProperty(prop, "PUBSUB_HUB_URL", "https://pubsubhubbub.appspot.com/subscribe");
             REQWEST_PROXY = getProperty(prop, "REQWEST_PROXY");
+            ReqwestUtils.init(REQWEST_PROXY);
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.video");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
@@ -195,6 +197,7 @@ public class Constants {
                             .map(JsonNodeFactory.instance::textNode).toList()
             );
             frontendProperties.put("s3Enabled", S3_CLIENT != null);
+            frontendProperties.put("registrationDisabled", DISABLE_REGISTRATION);
 
             // transform hibernate properties for legacy configurations
             hibernateProperties.replace("hibernate.dialect",

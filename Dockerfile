@@ -11,10 +11,12 @@ FROM eclipse-temurin:17-jre
 
 WORKDIR /app/
 
+COPY hotspot-entrypoint.sh /
+
 COPY --from=build /app/build/libs/piped-1.0-all.jar /app/piped.jar
 
 COPY VERSION .
 
 EXPOSE 8080
 
-CMD java -server -Xmx1G -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+UseG1GC -Xshare:on -jar /app/piped.jar
+ENTRYPOINT ["/hotspot-entrypoint.sh"]

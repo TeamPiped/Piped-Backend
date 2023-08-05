@@ -42,13 +42,13 @@ public class RequestUtils {
         }
     }
 
-    public static CompletableFuture<JsonNode> sendGetJson(String url) throws Exception {
+    public static CompletableFuture<JsonNode> sendGetJson(String url) {
         return ReqwestUtils.fetch(url, "GET", null, Map.of()).thenApply(Response::body).thenApplyAsync(resp -> {
             try {
                 return mapper.readTree(resp);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to parse JSON", e);
             }
-        }, Multithreading.getCachedExecutor());
+        });
     }
 }

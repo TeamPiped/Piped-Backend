@@ -42,6 +42,7 @@ import com.nimbusds.oauth2.sdk.id.*;
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -85,18 +86,21 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 .map(GET, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
                     var topic = request.getQueryParameter("hub.topic");
                     if (topic != null)
-                        Multithreading.runAsync(() -> {
+                        Multithreading.runAsyncLimited(() -> {
                             String channelId = StringUtils.substringAfter(topic, "channel_id=");
                             PubSubHelper.updatePubSub(channelId);
                         });
-                    return HttpResponse.ok200().withPlainText(Objects.requireNonNull(request.getQueryParameter("hub.challenge")));
+
+                    var challenge = request.getQueryParameter("hub.challenge");
+                    return HttpResponse.ok200()
+                            .withPlainText(Objects.requireNonNullElse(challenge, "ok"));
                 })).map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
                     try {
 
                         SyndFeed feed = new SyndFeedInput().build(
                                 new InputSource(new ByteArrayInputStream(request.loadBody().getResult().asArray())));
 
-                        Multithreading.runAsync(() -> {
+                        Multithreading.runAsyncLimited(() -> {
                             for (var entry : feed.getEntries()) {
                                 String url = entry.getLinks().get(0).getHref();
                                 String videoId = StringUtils.substring(url, -11);
@@ -104,7 +108,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                     if (DatabaseHelper.doesVideoExist(s, videoId))
                                         continue;
                                 }
-                                Multithreading.runAsync(() -> {
+                                Multithreading.runAsyncLimited(() -> {
                                     try {
                                         Sentry.setExtra("videoId", videoId);
                                         var extractor = YOUTUBE_SERVICE.getStreamExtractor("https://youtube.com/watch?v=" + videoId);
@@ -151,6 +155,23 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         return getJsonResponse(
                                 SponsorBlockUtils.getSponsors(request.getPathParameter("videoId"),
                                         request.getQueryParameter("category")).getBytes(UTF_8),
+                                "public, max-age=3600");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/dearrow", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var videoIds = getArray(request.getQueryParameter("videoIds"));
+
+                        return getJsonResponse(
+                                SponsorBlockUtils.getDeArrowedInfo(videoIds)
+                                        .thenApplyAsync(json -> {
+                                            try {
+                                                return mapper.writeValueAsBytes(json);
+                                            } catch (JsonProcessingException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                        }).get(),
                                 "public, max-age=3600");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());

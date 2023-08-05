@@ -11,10 +11,12 @@ FROM azul/zulu-openjdk:17-jre-headless-latest
 
 WORKDIR /app/
 
+COPY hotspot-entrypoint.sh /
+
 COPY --from=build /app/build/libs/piped-1.0-all.jar /app/piped.jar
 
 COPY VERSION .
 
 EXPOSE 8080
 
-CMD java -server -Xmx1G -XX:+UnlockExperimentalVMOptions -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseNUMA -XX:+UseG1GC -jar /app/piped.jar
+ENTRYPOINT ["/hotspot-entrypoint.sh"]

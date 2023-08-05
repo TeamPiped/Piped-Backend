@@ -6,7 +6,6 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Video;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
-import org.schabi.newpipe.extractor.exceptions.ParsingException;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
@@ -49,14 +48,7 @@ public class VideoHelpers {
                     Video video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
                             Math.max(infoTime, time), info.getThumbnailUrl(), info.isShortFormContent(), channel);
 
-                    var tr = s.beginTransaction();
-                    try {
-                        s.insert(video);
-                        tr.commit();
-                    } catch (Exception e) {
-                        tr.rollback();
-                        ExceptionHandler.handle(e);
-                    }
+                    insertVideo(video);
                     return;
                 }
             }
@@ -87,14 +79,7 @@ public class VideoHelpers {
                     Video video = new Video(extractor.getId(), extractor.getName(), extractor.getViewCount(), extractor.getLength(),
                             Math.max(infoTime, time), extractor.getThumbnailUrl(), isShort, channel);
 
-                    var tr = s.beginTransaction();
-                    try {
-                        s.insert(video);
-                        tr.commit();
-                    } catch (Exception e) {
-                        tr.rollback();
-                        ExceptionHandler.handle(e);
-                    }
+                    insertVideo(video);
 
                 }
             }
@@ -167,6 +152,32 @@ public class VideoHelpers {
             }
 
             return updated > 0;
+        }
+    }
+
+    public static void insertVideo(Video video) {
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+            var tr = s.beginTransaction();
+            try {
+                s.createNativeMutationQuery(
+                                "INSERT INTO videos (uploader_id,duration,is_short,thumbnail,title,uploaded,views,id) values " +
+                                        "(:uploader_id,:duration,:is_short,:thumbnail,:title,:uploaded,:views,:id) ON CONFLICT (id) DO UPDATE SET " +
+                                        "duration = excluded.duration, title = excluded.title, views = excluded.views"
+                        )
+                        .setParameter("uploader_id", video.getChannel().getUploaderId())
+                        .setParameter("duration", video.getDuration())
+                        .setParameter("is_short", video.isShort())
+                        .setParameter("thumbnail", video.getThumbnail())
+                        .setParameter("title", video.getTitle())
+                        .setParameter("uploaded", video.getUploaded())
+                        .setParameter("views", video.getViews())
+                        .setParameter("id", video.getId())
+                        .executeUpdate();
+                tr.commit();
+            } catch (Exception e) {
+                tr.rollback();
+                ExceptionHandler.handle(e);
+            }
         }
     }
 }
