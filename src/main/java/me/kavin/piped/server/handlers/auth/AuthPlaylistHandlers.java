@@ -9,7 +9,6 @@ import com.rometools.rome.io.SyndFeedOutput;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import jakarta.persistence.criteria.JoinType;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.ContentItem;
@@ -23,7 +22,7 @@ import me.kavin.piped.utils.resp.AuthenticationFailureResponse;
 import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
-import org.hibernate.internal.util.ExceptionHelper;
+import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
@@ -312,11 +311,16 @@ public class AuthPlaylistHandlers {
         if (StringUtils.isBlank(session) || StringUtils.isBlank(playlistId))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session and playlistId are required parameters"));
 
-        try (Session s = DatabaseSessionFactory.createSession()) {
+        if (index < 0)
+            return mapper.writeValueAsBytes(mapper.createObjectNode()
+                    .put("error", "Video Index out of bounds"));
+
+        long internalId;
+
+        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var cb = s.getCriteriaBuilder();
             var query = cb.createQuery(me.kavin.piped.utils.obj.db.Playlist.class);
             var root = query.from(me.kavin.piped.utils.obj.db.Playlist.class);
-            root.fetch("videos", JoinType.RIGHT);
             query.where(cb.equal(root.get("playlist_id"), UUID.fromString(playlistId)));
             var playlist = s.createQuery(query).uniqueResult();
 
@@ -327,19 +331,31 @@ public class AuthPlaylistHandlers {
             if (playlist.getOwner().getId() != DatabaseHelper.getUserFromSession(session).getId())
                 return mapper.writeValueAsBytes(mapper.createObjectNode()
                         .put("error", "You are not the owner this playlist"));
+            internalId = playlist.getId();
+        }
 
-            if (index < 0 || index >= playlist.getVideos().size())
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("error", "Video Index out of bounds"));
-
-            playlist.getVideos().remove(index);
+        try (Session s = DatabaseSessionFactory.createSession()) {
 
             var tr = s.beginTransaction();
-            s.merge(playlist);
-            tr.commit();
 
-            return mapper.writeValueAsBytes(new AcceptedResponse());
+            var updated = s.createNativeMutationQuery("DELETE FROM playlists_videos_ids WHERE playlist_id = :playlistId AND videos_order = :index")
+                    .setParameter("playlistId", internalId)
+                    .setParameter("index", index)
+                    .executeUpdate();
+
+            if (updated > 0) {
+                s.createNativeMutationQuery("UPDATE playlists_videos_ids SET videos_order = videos_order - 1 WHERE playlist_id = :playlistId AND videos_order > :index")
+                        .setParameter("playlistId", internalId)
+                        .setParameter("index", index)
+                        .executeUpdate();
+            } else
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("error", "Video Index not found"));
+
+            tr.commit();
         }
+
+        return mapper.writeValueAsBytes(new AcceptedResponse());
     }
 
     public static byte[] clearPlaylistResponse(String session, String playlistId) throws IOException {
