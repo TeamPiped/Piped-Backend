@@ -1,24 +1,17 @@
 package me.kavin.piped.utils;
 
-import liquibase.Contexts;
 import liquibase.Liquibase;
 import liquibase.Scope;
 import liquibase.command.CommandScope;
 import liquibase.command.core.UpdateCommandStep;
-import liquibase.command.core.helpers.ChangeExecListenerCommandStep;
-import liquibase.command.core.helpers.DatabaseChangelogCommandStep;
 import liquibase.command.core.helpers.DbUrlConnectionCommandStep;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
-import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import me.kavin.piped.consts.Constants;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +22,9 @@ public class LiquibaseHelper {
         String url = Constants.hibernateProperties.get("hibernate.connection.url");
         String username = Constants.hibernateProperties.get("hibernate.connection.username");
         String password = Constants.hibernateProperties.get("hibernate.connection.password");
+
+        // ensure postgres driver is loaded
+        DriverManager.registerDriver(new org.postgresql.Driver());
 
         Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(DriverManager.getConnection(url, username, password)));
 
