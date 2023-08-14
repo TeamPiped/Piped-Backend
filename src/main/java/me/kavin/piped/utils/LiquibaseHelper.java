@@ -26,6 +26,9 @@ public class LiquibaseHelper {
         // ensure postgres driver is loaded
         DriverManager.registerDriver(new org.postgresql.Driver());
 
+        // register YugabyteDB database
+        DatabaseFactory.getInstance().register(new liquibase.ext.yugabytedb.database.YugabyteDBDatabase());
+
         Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(DriverManager.getConnection(url, username, password)));
 
         try (Liquibase liquibase = new Liquibase("changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database)) {
