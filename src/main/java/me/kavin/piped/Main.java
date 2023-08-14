@@ -46,6 +46,13 @@ public class Main {
 
         Injector.useSpecializer();
 
+        try {
+            LiquibaseHelper.init();
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
+            System.exit(1);
+        }
+
         Multithreading.runAsync(() -> new Thread(new SyncRunner(
                 new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build(),
                 MATRIX_SERVER,
@@ -68,13 +75,6 @@ public class Main {
                     throw new RuntimeException(e);
                 }
             }).start();
-
-        try {
-            LiquibaseHelper.init();
-        } catch (Exception e) {
-            ExceptionHandler.handle(e);
-            System.exit(1);
-        }
 
         try (Session ignored = DatabaseSessionFactory.createSession()) {
             System.out.println("Database connection is ready!");
