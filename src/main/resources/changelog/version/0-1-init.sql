@@ -23,3 +23,13 @@ CREATE TABLE IF NOT EXISTS channels (
 CREATE INDEX IF NOT EXISTS channels_uploader_idx ON channels (uploader ASC);
 
 --rollback DROP TABLE IF EXISTS channels;
+
+CREATE TABLE IF NOT EXISTS pubsub (
+    id VARCHAR(24) NOT NULL,
+    subbed_at INT8 NULL,
+    CONSTRAINT pubsub_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS pubsub_id_idx ON pubsub (id ASC);
+
+--rollback DROP TABLE IF EXISTS pubsub;

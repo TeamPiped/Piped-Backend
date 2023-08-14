@@ -31,3 +31,7 @@ CREATE TABLE IF NOT EXISTS users_subscribed (
 );
 
 --rollback DROP TABLE IF EXISTS users_subscribed;
+
+CREATE INDEX IF NOT EXISTS pubsub_subbed_at_idx ON pubsub (subbed_at ASC) USING HASH;
+
+--rollback DROP INDEX IF EXISTS pubsub_subbed_at_idx;

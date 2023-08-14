@@ -32,3 +32,7 @@ CREATE INDEX IF NOT EXISTS users_subscribed_subscriber_idx ON users_subscribed (
 CREATE INDEX IF NOT EXISTS users_subscribed_channel_idx ON users_subscribed (channel ASC);
 
 --rollback DROP TABLE IF EXISTS users_subscribed;
+
+CREATE INDEX IF NOT EXISTS pubsub_subbed_at_idx ON pubsub (subbed_at ASC);
+
+--rollback DROP INDEX IF EXISTS pubsub_subbed_at_idx;
