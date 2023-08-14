@@ -74,3 +74,14 @@ CREATE TABLE IF NOT EXISTS playlists_videos_ids (
 CREATE INDEX IF NOT EXISTS playlists_videos_ids_playlist_id_idx ON playlists_videos_ids (playlist_id ASC);
 
 --rollback DROP TABLE IF EXISTS playlists_videos_ids;
+
+CREATE TABLE IF NOT EXISTS unauthenticated_subscriptions (
+    id VARCHAR(24) NOT NULL,
+    subscribed_at INT8 NOT NULL,
+    CONSTRAINT unauthenticated_subscriptions_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_unauthenticated_subscriptions_id_channels FOREIGN KEY (id) REFERENCES channels(uploader_id)
+);
+
+CREATE INDEX IF NOT EXISTS unauthenticated_subscriptions_subscribed_at_idx ON unauthenticated_subscriptions (subscribed_at ASC);
+
+--rollback DROP TABLE IF EXISTS unauthenticated_subscriptions;

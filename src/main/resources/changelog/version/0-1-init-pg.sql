@@ -42,3 +42,7 @@ CREATE INDEX IF NOT EXISTS playlists_owner_idx ON playlists (owner ASC);
 
 --rollback DROP INDEX IF EXISTS playlists_playlist_id_idx;
 --rollback DROP INDEX IF EXISTS playlists_owner_idx;
+
+CREATE INDEX IF NOT EXISTS unauthenticated_subscriptions_id_idx ON unauthenticated_subscriptions (id ASC);
+
+--rollback DROP INDEX IF EXISTS unauthenticated_subscriptions_id_idx;
