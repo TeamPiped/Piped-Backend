@@ -33,3 +33,16 @@ CREATE TABLE IF NOT EXISTS pubsub (
 CREATE INDEX IF NOT EXISTS pubsub_id_idx ON pubsub (id ASC);
 
 --rollback DROP TABLE IF EXISTS pubsub;
+
+CREATE TABLE IF NOT EXISTS playlists (
+    id SERIAL NOT NULL,
+    name VARCHAR(200) NULL,
+    playlist_id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    short_description VARCHAR(100) NULL,
+    thumbnail VARCHAR(300) NULL,
+    owner INT8 NOT NULL,
+    CONSTRAINT playlists_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_playlists_owner FOREIGN KEY (owner) REFERENCES users(id)
+);
+
+--rollback DROP TABLE IF EXISTS playlists;

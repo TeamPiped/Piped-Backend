@@ -36,3 +36,9 @@ CREATE INDEX IF NOT EXISTS users_subscribed_channel_idx ON users_subscribed (cha
 CREATE INDEX IF NOT EXISTS pubsub_subbed_at_idx ON pubsub (subbed_at ASC);
 
 --rollback DROP INDEX IF EXISTS pubsub_subbed_at_idx;
+
+CREATE INDEX IF NOT EXISTS playlists_playlist_id_idx ON playlists (playlist_id ASC);
+CREATE INDEX IF NOT EXISTS playlists_owner_idx ON playlists (owner ASC);
+
+--rollback DROP INDEX IF EXISTS playlists_playlist_id_idx;
+--rollback DROP INDEX IF EXISTS playlists_owner_idx;

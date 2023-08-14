@@ -35,3 +35,9 @@ CREATE TABLE IF NOT EXISTS users_subscribed (
 CREATE INDEX IF NOT EXISTS pubsub_subbed_at_idx ON pubsub (subbed_at ASC) USING HASH;
 
 --rollback DROP INDEX IF EXISTS pubsub_subbed_at_idx;
+
+CREATE INDEX IF NOT EXISTS playlists_playlist_id_idx ON playlists (playlist_id ASC) STORING (name, short_description, thumbnail, owner);
+CREATE INDEX IF NOT EXISTS playlists_owner_idx ON playlists (owner ASC) STORING (name, short_description, thumbnail, playlist_id);
+
+--rollback DROP INDEX IF EXISTS playlists_playlist_id_idx;
+--rollback DROP INDEX IF EXISTS playlists_owner_idx;
