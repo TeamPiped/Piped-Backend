@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CURLOPTS=(-i -s -S -o /dev/null -f -w "%{http_code}\tTime:\t%{time_starttransfer}\t%{url_effective}\n")
+CURLOPTS=(-i -s -S --max-time 60 -o /dev/null -f -w "%{http_code}\tTime:\t%{time_starttransfer}\t%{url_effective}\n")
 HOST="127.0.0.1:8080"
 
 # Healthcheck Test
