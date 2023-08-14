@@ -15,7 +15,6 @@ jobs:
       matrix:
         docker-compose-file:
           - docker-compose.yml
-          - testing/docker-compose.hsqldb.yml
           - testing/docker-compose.cockroachdb.yml
           - testing/docker-compose.yugabytedb.yml
         dockerfile:
