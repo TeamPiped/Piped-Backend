@@ -3,7 +3,7 @@ CREATE INDEX IF NOT EXISTS users_session_id_idx ON users (session_id ASC);
 --rollback DROP INDEX IF EXISTS users_session_id_idx;
 
 CREATE TABLE IF NOT EXISTS videos (
-    id VARCHAR(16) NOT NULL UNIQUE,
+    id VARCHAR(11) NOT NULL UNIQUE,
     duration INT8 NULL,
     thumbnail VARCHAR(400) NULL,
     title VARCHAR(120) NULL,
