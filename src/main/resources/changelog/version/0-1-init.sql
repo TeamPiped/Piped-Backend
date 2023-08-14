@@ -61,3 +61,16 @@ CREATE INDEX IF NOT EXISTS playlist_videos_id_idx ON playlist_videos (id ASC);
 CREATE INDEX IF NOT EXISTS playlist_videos_uploader_id_idx ON playlist_videos (uploader_id ASC);
 
 --rollback DROP TABLE IF EXISTS playlist_videos;
+
+CREATE TABLE IF NOT EXISTS playlists_videos_ids (
+    playlist_id INT8 NOT NULL,
+    videos_id VARCHAR(11) NOT NULL,
+    videos_order INT8 NOT NULL,
+    CONSTRAINT playlists_videos_ids_pkey PRIMARY KEY (playlist_id, videos_order),
+    CONSTRAINT fk_playlists_videos_video_id_playlist_video FOREIGN KEY (videos_id) REFERENCES playlist_videos(id),
+    CONSTRAINT fk_playlists_videos_playlist_id_playlist FOREIGN KEY (playlist_id) REFERENCES playlists(id)
+);
+
+CREATE INDEX IF NOT EXISTS playlists_videos_ids_playlist_id_idx ON playlists_videos_ids (playlist_id ASC);
+
+--rollback DROP TABLE IF EXISTS playlists_videos_ids;
