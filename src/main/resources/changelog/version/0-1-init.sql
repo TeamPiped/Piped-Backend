@@ -10,7 +10,6 @@ DROP INDEX IF EXISTS users_id_idx;
 
 CREATE INDEX IF NOT EXISTS username_idx ON users (username ASC);
 
---rollback DROP INDEX IF EXISTS username_idx;
 --rollback DROP TABLE IF EXISTS users;
 
 CREATE TABLE IF NOT EXISTS channels (
@@ -23,5 +22,4 @@ CREATE TABLE IF NOT EXISTS channels (
 
 CREATE INDEX IF NOT EXISTS channels_uploader_idx ON channels (uploader ASC);
 
---rollback DROP INDEX IF EXISTS channels_uploader_idx;
 --rollback DROP TABLE IF EXISTS channels;
