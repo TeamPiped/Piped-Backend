@@ -20,7 +20,6 @@ import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
-import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +45,13 @@ public class Main {
         });
 
         Injector.useSpecializer();
+
+        try {
+            LiquibaseHelper.init();
+        } catch (Exception e) {
+            ExceptionHandler.handle(e);
+            System.exit(1);
+        }
 
         Multithreading.runAsync(() -> new Thread(new SyncRunner(
                 new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build(),

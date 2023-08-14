@@ -4,11 +4,11 @@
         "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 <hibernate-configuration>
     <session-factory>
-    	<property name="hibernate.hbm2ddl.auto">update</property>
+        <property name="hibernate.hbm2ddl.auto">validate</property>
         <!-- Optional: Show SQL output for debugging -->
         <property name="hibernate.show_sql">false</property>
         <property name="hibernate.format_sql">true</property>
-        
+
         <property name="hibernate.connection.provider_class">org.hibernate.hikaricp.internal.HikariCPConnectionProvider</property>
         <property name="hibernate.connection.handling_mode">DELAYED_ACQUISITION_AND_RELEASE_AFTER_STATEMENT</property>
         <property name="hibernate.jdbc.batch_size">50</property>
