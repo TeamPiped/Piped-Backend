@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL NOT NULL,
+    id BIGSERIAL NOT NULL,
     password TEXT NULL,
     session_id VARCHAR(36) NULL,
     username VARCHAR(24) NULL UNIQUE,
@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS pubsub_id_idx ON pubsub (id ASC);
 --rollback DROP TABLE IF EXISTS pubsub;
 
 CREATE TABLE IF NOT EXISTS playlists (
-    id SERIAL NOT NULL,
+    id BIGSERIAL NOT NULL,
     name VARCHAR(200) NULL,
     playlist_id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
     short_description VARCHAR(100) NULL,
