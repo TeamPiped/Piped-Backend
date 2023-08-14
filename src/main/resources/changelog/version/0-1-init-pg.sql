@@ -20,3 +20,15 @@ CREATE INDEX IF NOT EXISTS video_uploaded_idx ON videos (uploaded ASC);
 CREATE INDEX IF NOT EXISTS video_uploader_id_idx ON videos (uploader_id ASC);
 
 --rollback DROP TABLE IF EXISTS videos;
+
+CREATE TABLE IF NOT EXISTS users_subscribed (
+    subscriber INT8 NOT NULL,
+    channel VARCHAR(24) NOT NULL,
+    CONSTRAINT users_subscribed_pkey PRIMARY KEY (subscriber, channel),
+    CONSTRAINT fk_subscriber_users FOREIGN KEY (subscriber) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS users_subscribed_subscriber_idx ON users_subscribed (subscriber ASC);
+CREATE INDEX IF NOT EXISTS users_subscribed_channel_idx ON users_subscribed (channel ASC);
+
+--rollback DROP TABLE IF EXISTS users_subscribed;
