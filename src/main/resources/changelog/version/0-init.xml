@@ -4,10 +4,13 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
+    <changeSet id="0-0" author="kavin" runInTransaction="false">
+        <sqlFile path="0-0-init-yb.sql" dbms="yugabytedb" relativeToChangelogFile="true"/>
+    </changeSet>
+
     <changeSet id="0-1" author="kavin" runInTransaction="false">
         <sqlFile path="0-1-init.sql" relativeToChangelogFile="true"/>
         <sqlFile path="0-1-init-crdb.sql" dbms="cockroachdb" relativeToChangelogFile="true"/>
-        <sqlFile path="0-1-init-yb.sql" dbms="yugabytedb" relativeToChangelogFile="true"/>
         <sqlFile path="0-1-init-pg.sql" dbms="postgresql,yugabytedb" relativeToChangelogFile="true"/>
     </changeSet>
 
