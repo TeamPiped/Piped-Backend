@@ -42,7 +42,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp-brotli'
     implementation 'io.sentry:sentry:6.28.0'
     implementation 'rocks.kavin:reqwest4j:1.0.9'
-    implementation 'io.minio:minio:8.5.4'
+    implementation 'io.minio:minio:8.5.5'
 }
 
 shadowJar {
