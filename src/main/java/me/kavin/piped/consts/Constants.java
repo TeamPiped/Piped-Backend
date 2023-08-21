@@ -51,6 +51,8 @@ public class Constants {
     public static final String PUBSUB_HUB_URL;
 
     public static final String REQWEST_PROXY;
+    public static final String REQWEST_PROXY_USER;
+    public static final String REQWEST_PROXY_PASS;
 
     public static final String FRONTEND_URL;
 
@@ -131,7 +133,9 @@ public class Constants {
             PUBSUB_URL = getProperty(prop, "PUBSUB_URL", PUBLIC_URL);
             PUBSUB_HUB_URL = getProperty(prop, "PUBSUB_HUB_URL", "https://pubsubhubbub.appspot.com/subscribe");
             REQWEST_PROXY = getProperty(prop, "REQWEST_PROXY");
-            ReqwestUtils.init(REQWEST_PROXY);
+            REQWEST_PROXY_USER = getProperty(prop, "REQWEST_PROXY_USER");
+            REQWEST_PROXY_PASS = getProperty(prop, "REQWEST_PROXY_PASS");
+            ReqwestUtils.init(REQWEST_PROXY, REQWEST_PROXY_USER, REQWEST_PROXY_PASS);
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.video");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
