@@ -210,6 +210,57 @@ public class ChannelHandlers {
 
         List<ContentItem> items = collectRelatedItems(info.getRelatedItems());
 
+        Multithreading.runAsync(() -> {
+
+            var channel = DatabaseHelper.getChannelFromId(info.getId());
+
+            if (channel != null) {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                    var streamInfoItems = info.getRelatedItems()
+                            .stream()
+                            .parallel()
+                            .filter(StreamInfoItem.class::isInstance)
+                            .map(StreamInfoItem.class::cast)
+                            .toList();
+
+                    var channelIds = streamInfoItems
+                            .stream()
+                            .map(item -> {
+                                try {
+                                    return YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
+                                } catch (ParsingException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }).collect(Collectors.toUnmodifiableSet());
+
+                    List<String> videoIdsPresent = DatabaseHelper.getVideosFromIds(s, channelIds)
+                            .stream()
+                            .map(Video::getId)
+                            .toList();
+
+                    streamInfoItems
+                            .stream()
+                            .parallel()
+                            .forEach(item -> {
+                                try {
+                                    String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
+                                    if (videoIdsPresent.contains(id))
+                                        VideoHelpers.updateVideo(id, item);
+                                    else if (item.getUploadDate() != null) {
+                                        // shorts tab doesn't have upload date
+                                        // we don't want to fetch each video's upload date
+                                        long time = item.getUploadDate().offsetDateTime().toInstant().toEpochMilli();
+                                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                                            VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
+                                    }
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                }
+            }
+        });
+
         String nextpage = null;
         if (info.hasNextPage()) {
             Page page = info.getNextPage();
