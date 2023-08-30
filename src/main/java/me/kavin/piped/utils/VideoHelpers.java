@@ -24,7 +24,9 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 public class VideoHelpers {
     public static void handleNewVideo(String url, long time, me.kavin.piped.utils.obj.db.Channel channel) {
         try {
-            handleNewVideo(YOUTUBE_SERVICE.getStreamExtractor(url), time, channel);
+            var extractor = YOUTUBE_SERVICE.getStreamExtractor(url);
+            extractor.fetchPage();
+            handleNewVideo(extractor, time, channel);
         } catch (Exception e) {
             ExceptionHandler.handle(e);
         }
