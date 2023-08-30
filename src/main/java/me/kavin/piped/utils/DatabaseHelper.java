@@ -214,9 +214,11 @@ public class DatabaseHelper {
             CollectionUtils.collectPreloadedTabs(info.getTabs())
                     .stream()
                     .parallel()
-                    .map(tab -> {
+                    .mapMulti((tab, consumer) -> {
                         try {
-                            return ChannelTabInfo.getInfo(YOUTUBE_SERVICE, tab).getRelatedItems();
+                            ChannelTabInfo.getInfo(YOUTUBE_SERVICE, tab)
+                                    .getRelatedItems()
+                                    .forEach(consumer);
                         } catch (ExtractionException | IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -224,11 +226,11 @@ public class DatabaseHelper {
                     .filter(StreamInfoItem.class::isInstance)
                     .map(StreamInfoItem.class::cast)
                     .forEach(item -> {
-                            long time = item.getUploadDate() != null
-                                    ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
-                                    : System.currentTimeMillis();
-                            if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                                VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
+                        long time = item.getUploadDate() != null
+                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                                : System.currentTimeMillis();
+                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                            VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
                     });
         });
 
