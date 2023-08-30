@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="1-0" author="kavin" runInTransaction="false">
+        <!-- drop constraint since it prevents breaks unauthenticated subscriptions from working -->
+        <sql>ALTER TABLE unauthenticated_subscriptions DROP CONSTRAINT IF EXISTS fk_unauthenticated_subscriptions_id_channels;</sql>
+        <rollback>
+            <sql>ALTER TABLE unauthenticated_subscriptions ADD CONSTRAINT fk_unauthenticated_subscriptions_id_channels FOREIGN KEY (id) REFERENCES channels(uploader_id);</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
