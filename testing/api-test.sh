@@ -145,7 +145,10 @@ curl "${CURLOPTS[@]}" $HOST/user/playlists/clear -X POST -H "Content-Type: appli
 curl "${CURLOPTS[@]}" $HOST/user/playlists/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg playlistId "$PLAYLIST_ID" '{"playlistId": $playlistId}')" || exit 1
 
 # Import Playlist Test
-curl "${CURLOPTS[@]}" $HOST/import/playlist -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg playlistId "PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT" '{"playlistId": $playlistId}')" || exit 1
+IMPORTED_PLAYLIST_ID=$(curl -s -o - -f $HOST/import/playlist -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg playlistId "PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT" '{"playlistId": $playlistId}')" | jq -r .playlistId || exit 1)
+
+# Remove first video from playlist
+curl "${CURLOPTS[@]}" $HOST/user/playlists/remove -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg index "0" --arg playlistId "$IMPORTED_PLAYLIST_ID" '{"index": $index, "playlistId": $playlistId}')" || exit 1
 
 # Delete User Test
 curl "${CURLOPTS[@]}" $HOST/user/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg password "$PASS" '{"password": $password}')" || exit 1
