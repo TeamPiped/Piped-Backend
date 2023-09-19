@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 21
-          distribution: temurin
+          distribution: zulu
           cache: "gradle"
       - name: Run Build
         run: ./gradlew shadowJar
