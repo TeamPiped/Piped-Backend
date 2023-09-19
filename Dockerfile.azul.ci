@@ -1,4 +1,4 @@
-FROM azul/zulu-openjdk:17-jre-headless-latest
+FROM azul/zulu-openjdk:21-jre-headless-latest
 
 RUN --mount=type=cache,target=/var/cache/apt/ \
  apt-get update && \
