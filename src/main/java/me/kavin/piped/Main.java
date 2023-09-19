@@ -53,11 +53,11 @@ public class Main {
             System.exit(1);
         }
 
-        Multithreading.runAsync(() -> new Thread(new SyncRunner(
+        Multithreading.runAsync(() ->  Thread.ofVirtual().start(new SyncRunner(
                 new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build(),
                 MATRIX_SERVER,
                 MatrixHelper.MATRIX_TOKEN)
-        ).start());
+        ));
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
