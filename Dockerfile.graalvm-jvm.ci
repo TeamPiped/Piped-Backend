@@ -1,4 +1,4 @@
-FROM ghcr.io/graalvm/native-image:latest as build
+FROM container-registry.oracle.com/graalvm/native-image:latest as build
 
 RUN jlink \
     --add-modules java.base,java.logging,java.sql,java.management,java.xml,java.naming,java.desktop,jdk.crypto.ec \
