@@ -192,7 +192,7 @@ public class DatabaseHelper {
         }
 
         var channel = new Channel(channelId, StringUtils.abbreviate(info.getName(), 100),
-                info.getAvatarUrl(), info.isVerified());
+                info.getAvatars().isEmpty() ? null : info.getAvatars().getLast().getUrl(), info.isVerified());
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
             var tr = s.beginTransaction();
