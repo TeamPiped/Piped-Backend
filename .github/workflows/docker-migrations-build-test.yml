@@ -39,7 +39,7 @@ jobs:
           - testing/docker-compose.cockroachdb.yml
           - testing/docker-compose.yugabytedb.yml
         dockerfile:
-          - Dockerfile.ci
+          - Dockerfile.azul.ci
         include:
           - sleep: 20
           - docker-compose-file: testing/docker-compose.cockroachdb.yml

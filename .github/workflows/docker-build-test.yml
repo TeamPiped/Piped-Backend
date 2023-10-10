@@ -22,9 +22,9 @@ jobs:
           - testing/docker-compose.cockroachdb.yml
           - testing/docker-compose.yugabytedb.yml
         dockerfile:
-          - Dockerfile.ci
+          #- Dockerfile.ci
           - Dockerfile.azul.ci
-          - Dockerfile.openj9.ci
+          #- Dockerfile.openj9.ci
           - Dockerfile.graalvm-jvm.ci
         include:
           - sleep: 20
