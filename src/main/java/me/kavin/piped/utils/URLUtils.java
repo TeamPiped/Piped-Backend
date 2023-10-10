@@ -2,12 +2,14 @@ package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
 import org.apache.commons.lang3.StringUtils;
+import org.schabi.newpipe.extractor.Image;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class URLUtils {
 
@@ -35,6 +37,10 @@ public class URLUtils {
 
     public static String rewriteURL(final String old) {
         return rewriteURL(old, Constants.IMAGE_PROXY_PART);
+    }
+
+    public static String getLastThumbnail(final List<Image> thumbnails) {
+        return thumbnails.isEmpty() ? null : rewriteURL(thumbnails.getLast().getUrl());
     }
 
     public static String rewriteVideoURL(final String old) {

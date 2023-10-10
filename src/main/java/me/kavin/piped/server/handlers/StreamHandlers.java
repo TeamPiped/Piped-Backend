@@ -36,8 +36,7 @@ import java.util.concurrent.TimeoutException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.consts.Constants.mapper;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
-import static me.kavin.piped.utils.URLUtils.substringYouTube;
+import static me.kavin.piped.utils.URLUtils.*;
 import static org.schabi.newpipe.extractor.NewPipe.getPreferredContentCountry;
 import static org.schabi.newpipe.extractor.NewPipe.getPreferredLocalization;
 import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getJsonPostResponse;
@@ -342,7 +341,7 @@ public class StreamHandlers {
                 if (comment.getReplies() != null)
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
-                comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
+                comments.add(new Comment(comment.getUploaderName(), getLastThumbnail(comment.getUploaderAvatars()),
                         comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::getContent).orElse(null), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));
@@ -380,7 +379,7 @@ public class StreamHandlers {
                 if (comment.getReplies() != null)
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
-                comments.add(new Comment(comment.getUploaderName(), rewriteURL(comment.getUploaderAvatarUrl()),
+                comments.add(new Comment(comment.getUploaderName(), getLastThumbnail(comment.getUploaderAvatars()),
                         comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::getContent).orElse(null), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified()));

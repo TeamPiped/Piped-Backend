@@ -268,7 +268,7 @@ public class AuthPlaylistHandlers {
                             channel = DatabaseHelper.saveChannel(channelId);
                         }
 
-                        video = new PlaylistVideo(videoId, info.getName(), info.getThumbnailUrl(), info.getDuration(), channel);
+                        video = new PlaylistVideo(videoId, info.getName(), info.getThumbnails().getLast().getUrl(), info.getDuration(), channel);
 
                         var tr = s.beginTransaction();
                         try {
@@ -402,7 +402,7 @@ public class AuthPlaylistHandlers {
 
         PlaylistInfo info = PlaylistInfo.getInfo(url);
 
-        var playlist = new me.kavin.piped.utils.obj.db.Playlist(info.getName(), user, info.getThumbnailUrl());
+        var playlist = new me.kavin.piped.utils.obj.db.Playlist(info.getName(), user, info.getThumbnails().getLast().getUrl());
 
         List<StreamInfoItem> videos = new ObjectArrayList<>(info.getRelatedItems());
 
@@ -451,7 +451,7 @@ public class AuthPlaylistHandlers {
 
                 var channel = channelMap.get(channelId);
 
-                playlist.getVideos().add(videoMap.computeIfAbsent(videoId, (key) -> new PlaylistVideo(videoId, video.getName(), video.getThumbnailUrl(), video.getDuration(), channel)));
+                playlist.getVideos().add(videoMap.computeIfAbsent(videoId, (key) -> new PlaylistVideo(videoId, video.getName(), video.getThumbnails().getLast().getUrl(), video.getDuration(), channel)));
             });
 
             var tr = s.beginTransaction();
