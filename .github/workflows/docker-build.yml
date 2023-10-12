@@ -19,8 +19,8 @@ jobs:
         include:
 #          - image: 1337kavin/piped:openj9
 #            dockerfile: ./Dockerfile.openj9.ci
-#          - image: 1337kavin/piped:hotspot
-#            dockerfile: ./Dockerfile.ci
+          - image: 1337kavin/piped:hotspot
+            dockerfile: ./Dockerfile.ci
           - image: 1337kavin/piped:latest,1337kavin/piped:azul-zulu
             dockerfile: ./Dockerfile.azul.ci
           - image: 1337kavin/piped:graalvm-jvm
