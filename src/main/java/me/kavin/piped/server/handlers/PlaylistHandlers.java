@@ -30,8 +30,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.consts.Constants.mapper;
 import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
-import static me.kavin.piped.utils.URLUtils.substringYouTube;
+import static me.kavin.piped.utils.URLUtils.*;
 
 public class PlaylistHandlers {
     public static byte[] playlistResponse(String playlistId) throws Exception {
@@ -60,10 +59,10 @@ public class PlaylistHandlers {
             nextpage = mapper.writeValueAsString(page);
         }
 
-        final Playlist playlist = new Playlist(info.getName(), rewriteURL(info.getThumbnailUrl()),
-                info.getDescription().getContent(), rewriteURL(info.getBannerUrl()), nextpage,
+        final Playlist playlist = new Playlist(info.getName(), getLastThumbnail(info.getThumbnails()),
+                info.getDescription().getContent(), getLastThumbnail(info.getBanners()), nextpage,
                 info.getUploaderName().isEmpty() ? null : info.getUploaderName(),
-                substringYouTube(info.getUploaderUrl()), rewriteURL(info.getUploaderAvatarUrl()),
+                substringYouTube(info.getUploaderUrl()), getLastThumbnail(info.getUploaderAvatars()),
                 (int) info.getStreamCount(), relatedStreams);
 
         return mapper.writeValueAsBytes(playlist);

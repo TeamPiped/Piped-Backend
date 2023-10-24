@@ -1,5 +1,7 @@
 package me.kavin.piped.utils;
 
+import com.rometools.modules.mediarss.MediaEntryModuleImpl;
+import com.rometools.modules.mediarss.types.*;
 import com.rometools.rome.feed.synd.*;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
@@ -11,6 +13,7 @@ import org.hibernate.StatelessSession;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Date;
@@ -79,6 +82,7 @@ public class ChannelHelpers {
         entry.setAuthors(Collections.singletonList(person));
         entry.setLink(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
         entry.setUri(Constants.FRONTEND_URL + "/watch?v=" + video.getId());
+
         entry.setTitle(video.getTitle());
         entry.setPublishedDate(new Date(video.getUploaded()));
 
@@ -94,6 +98,23 @@ public class ChannelHelpers {
         thumbnail.setValue(thumbnailContent);
 
         entry.setContents(List.of(thumbnail, content));
+
+        // the Media RSS content for embedding videos starts here
+        // see https://www.rssboard.org/media-rss#media-content
+
+        String playerUrl = Constants.FRONTEND_URL + "/embed/" + video.getId();
+        MediaContent media = new MediaContent(new PlayerReference(URI.create(playerUrl)));
+        media.setDuration(video.getDuration());
+
+        Metadata metadata = new Metadata();
+        metadata.setTitle(video.getTitle());
+        Thumbnail metadataThumbnail = new Thumbnail(URI.create(video.getThumbnail()));
+        metadata.setThumbnail(new Thumbnail[]{ metadataThumbnail });
+        media.setMetadata(metadata);
+
+        MediaEntryModuleImpl mediaModule = new MediaEntryModuleImpl();
+        mediaModule.setMediaContents(new MediaContent[]{ media });
+        entry.getModules().add(mediaModule);
 
         return entry;
     }

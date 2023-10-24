@@ -32,7 +32,7 @@ import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.consts.Constants.mapper;
 import static me.kavin.piped.utils.CollectionUtils.collectPreloadedTabs;
 import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
-import static me.kavin.piped.utils.URLUtils.rewriteURL;
+import static me.kavin.piped.utils.URLUtils.getLastThumbnail;
 
 public class ChannelHandlers {
     public static byte[] channelResponse(String channelPath) throws Exception {
@@ -77,7 +77,7 @@ public class ChannelHandlers {
         Multithreading.runAsync(() -> {
             try {
                 MatrixHelper.sendEvent("video.piped.channel.info", new FederatedChannelInfo(
-                        info.getId(), StringUtils.abbreviate(info.getName(), 100), info.getAvatarUrl(), info.isVerified())
+                        info.getId(), StringUtils.abbreviate(info.getName(), 100), info.getAvatars().isEmpty() ? null : info.getAvatars().getLast().getUrl(), info.isVerified())
                 );
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -93,7 +93,7 @@ public class ChannelHandlers {
 
                     if (channel != null) {
 
-                        ChannelHelpers.updateChannel(s, channel, StringUtils.abbreviate(info.getName(), 100), info.getAvatarUrl(), info.isVerified());
+                        ChannelHelpers.updateChannel(s, channel, StringUtils.abbreviate(info.getName(), 100), info.getAvatars().isEmpty() ? null : info.getAvatars().getLast().getUrl(), info.isVerified());
 
                         Set<String> ids = tabInfo.getRelatedItems()
                                 .stream()
@@ -159,8 +159,8 @@ public class ChannelHandlers {
                     }
                 }).toList();
 
-        final Channel channel = new Channel(info.getId(), info.getName(), rewriteURL(info.getAvatarUrl()),
-                rewriteURL(info.getBannerUrl()), info.getDescription(), info.getSubscriberCount(), info.isVerified(),
+        final Channel channel = new Channel(info.getId(), info.getName(), getLastThumbnail(info.getAvatars()),
+                getLastThumbnail(info.getBanners()), info.getDescription(), info.getSubscriberCount(), info.isVerified(),
                 nextpage, relatedStreams, tabs);
 
         return mapper.writeValueAsBytes(channel);
@@ -209,6 +209,57 @@ public class ChannelHandlers {
         var info = ChannelTabInfo.getInfo(YOUTUBE_SERVICE, tabHandler);
 
         List<ContentItem> items = collectRelatedItems(info.getRelatedItems());
+
+        Multithreading.runAsync(() -> {
+
+            var channel = DatabaseHelper.getChannelFromId(info.getId());
+
+            if (channel != null) {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                    var streamInfoItems = info.getRelatedItems()
+                            .stream()
+                            .parallel()
+                            .filter(StreamInfoItem.class::isInstance)
+                            .map(StreamInfoItem.class::cast)
+                            .toList();
+
+                    var channelIds = streamInfoItems
+                            .stream()
+                            .map(item -> {
+                                try {
+                                    return YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
+                                } catch (ParsingException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }).collect(Collectors.toUnmodifiableSet());
+
+                    List<String> videoIdsPresent = DatabaseHelper.getVideosFromIds(s, channelIds)
+                            .stream()
+                            .map(Video::getId)
+                            .toList();
+
+                    streamInfoItems
+                            .stream()
+                            .parallel()
+                            .forEach(item -> {
+                                try {
+                                    String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
+                                    if (videoIdsPresent.contains(id))
+                                        VideoHelpers.updateVideo(id, item);
+                                    else if (item.getUploadDate() != null) {
+                                        // shorts tab doesn't have upload date
+                                        // we don't want to fetch each video's upload date
+                                        long time = item.getUploadDate().offsetDateTime().toInstant().toEpochMilli();
+                                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                                            VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
+                                    }
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                }
+            }
+        });
 
         String nextpage = null;
         if (info.hasNextPage()) {

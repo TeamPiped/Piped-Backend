@@ -1,7 +1,6 @@
 plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1"
     id "java"
-    id "io.freefair.lombok" version "8.1.0"
     id "eclipse"
 }
 
@@ -13,36 +12,40 @@ repositories {
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.13.0'
     implementation 'org.apache.commons:commons-text:1.10.0'
-    implementation 'commons-io:commons-io:2.12.0'
+    implementation 'commons-io:commons-io:2.14.0'
     implementation 'it.unimi.dsi:fastutil-core:8.5.12'
     implementation 'commons-codec:commons-codec:1.16.0'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:88ceba0da4a48b5f4ffecb3b5b2f36f95ec53afe'
+    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:48beff184a9792c4787cfa05fce577c3adf89f56'
     implementation 'com.github.FireMasterK:nanojson:9f4af3b739cc13f3d0d9d4b758bbe2b2ae7119d7'
+    implementation 'com.nimbusds:oauth2-oidc-sdk:11.5.0'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
     implementation 'com.rometools:rome:2.1.0'
+    implementation 'com.rometools:rome-modules:2.1.0'
     implementation 'org.jsoup:jsoup:1.16.1'
     implementation 'io.activej:activej-common:5.5'
     implementation 'io.activej:activej-http:5.5'
     implementation 'io.activej:activej-boot:5.5'
     implementation 'io.activej:activej-specializer:5.5'
     implementation 'io.activej:activej-launchers-http:5.5'
-    implementation 'org.hsqldb:hsqldb:2.7.2'
     implementation 'org.postgresql:postgresql:42.6.0'
-    implementation 'org.hibernate:hibernate-core:6.2.7.Final'
-    implementation 'org.hibernate:hibernate-hikaricp:6.2.7.Final'
+    implementation 'org.hibernate:hibernate-core:6.3.1.Final'
+    implementation 'org.hibernate:hibernate-hikaricp:6.3.1.Final'
+    implementation 'org.liquibase:liquibase-core:4.23.2'
+    implementation('org.liquibase.ext:liquibase-yugabytedb:4.23.2') { exclude group: 'org.liquibase' }
     implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'org.springframework.security:spring-security-crypto:6.1.2'
+    implementation 'org.springframework.security:spring-security-crypto:6.1.4'
     implementation 'commons-logging:commons-logging:1.2'
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.11.0"))
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:okhttp-brotli'
-    implementation 'com.nimbusds:oauth2-oidc-sdk:10.9.1'
-    implementation 'io.sentry:sentry:6.28.0'
-    implementation 'rocks.kavin:reqwest4j:1.0.7'
-    implementation 'io.minio:minio:8.5.4'
+    implementation 'io.sentry:sentry:6.30.0'
+    implementation 'rocks.kavin:reqwest4j:1.0.12'
+    implementation 'io.minio:minio:8.5.6'
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
 shadowJar {
@@ -59,5 +62,5 @@ jar {
 
 group = 'me.kavin.piped'
 version = '1.0'
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21

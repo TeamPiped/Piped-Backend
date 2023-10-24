@@ -97,53 +97,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(POST, "/webhooks/pubsub", AsyncServlet.ofBlocking(executor, request -> {
                     try {
 
-                        SyndFeed feed = new SyndFeedInput().build(
-                                new InputSource(new ByteArrayInputStream(request.loadBody().getResult().asArray())));
-
-                        Multithreading.runAsyncLimited(() -> {
-                            for (var entry : feed.getEntries()) {
-                                String url = entry.getLinks().get(0).getHref();
-                                String videoId = StringUtils.substring(url, -11);
-                                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-                                    if (DatabaseHelper.doesVideoExist(s, videoId))
-                                        continue;
-                                }
-                                Multithreading.runAsyncLimited(() -> {
-                                    try {
-                                        Sentry.setExtra("videoId", videoId);
-                                        var extractor = YOUTUBE_SERVICE.getStreamExtractor("https://youtube.com/watch?v=" + videoId);
-                                        extractor.fetchPage();
-
-                                        Multithreading.runAsync(() -> {
-
-                                            DateWrapper uploadDate;
-
-                                            try {
-                                                uploadDate = extractor.getUploadDate();
-                                            } catch (ParsingException e) {
-                                                throw new RuntimeException(e);
-                                            }
-
-                                            if (uploadDate != null && System.currentTimeMillis() - uploadDate.offsetDateTime().toInstant().toEpochMilli() < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION)) {
-                                                try {
-                                                    MatrixHelper.sendEvent("video.piped.stream.info", new FederatedVideoInfo(
-                                                            StringUtils.substring(extractor.getUrl(), -11), StringUtils.substring(extractor.getUploaderUrl(), -24),
-                                                            extractor.getName(),
-                                                            extractor.getLength(), extractor.getViewCount())
-                                                    );
-                                                } catch (Exception e) {
-                                                    ExceptionHandler.handle(e);
-                                                }
-                                            }
-                                        });
-
-                                        VideoHelpers.handleNewVideo(extractor, entry.getPublishedDate().getTime(), null);
-                                    } catch (Exception e) {
-                                        ExceptionHandler.handle(e);
-                                    }
-                                });
-                            }
-                        });
+                        PubSubHandlers.handlePubSub(request.loadBody().getResult().asArray());
 
                         return HttpResponse.ofCode(204);
 

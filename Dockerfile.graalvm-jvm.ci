@@ -1,4 +1,4 @@
-FROM ghcr.io/graalvm/native-image:latest as build
+FROM container-registry.oracle.com/graalvm/native-image:latest as build
 
 RUN jlink \
     --add-modules java.base,java.logging,java.sql,java.management,java.xml,java.naming,java.desktop,jdk.crypto.ec \
@@ -10,11 +10,21 @@ RUN jlink \
 
 FROM debian:stable-slim
 
+RUN --mount=type=cache,target=/var/cache/apt/ \
+ apt-get update && \
+ apt-get install -y --no-install-recommends \
+  curl \
+  && \
+ apt-get clean && \
+ rm -rf /var/lib/apt/lists/*
+
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 COPY --from=build /javaruntime $JAVA_HOME
 
 WORKDIR /app/
+
+COPY docker-healthcheck.sh /
 
 COPY ./piped.jar /app/piped.jar
 
@@ -22,4 +32,5 @@ COPY VERSION .
 
 EXPOSE 8080
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD /docker-healthcheck.sh
 CMD java -jar /app/piped.jar

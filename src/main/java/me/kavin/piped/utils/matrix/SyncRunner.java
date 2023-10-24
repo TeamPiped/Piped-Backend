@@ -129,7 +129,7 @@ public class SyncRunner implements Runnable {
                             var type = event.get("type").asText();
                             var content = event.at("/content/content");
 
-                            if (type.startsWith("video.piped.stream.bypass.")) {
+                            if (!UNAUTHENTICATED && type.startsWith("video.piped.stream.bypass.")) {
                                 switch (type) {
                                     case "video.piped.stream.bypass.request" -> {
                                         FederatedGeoBypassRequest bypassRequest = mapper.treeToValue(content, FederatedGeoBypassRequest.class);

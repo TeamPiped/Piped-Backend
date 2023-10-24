@@ -71,7 +71,7 @@ public class CollectionUtils {
 
         return new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
-                rewriteURL(info.getUploaderAvatarUrl()), rewriteURL(info.getThumbnailUrl()), info.getDuration(),
+                getLastThumbnail(info.getUploaderAvatars()), getLastThumbnail(info.getThumbnails()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl()),
                 rewriteVideoURL(info.getDashMpdUrl()), null, info.getCategory(), info.getLicence(),
@@ -101,9 +101,9 @@ public class CollectionUtils {
         StreamInfoItem item = (StreamInfoItem) o;
 
         return new StreamItem(substringYouTube(item.getUrl()), item.getName(),
-                rewriteURL(item.getThumbnailUrl()),
+                getLastThumbnail(item.getThumbnails()),
                 item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
-                rewriteURL(item.getUploaderAvatarUrl()), item.getTextualUploadDate(),
+                getLastThumbnail(item.getUploaderAvatars()), item.getTextualUploadDate(),
                 item.getShortDescription(), item.getDuration(),
                 item.getViewCount(), item.getUploadDate() != null ?
                 item.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1,
@@ -115,7 +115,7 @@ public class CollectionUtils {
         PlaylistInfoItem item = (PlaylistInfoItem) o;
 
         return new PlaylistItem(substringYouTube(item.getUrl()), item.getName(),
-                rewriteURL(item.getThumbnailUrl()),
+                getLastThumbnail(item.getThumbnails()),
                 item.getUploaderName(), substringYouTube(item.getUploaderUrl()),
                 item.isUploaderVerified(),
                 item.getPlaylistType().name(), item.getStreamCount());
@@ -126,7 +126,7 @@ public class CollectionUtils {
         ChannelInfoItem item = (ChannelInfoItem) o;
 
         return new ChannelItem(substringYouTube(item.getUrl()), item.getName(),
-                rewriteURL(item.getThumbnailUrl()),
+                getLastThumbnail(item.getThumbnails()),
                 item.getDescription(), item.getSubscriberCount(), item.getStreamCount(),
                 item.isVerified());
     }
