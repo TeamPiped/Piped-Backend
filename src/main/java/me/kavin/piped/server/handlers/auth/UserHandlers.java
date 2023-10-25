@@ -1,6 +1,10 @@
 package me.kavin.piped.server.handlers.auth;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
@@ -9,6 +13,8 @@ import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.DatabaseSessionFactory;
 import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.RequestUtils;
+import me.kavin.piped.utils.obj.OidcData;
+import me.kavin.piped.utils.obj.OidcProvider;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -19,6 +25,10 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.io.IOException;
+import java.net.URI;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,6 +37,7 @@ import static me.kavin.piped.consts.Constants.mapper;
 public class UserHandlers {
     private static final Argon2PasswordEncoder argon2PasswordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
+    public static final Map<String, OidcData> PENDING_OIDC = new HashMap<>();
 
     public static byte[] registerResponse(String user, String pass) throws Exception {
 
@@ -111,6 +122,7 @@ public class UserHandlers {
 
     public static String oidcCallbackResponse(String provider, String uid) {
         try (Session s = DatabaseSessionFactory.createSession()) {
+            // TODO: Add oidc provider to database
             String dbName = provider + "-" + uid;
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<User> cr = cb.createQuery(User.class);
@@ -148,12 +160,21 @@ public class UserHandlers {
 
             String hash = user.getPassword();
 
-            if (hash.equals("")) {
-                //TODO: Authorize against oidc provider before deletion
-                var tr = s.beginTransaction();
-                s.remove(user);
-                tr.commit();
-                return mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
+            if (hash.isEmpty()) {
+                //TODO: Get user from oidc table and lookup provider
+                OidcProvider provider = Constants.OIDC_PROVIDERS.get(0);
+                URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
+                OidcData data = new OidcData(session + "|" + Instant.now().getEpochSecond());
+                String state = data.getState();
+                PENDING_OIDC.put(state, data);
+
+                AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
+                        new ResponseType("code"),
+                        new Scope("openid"), provider.clientID, callback).endpointURI(provider.authUri)
+                            .state(new State(state)).nonce(data.nonce).maxAge(0).build();
+
+
+                return String.format("{\"redirect\": \"%s\"}", oidcRequest.toURI().toString()).getBytes();
             }
             if (!hashMatch(hash, pass))
                 ExceptionHandler.throwErrorResponse(new IncorrectCredentialsResponse());
@@ -163,6 +184,18 @@ public class UserHandlers {
             tr.commit();
 
             return mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
+        }
+    }
+
+    public static String deleteOidcUserResponse(String session) throws IOException {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            User user = DatabaseHelper.getUserFromSession(session);
+
+            var tr = s.beginTransaction();
+            s.remove(user);
+            tr.commit();
+
+            return user.getUsername();
         }
     }
 

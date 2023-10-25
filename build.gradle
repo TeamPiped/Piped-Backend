@@ -18,7 +18,7 @@ dependencies {
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:48beff184a9792c4787cfa05fce577c3adf89f56'
     implementation 'com.github.FireMasterK:nanojson:9f4af3b739cc13f3d0d9d4b758bbe2b2ae7119d7'
-    implementation 'com.nimbusds:oauth2-oidc-sdk:11.5.0'
+    implementation 'com.nimbusds:oauth2-oidc-sdk:11.5'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'

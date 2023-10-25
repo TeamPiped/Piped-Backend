@@ -2,10 +2,10 @@ package me.kavin.piped.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
-import com.nimbusds.oauth2.sdk.id.Identifier;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.*;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
@@ -28,6 +28,7 @@ import me.kavin.piped.server.handlers.auth.UserHandlers;
 import me.kavin.piped.utils.ErrorResponse;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.MatrixHelper;
+import me.kavin.piped.utils.obj.OidcData;
 import me.kavin.piped.utils.obj.OidcProvider;
 import me.kavin.piped.utils.obj.federation.FederatedVideoInfo;
 import me.kavin.piped.utils.resp.*;
@@ -43,6 +44,8 @@ import org.xml.sax.InputSource;
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +61,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
 
     private static final HttpHeader FILE_NAME = HttpHeaders.of("x-file-name");
     private static final HttpHeader LAST_ETAG = HttpHeaders.of("x-last-etag");
+    private static final Map<String, OidcData> PENDING_OIDC = new HashMap<>();
 
     @Provides
     Executor executor() {
@@ -285,7 +289,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         String function = request.getPathParameter("function");
                         OidcProvider provider = getOidcProvider(request.getPathParameter("provider"));
                         if (provider == null)
-                            return HttpResponse.ofCode(500).withHtml("Can't find the provider on the server.");
+                            return HttpResponse.ofCode(500).withHtml("Can't find the provider on the server");
 
                         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/callback");
 
@@ -294,62 +298,62 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                 String redirectUri = request.getQueryParameter("redirect");
 
                                 if (StringUtils.isBlank(redirectUri)) {
-                                    return HttpResponse.ofCode(400).withHtml("Missing redirect parameter");
+                                    return HttpResponse.ofCode(400).withHtml("redirect is a required parameter");
                                 }
 
-                                State state = new State(new Identifier(24) + "." + redirectUri);
-                                Nonce nonce = new Nonce();
+                                OidcData data = new OidcData(redirectUri);
+                                String state = data.getState();
+
+                                PENDING_OIDC.put(state, data);
 
                                 AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
                                         new ResponseType("code"),
                                         new Scope("openid"),
-                                        provider.clientID,
-                                        callback)
-                                        .endpointURI(provider.authUri)
-                                        .state(state)
-                                        .nonce(nonce)
-                                        .build();
+                                        provider.clientID, callback).endpointURI(provider.authUri)
+                                        .state(new State(state)).nonce(data.nonce).build();
 
                                 if (redirectUri.equals(Constants.FRONTEND_URL + "/login")) {
                                     return HttpResponse.redirect302(oidcRequest.toURI().toString());
                                 }
                                 return HttpResponse.ok200().withHtml(
-                                        "<!DOCTYPE html><html style= \"color: white;background: #0f0f0f;\"><body>"
-                                                + "<h3>Warning:</h3> You are trying to give <pre style=\"font-size: 1.2rem;\">"
-                                                + redirectUri
-                                                + "</pre> access to your Piped account. If you wish to continue click <a style=\"text-decoration: underline;color: inherit;\"href=\""
-                                                + oidcRequest.toURI().toString()
-                                                + "\">here</a></body></html>");
+                                        "<!DOCTYPE html><html style=\"color-scheme: dark light;\"><body>" +
+                                                "<h3>Warning:</h3> You are trying to give <pre style=\"font-size: 1.2rem;\">" +
+                                                redirectUri +
+                                                "</pre> access to your Piped account. If you wish to continue click " +
+                                                "<a style=\"text-decoration: underline;color: inherit;\"href=\"" +
+                                                oidcRequest.toURI().toString() +
+                                                "\">here</a></body></html>");
                             }
                             case "callback" -> {
                                 ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
 
-                                AuthenticationResponse response = AuthenticationResponseParser.parse(
-                                        URI.create(request.getFullUrl())
-                                );
+                                AuthenticationSuccessResponse sr = parseOidcUri(URI.create(request.getFullUrl()));
 
-                                if (response instanceof AuthenticationErrorResponse) {
-                                    // The OpenID provider returned an error
-                                    System.err.println(response.toErrorResponse().getErrorObject());
-                                    return HttpResponse.ofCode(500).withHtml("OpenID provider returned an error:\n\n" + response.toErrorResponse().getErrorObject().toString());
+                                OidcData data = PENDING_OIDC.get(sr.getState().toString());
+                                if (data == null) {
+                                    return HttpResponse.ofCode(400).withHtml(
+                                            "Your oidc provider sent invalid state data. Try again or contact your oidc admin"
+                                    );
                                 }
-                                AuthenticationSuccessResponse sr = response.toSuccessResponse();
-
                                 AuthorizationCode code = sr.getAuthorizationCode();
-                                AuthorizationGrant codeGrant = new AuthorizationCodeGrant(
-                                        code, callback
-                                );
+                                AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
+
 
                                 TokenRequest tr = new TokenRequest(provider.tokenUri, clientAuth, codeGrant);
-                                TokenResponse tokenResponse = OIDCTokenResponseParser.parse(tr.toHTTPRequest().send());
+                                OIDCTokenResponse tokenResponse = (OIDCTokenResponse) OIDCTokenResponseParser.parse(tr.toHTTPRequest().send());
 
                                 if (!tokenResponse.indicatesSuccess()) {
                                     TokenErrorResponse errorResponse = tokenResponse.toErrorResponse();
                                     return HttpResponse.ofCode(500).withHtml("Failure while trying to request token:\n\n" + errorResponse.getErrorObject().getDescription());
                                 }
 
-                                OIDCTokenResponse successResponse = (OIDCTokenResponse) tokenResponse.toSuccessResponse();
+                                OIDCTokenResponse successResponse = tokenResponse.toSuccessResponse();
 
+                                if (data.isInvalidNonce((String) successResponse.getOIDCTokens().getIDToken().getJWTClaimsSet().getClaim("nonce"))) {
+                                    return HttpResponse.ofCode(400).withHtml(
+                                            "Your oidc provider sent an invalid nonce. Try again or contact your oidc admin"
+                                    );
+                                }
 
                                 UserInfoRequest ur = new UserInfoRequest(provider.userinfoUri, successResponse.getOIDCTokens().getBearerAccessToken());
                                 UserInfoResponse userInfoResponse = UserInfoResponse.parse(ur.toHTTPRequest().send());
@@ -363,11 +367,57 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                 UserInfo userInfo = userInfoResponse.toSuccessResponse().getUserInfo();
 
                                 String sessionId = UserHandlers.oidcCallbackResponse(provider.name, userInfo.getSubject().toString());
+                                return HttpResponse.redirect302(data.data + "?session=" + sessionId);
+                            }
+                            case "delete" -> {
+                                ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
 
-                                return HttpResponse.redirect302(sr.getState().toString().split("\\.", 2)[1] + "?session=" + sessionId);
+                                AuthenticationSuccessResponse sr = parseOidcUri(URI.create(request.getFullUrl()));
+
+                                OidcData data = UserHandlers.PENDING_OIDC.get(sr.getState().toString());
+                                if (data == null) {
+                                    return HttpResponse.ofCode(400).withHtml(
+                                            "Your oidc provider sent invalid state data. Try again or contact your oidc admin"
+                                    );
+                                }
+
+                                long start = Long.parseLong(data.data.split("\\|")[1]);
+                                String session = data.data.split("\\|")[0];
+
+                                AuthorizationCode code = sr.getAuthorizationCode();
+                                AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, new URI(Constants.PUBLIC_URL + request.getPath()));
+
+
+                                TokenRequest tr = new TokenRequest(provider.tokenUri, clientAuth, codeGrant);
+                                TokenResponse tokenResponse = OIDCTokenResponseParser.parse(tr.toHTTPRequest().send());
+
+                                if (!tokenResponse.indicatesSuccess()) {
+                                    TokenErrorResponse errorResponse = tokenResponse.toErrorResponse();
+                                    return HttpResponse.ofCode(500).withHtml("Failure while trying to request token:\n\n" + errorResponse.getErrorObject().getDescription());
+                                }
+
+                                OIDCTokenResponse successResponse = (OIDCTokenResponse) tokenResponse.toSuccessResponse();
+
+                                JWTClaimsSet claims = successResponse.getOIDCTokens().getIDToken().getJWTClaimsSet();
+
+                                if (data.isInvalidNonce((String) claims.getClaim("nonce"))) {
+                                    return HttpResponse.ofCode(400).withHtml(
+                                            "Your oidc provider sent an invalid nonce. Please try again or contact your oidc admin."
+                                    );
+                                }
+
+                                long authTime = (long) claims.getClaim("auth_time");
+
+                                if (authTime < start) {
+                                    return HttpResponse.ofCode(500).withHtml(
+                                            "Your oidc provider didn't verify your identity. Please try again or contact your oidc admin."
+                                    );
+                                }
+
+                                return HttpResponse.redirect302(Constants.FRONTEND_URL + "/preferences?deleted=" + UserHandlers.deleteOidcUserResponse(session));
                             }
                             default -> {
-                                return HttpResponse.ofCode(500).withHtml("Invalid function `" + function + "`.");
+                                return HttpResponse.ofCode(500).withHtml("Invalid function `" + function + "`");
                             }
                         }
 
@@ -628,6 +678,17 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
             return curr;
         }
         return null;
+    }
+
+    private static AuthenticationSuccessResponse parseOidcUri(URI uri) throws Exception {
+        AuthenticationResponse response = AuthenticationResponseParser.parse(uri);
+
+        if (response instanceof AuthenticationErrorResponse) {
+            // The OpenID provider returned an error
+            System.err.println(response.toErrorResponse().getErrorObject());
+            throw new Exception(response.toErrorResponse().getErrorObject().toString());
+        }
+        return response.toSuccessResponse();
     }
 
     private static String[] getArray(String s) {
