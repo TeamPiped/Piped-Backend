@@ -4,8 +4,12 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <include file="version/0-init.xml" relativeToChangelogFile="true"/>
-    <include file="version/1-fix-subs.xml" relativeToChangelogFile="true"/>
-    <include file="version/2-oidc.xml" relativeToChangelogFile="true"/>
+    <changeSet id="2-0" author="kavin" runInTransaction="false">
+        <!-- alter username's varchar length to 32 from 24 -->
+        <sql>ALTER TABLE users ALTER COLUMN username TYPE varchar(32);</sql>
+        <rollback>
+            <sql>ALTER TABLE users ALTER COLUMN username TYPE varchar(24);</sql>
+        </rollback>
+    </changeSet>
 
 </databaseChangeLog>
