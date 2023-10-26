@@ -50,7 +50,7 @@ public class VideoHelpers {
                 if (!DatabaseHelper.doesVideoExist(s, info.getId())) {
 
                     Video video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
-                            Math.max(infoTime, time), info.getThumbnailUrl(), info.isShortFormContent(), channel);
+                            Math.max(infoTime, time), info.getThumbnails().getLast().getUrl(), info.isShortFormContent(), channel);
 
                     insertVideo(video);
                     return;
@@ -81,7 +81,7 @@ public class VideoHelpers {
                     boolean isShort = extractor.isShortFormContent() || isShort(extractor.getId());
 
                     Video video = new Video(extractor.getId(), extractor.getName(), extractor.getViewCount(), extractor.getLength(),
-                            Math.max(infoTime, time), extractor.getThumbnailUrl(), isShort, channel);
+                            Math.max(infoTime, time), extractor.getThumbnails().getLast().getUrl(), isShort, channel);
 
                     insertVideo(video);
 

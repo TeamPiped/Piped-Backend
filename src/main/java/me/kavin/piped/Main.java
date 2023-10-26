@@ -18,7 +18,7 @@ import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.localization.Localization;
-import org.schabi.newpipe.extractor.services.youtube.YoutubeThrottlingDecrypter;
+import org.schabi.newpipe.extractor.services.youtube.YoutubeJavaScriptPlayerManager;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
 
 import java.util.*;
@@ -53,17 +53,17 @@ public class Main {
             System.exit(1);
         }
 
-        Multithreading.runAsync(() -> new Thread(new SyncRunner(
+        Multithreading.runAsync(() ->  Thread.ofVirtual().start(new SyncRunner(
                 new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build(),
                 MATRIX_SERVER,
                 MatrixHelper.MATRIX_TOKEN)
-        ).start());
+        ));
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                System.out.printf("ThrottlingCache: %o entries%n", YoutubeThrottlingDecrypter.getCacheSize());
-                YoutubeThrottlingDecrypter.clearCache();
+                System.out.printf("ThrottlingCache: %o entries%n", YoutubeJavaScriptPlayerManager.getThrottlingParametersCacheSize());
+                YoutubeJavaScriptPlayerManager.clearThrottlingParametersCache();
             }
         }, 0, TimeUnit.MINUTES.toMillis(60));
 

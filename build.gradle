@@ -1,7 +1,6 @@
 plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1"
     id "java"
-    id "io.freefair.lombok" version "8.3"
     id "eclipse"
 }
 
@@ -13,11 +12,11 @@ repositories {
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.13.0'
     implementation 'org.apache.commons:commons-text:1.10.0'
-    implementation 'commons-io:commons-io:2.13.0'
+    implementation 'commons-io:commons-io:2.14.0'
     implementation 'it.unimi.dsi:fastutil-core:8.5.12'
     implementation 'commons-codec:commons-codec:1.16.0'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:5518112dce594bb4cd07d8ed3391bcc5e688f829'
+    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:8cf9a4aef0919df2ef1baafd30ab5bfefefc0844'
     implementation 'com.github.FireMasterK:nanojson:9f4af3b739cc13f3d0d9d4b758bbe2b2ae7119d7'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
@@ -42,9 +41,11 @@ dependencies {
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.11.0"))
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:okhttp-brotli'
-    implementation 'io.sentry:sentry:6.28.0'
+    implementation 'io.sentry:sentry:6.30.0'
     implementation 'rocks.kavin:reqwest4j:1.0.12'
     implementation 'io.minio:minio:8.5.6'
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
 shadowJar {
@@ -61,5 +62,5 @@ jar {
 
 group = 'me.kavin.piped'
 version = '1.0'
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
