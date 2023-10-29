@@ -19,6 +19,7 @@ import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.RequestUtils;
 import me.kavin.piped.utils.obj.OidcData;
 import me.kavin.piped.utils.obj.OidcProvider;
+import me.kavin.piped.utils.obj.db.OidcUserData;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -297,6 +298,14 @@ public class UserHandlers {
             String hash = user.getPassword();
 
             if (hash.isEmpty()) {
+
+                CriteriaBuilder cb = s.getCriteriaBuilder();
+                CriteriaQuery<OidcUserData> cr = cb.createQuery(OidcUserData.class);
+                Root<OidcUserData> root = cr.from(OidcUserData.class);
+                cr.select(root).where(cb.equal(root.get("user"), user.getId()));
+
+                OidcUserData oidcUserData = s.createQuery(cr).uniqueResult();
+
                 //TODO: Get user from oidc table and lookup provider
                 OidcProvider provider = Constants.OIDC_PROVIDERS.get(0);
                 URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
@@ -310,7 +319,8 @@ public class UserHandlers {
                             .state(new State(state)).nonce(data.nonce).maxAge(0).build();
 
 
-                return String.format("{\"redirect\": \"%s\"}", oidcRequest.toURI().toString()).getBytes();
+                return mapper.writeValueAsBytes(mapper.createObjectNode()
+                        .put("redirect", oidcRequest.toURI().toString()));
             }
             if (!hashMatch(hash, pass))
                 ExceptionHandler.throwErrorResponse(new IncorrectCredentialsResponse());
