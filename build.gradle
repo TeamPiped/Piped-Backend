@@ -42,7 +42,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp-brotli'
     implementation 'io.sentry:sentry:6.30.0'
     implementation 'rocks.kavin:reqwest4j:1.0.12'
-    implementation 'io.minio:minio:8.5.6'
+    implementation 'io.minio:minio:8.5.7'
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
