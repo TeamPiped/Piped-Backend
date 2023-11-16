@@ -34,7 +34,7 @@ dependencies {
     implementation 'org.hibernate:hibernate-core:6.3.1.Final'
     implementation 'org.hibernate:hibernate-hikaricp:6.3.1.Final'
     implementation 'org.liquibase:liquibase-core:4.25.0'
-    implementation('org.liquibase.ext:liquibase-yugabytedb:4.24.0') { exclude group: 'org.liquibase' }
+    implementation('org.liquibase.ext:liquibase-yugabytedb:4.25.0') { exclude group: 'org.liquibase' }
     implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'org.springframework.security:spring-security-crypto:6.1.4'
     implementation 'commons-logging:commons-logging:1.2'
