@@ -109,6 +109,12 @@ public class URLUtils {
             queryPairs.add(List.of("host", host));
         }
 
+        String path = url.getPath();
+
+        if (path.contains("=")) {
+            path = StringUtils.substringBefore(path, "=") + "=" + StringUtils.substringAfter(path, "=").replace("-rj", "-rw");
+        }
+
         if (PROXY_HASH_SECRET != null)
             try {
                 MessageDigest md = MessageDigest.getInstance("BLAKE3-256");
@@ -117,19 +123,14 @@ public class URLUtils {
                     md.update(pair.get(1).getBytes(StandardCharsets.UTF_8));
                 }
 
+                md.update(path.getBytes(StandardCharsets.UTF_8));
+
                 md.update(PROXY_HASH_SECRET);
 
                 queryPairs.add(List.of("qhash", Hex.encodeHexString(md.digest()).substring(0, 8)));
             } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
             }
-
-
-        String path = url.getPath();
-
-        if (path.contains("=")) {
-            path = StringUtils.substringBefore(path, "=") + "=" + StringUtils.substringAfter(path, "=").replace("-rj", "-rw");
-        }
 
         String newUrl = proxy + path;
 
@@ -142,9 +143,9 @@ public class URLUtils {
                 qstring.append("&");
             }
 
-            qstring.append(pair.get(0));
+            qstring.append(silentEncode(pair.get(0)));
             qstring.append("=");
-            qstring.append(pair.get(1));
+            qstring.append(silentEncode(pair.get(1)));
         }
 
         newUrl += "?" + qstring;
