@@ -149,9 +149,7 @@ public class URLUtils {
             }
         }
 
-        if (qstring != null) {
-            newUrl += "?" + qstring;
-        }
+        newUrl += "?" + qstring;
 
         return newUrl;
 
