@@ -1,6 +1,7 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.consts.Constants;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.schabi.newpipe.extractor.Image;
 
@@ -9,7 +10,14 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import static me.kavin.piped.consts.Constants.PROXY_HASH_SECRET;
 
 public class URLUtils {
 
@@ -65,13 +73,87 @@ public class URLUtils {
 
         boolean hasQuery = query != null;
 
+        Comparator<List<String>> listComparator = (o1, o2) -> {
+            for (int i = 0; i < Math.min(o1.size(), o2.size()); i++) {
+                int result = o1.get(i).compareTo(o2.get(i));
+                if (result != 0) {
+                    return result;
+                }
+            }
+            return Integer.compare(o1.size(), o2.size()); // compare list sizes if all elements are equal
+        };
+
+        Set<List<String>> queryPairs = new TreeSet<>(listComparator);
+
+        if (hasQuery) {
+            String[] pairs = query.split("&");
+
+            for (String pair : pairs) {
+                int idx = pair.indexOf("=");
+                queryPairs.add(List.of(
+                        silentDecode(pair.substring(0, idx)),
+                        silentDecode(pair.substring(idx + 1))
+                ));
+            }
+        }
+
+        // look for host param, and add it if it doesn't exist
+        boolean hasHost = false;
+        for (List<String> pair : queryPairs) {
+            if (pair.get(0).equals("host")) {
+                hasHost = true;
+                break;
+            }
+        }
+        if (!hasHost) {
+            queryPairs.add(List.of("host", host));
+        }
+
+        if (PROXY_HASH_SECRET != null)
+            try {
+                MessageDigest md = MessageDigest.getInstance("BLAKE3-256");
+                for (List<String> pair : queryPairs) {
+                    md.update(pair.get(0).getBytes(StandardCharsets.UTF_8));
+                    md.update(pair.get(1).getBytes(StandardCharsets.UTF_8));
+                }
+
+                md.update(PROXY_HASH_SECRET);
+
+                queryPairs.add(List.of("qhash", Hex.encodeHexString(md.digest()).substring(0, 8)));
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+
+
         String path = url.getPath();
 
         if (path.contains("=")) {
             path = StringUtils.substringBefore(path, "=") + "=" + StringUtils.substringAfter(path, "=").replace("-rj", "-rw");
         }
 
-        return proxy + path + (hasQuery ? "?" + query + "&host=" : "?host=") + silentEncode(host);
+        String newUrl = proxy + path;
+
+        StringBuilder qstring = null;
+
+        if (hasQuery) {
+            for (List<String> pair : queryPairs) {
+                if (qstring == null) {
+                    qstring = new StringBuilder();
+                } else {
+                    qstring.append("&");
+                }
+
+                qstring.append(pair.get(0));
+                qstring.append("=");
+                qstring.append(pair.get(1));
+            }
+        }
+
+        if (qstring != null) {
+            newUrl += "?" + qstring;
+        }
+
+        return newUrl;
 
     }
 }
