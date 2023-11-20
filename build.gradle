@@ -36,7 +36,7 @@ dependencies {
     implementation 'org.liquibase:liquibase-core:4.25.0'
     implementation('org.liquibase.ext:liquibase-yugabytedb:4.25.0') { exclude group: 'org.liquibase' }
     implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'org.springframework.security:spring-security-crypto:6.1.4'
+    implementation 'org.springframework.security:spring-security-crypto:6.2.0'
     implementation 'commons-logging:commons-logging:1.2'
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
     implementation 'com.squareup.okhttp3:okhttp'
