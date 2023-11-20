@@ -25,7 +25,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -39,6 +41,8 @@ public class Constants {
     public static final String PROXY_PART;
 
     public static final String IMAGE_PROXY_PART;
+
+    public static final byte[] PROXY_HASH_SECRET;
 
     public static final String CAPTCHA_BASE_URL, CAPTCHA_API_KEY;
 
@@ -127,6 +131,7 @@ public class Constants {
                     String.valueOf(Runtime.getRuntime().availableProcessors()));
             PROXY_PART = getProperty(prop, "PROXY_PART");
             IMAGE_PROXY_PART = getProperty(prop, "IMAGE_PROXY_PART", PROXY_PART);
+            PROXY_HASH_SECRET = Optional.ofNullable(getProperty(prop, "PROXY_HASH_SECRET")).map(s -> s.getBytes(StandardCharsets.UTF_8)).orElse(null);
             CAPTCHA_BASE_URL = getProperty(prop, "CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = getProperty(prop, "CAPTCHA_API_KEY");
             PUBLIC_URL = getProperty(prop, "API_URL");
