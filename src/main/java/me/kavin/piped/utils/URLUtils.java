@@ -135,18 +135,16 @@ public class URLUtils {
 
         StringBuilder qstring = null;
 
-        if (hasQuery) {
-            for (List<String> pair : queryPairs) {
-                if (qstring == null) {
-                    qstring = new StringBuilder();
-                } else {
-                    qstring.append("&");
-                }
-
-                qstring.append(pair.get(0));
-                qstring.append("=");
-                qstring.append(pair.get(1));
+        for (List<String> pair : queryPairs) {
+            if (qstring == null) {
+                qstring = new StringBuilder();
+            } else {
+                qstring.append("&");
             }
+
+            qstring.append(pair.get(0));
+            qstring.append("=");
+            qstring.append(pair.get(1));
         }
 
         newUrl += "?" + qstring;
