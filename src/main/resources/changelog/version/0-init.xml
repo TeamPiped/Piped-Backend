@@ -9,9 +9,10 @@
     </changeSet>
 
     <changeSet id="0-1" author="kavin" runInTransaction="false">
-        <sqlFile path="0-1-init.sql" relativeToChangelogFile="true"/>
+        <sqlFile path="0-1-init.sql" dbms="!hsqldb" relativeToChangelogFile="true"/>
         <sqlFile path="0-1-init-crdb.sql" dbms="cockroachdb" relativeToChangelogFile="true"/>
         <sqlFile path="0-1-init-pg.sql" dbms="postgresql,yugabytedb" relativeToChangelogFile="true"/>
+        <sqlFile path="0-1-init-hsqldb.sql" dbms="hsqldb" relativeToChangelogFile="true" stripComments="true"/>
     </changeSet>
 
 </databaseChangeLog>
