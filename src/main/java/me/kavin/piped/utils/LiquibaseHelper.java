@@ -28,8 +28,6 @@ public class LiquibaseHelper {
 
         // register YugabyteDB database
         DatabaseFactory.getInstance().register(new liquibase.ext.yugabytedb.database.YugabyteDBDatabase());
-        // register HsqlDatabase database
-        DatabaseFactory.getInstance().register(new liquibase.database.core.HsqlDatabase());
 
         Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(DriverManager.getConnection(url, username, password)));
 
