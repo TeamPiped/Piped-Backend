@@ -12,10 +12,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import static me.kavin.piped.consts.Constants.PROXY_HASH_SECRET;
 
@@ -44,18 +41,18 @@ public class URLUtils {
     }
 
     public static String rewriteURL(final String old) {
-        return rewriteURL(old, Constants.IMAGE_PROXY_PART);
+        return rewriteURL(old, Constants.IMAGE_PROXY_PART, Map.of());
     }
 
     public static String getLastThumbnail(final List<Image> thumbnails) {
         return thumbnails.isEmpty() ? null : rewriteURL(thumbnails.getLast().getUrl());
     }
 
-    public static String rewriteVideoURL(final String old) {
-        return rewriteURL(old, Constants.PROXY_PART);
+    public static String rewriteVideoURL(final String old, final Map<String, String> extraParams) {
+        return rewriteURL(old, Constants.PROXY_PART, extraParams);
     }
 
-    public static String rewriteURL(final String old, final String proxy) {
+    public static String rewriteURL(final String old, final String proxy, final Map<String, String> extraParams) {
 
         if (StringUtils.isEmpty(old)) return null;
 
@@ -107,6 +104,10 @@ public class URLUtils {
         }
         if (!hasHost) {
             queryPairs.add(List.of("host", host));
+        }
+
+        for (var entry : extraParams.entrySet()) {
+            queryPairs.add(List.of(entry.getKey(), entry.getValue()));
         }
 
         String path = url.getPath();
