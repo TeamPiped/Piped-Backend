@@ -13,6 +13,7 @@ import org.schabi.newpipe.extractor.stream.StreamType;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import static me.kavin.piped.utils.URLUtils.*;
@@ -42,18 +43,23 @@ public class CollectionUtils {
 
         boolean livestream = info.getStreamType() == StreamType.LIVE_STREAM;
 
+        final var extraParams = Map.of(
+                "ump", "1",
+                "srfvp", "1"
+        );
+
         if (!livestream) {
-            info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent()),
+            info.getVideoOnlyStreams().forEach(stream -> videoStreams.add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent(), extraParams),
                     String.valueOf(stream.getFormat()), stream.getResolution(), stream.getFormat().getMimeType(), true,
                     stream.getBitrate(), stream.getInitStart(), stream.getInitEnd(), stream.getIndexStart(),
                     stream.getIndexEnd(), stream.getCodec(), stream.getWidth(), stream.getHeight(), stream.getFps(), stream.getItagItem().getContentLength())));
             info.getVideoStreams()
                     .forEach(stream -> videoStreams
-                            .add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent()), String.valueOf(stream.getFormat()),
+                            .add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent(), Map.of()), String.valueOf(stream.getFormat()),
                                     stream.getResolution(), stream.getFormat().getMimeType(), false, stream.getItagItem().getContentLength())));
 
             info.getAudioStreams()
-                    .forEach(stream -> audioStreams.add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent()),
+                    .forEach(stream -> audioStreams.add(new PipedStream(stream.getItag(), rewriteVideoURL(stream.getContent(), extraParams),
                             String.valueOf(stream.getFormat()), stream.getAverageBitrate() + " kbps",
                             stream.getFormat().getMimeType(), false, stream.getBitrate(), stream.getInitStart(),
                             stream.getInitEnd(), stream.getIndexStart(), stream.getIndexEnd(), stream.getItagItem().getContentLength(), stream.getCodec(), stream.getAudioTrackId(),
@@ -73,8 +79,8 @@ public class CollectionUtils {
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
                 getLastThumbnail(info.getUploaderAvatars()), getLastThumbnail(info.getThumbnails()), info.getDuration(),
                 info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
-                audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl()),
-                rewriteVideoURL(info.getDashMpdUrl()), null, info.getCategory(), info.getLicence(),
+                audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl(), Map.of()),
+                rewriteVideoURL(info.getDashMpdUrl(), Map.of()), null, info.getCategory(), info.getLicence(),
                 info.getPrivacy().name().toLowerCase(), info.getTags(), metaInfo, chapters, previewFrames);
     }
 
