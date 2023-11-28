@@ -44,8 +44,7 @@ public class CollectionUtils {
         boolean livestream = info.getStreamType() == StreamType.LIVE_STREAM;
 
         final var extraParams = Map.of(
-                "ump", "1",
-                "srfvp", "1"
+                "ump", "1"
         );
 
         if (!livestream) {
