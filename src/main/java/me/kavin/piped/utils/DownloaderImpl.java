@@ -12,6 +12,8 @@ import java.net.HttpCookie;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class DownloaderImpl extends Downloader {
 
@@ -110,8 +112,8 @@ public class DownloaderImpl extends Downloader {
         }, Multithreading.getCachedExecutor());
 
         try {
-            return responseFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
+            return responseFuture.get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new IOException(e);
         }
     }
