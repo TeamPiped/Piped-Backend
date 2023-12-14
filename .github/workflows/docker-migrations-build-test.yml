@@ -24,7 +24,7 @@ jobs:
       - name: Run Build
         run: ./gradlew shadowJar
       - run: mv build/libs/piped-*-all.jar piped.jar
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: piped-old.jar
           path: piped.jar
