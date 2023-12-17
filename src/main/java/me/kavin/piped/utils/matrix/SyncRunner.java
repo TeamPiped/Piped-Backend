@@ -132,6 +132,9 @@ public class SyncRunner implements Runnable {
                             if (!UNAUTHENTICATED && type.startsWith("video.piped.stream.bypass.")) {
                                 switch (type) {
                                     case "video.piped.stream.bypass.request" -> {
+                                        if (Constants.YOUTUBE_COUNTRY == null) {
+                                            continue;
+                                        }
                                         FederatedGeoBypassRequest bypassRequest = mapper.treeToValue(content, FederatedGeoBypassRequest.class);
                                         if (bypassRequest.getAllowedCountries().contains(Constants.YOUTUBE_COUNTRY)) {
                                             // We're capable of helping another instance!

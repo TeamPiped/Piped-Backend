@@ -103,7 +103,7 @@ public class Constants {
 
     public static final String GEO_RESTRICTION_CHECKER_URL;
 
-    public static final String YOUTUBE_COUNTRY;
+    public static String YOUTUBE_COUNTRY;
 
     public static final String VERSION;
 
@@ -140,7 +140,6 @@ public class Constants {
             REQWEST_PROXY = getProperty(prop, "REQWEST_PROXY");
             REQWEST_PROXY_USER = getProperty(prop, "REQWEST_PROXY_USER");
             REQWEST_PROXY_PASS = getProperty(prop, "REQWEST_PROXY_PASS");
-            ReqwestUtils.init(REQWEST_PROXY, REQWEST_PROXY_USER, REQWEST_PROXY_PASS);
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.video");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
@@ -202,18 +201,6 @@ public class Constants {
                     .addInterceptor(BrotliInterceptor.INSTANCE);
             h2client = builder.build();
             h2_no_redir_client = builder_noredir.build();
-            String temp = null;
-            try {
-                var html = RequestUtils.sendGet("https://www.youtube.com/").get();
-                var regex = Pattern.compile("GL\":\"([A-Z]{2})\"", Pattern.MULTILINE);
-                var matcher = regex.matcher(html);
-                if (matcher.find()) {
-                    temp = matcher.group(1);
-                }
-            } catch (Exception ignored) {
-                System.err.println("Failed to get country from YouTube!");
-            }
-            YOUTUBE_COUNTRY = temp;
             VERSION = new File("VERSION").exists() ?
                     IOUtils.toString(new FileReader("VERSION")) :
                     "unknown";
