@@ -42,7 +42,7 @@ public class Main {
         Security.setProperty("crypto.policy", "unlimited");
         Security.addProvider(new BouncyCastleProvider());
 
-        ReqwestUtils.init(REQWEST_PROXY_USER, REQWEST_PROXY, REQWEST_PROXY_PASS);
+        ReqwestUtils.init(REQWEST_PROXY, REQWEST_PROXY_USER, REQWEST_PROXY_PASS);
 
         NewPipe.init(new DownloaderImpl(), new Localization("en", "US"), ContentCountry.DEFAULT, Multithreading.getCachedExecutor());
         YoutubeStreamExtractor.forceFetchAndroidClient(true);
