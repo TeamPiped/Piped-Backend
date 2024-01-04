@@ -22,7 +22,7 @@ import static me.kavin.piped.consts.Constants.mapper;
 
 public class SponsorBlockUtils {
 
-    public static String getSponsors(String id, String categories)
+    public static String getSponsors(String id, String categories, String actionType)
             throws IOException {
 
         if (StringUtils.isEmpty(categories))
@@ -34,7 +34,7 @@ public class SponsorBlockUtils {
             try {
 
                 var resp = RequestUtils.sendGetRaw(url + "/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
-                        + "?categories=" + URLUtils.silentEncode(categories)).get();
+                        + "?categories=" + URLUtils.silentEncode(categories) + "&actionTypes=" + URLUtils.silentEncode(actionType)).get();
 
                 if (resp.status() == 200) {
                     var any = mapper.readTree(resp.body());
