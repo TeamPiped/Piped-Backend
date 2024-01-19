@@ -118,4 +118,14 @@ public class ChannelHelpers {
 
         return entry;
     }
+
+    public static void addChannelInformation(SyndFeed feed, Channel channel) {
+        feed.setTitle("Piped - " + channel.getUploader());
+        SyndImage channelIcon = new SyndImageImpl();
+        channelIcon.setLink(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+        channelIcon.setTitle(channel.getUploader());
+        channelIcon.setUrl(rewriteURL(channel.getUploaderAvatar()));
+        feed.setIcon(channelIcon);
+        feed.setImage(channelIcon);
+    }
 }

@@ -22,6 +22,7 @@ import me.kavin.piped.utils.resp.SubscribeStatusResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
+import org.schabi.newpipe.extractor.channel.ChannelInfo;
 
 import java.io.IOException;
 import java.util.*;
@@ -236,11 +237,11 @@ public class FeedHandlers {
 
     public static byte[] unauthenticatedFeedResponseRSS(String[] channelIds) throws Exception {
 
-        Set<String> filtered = Arrays.stream(channelIds)
+        Set<String> filteredChannels = Arrays.stream(channelIds)
                 .filter(ChannelHelpers::isValidId)
                 .collect(Collectors.toUnmodifiableSet());
 
-        if (filtered.isEmpty())
+        if (filteredChannels.isEmpty())
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("No valid channel IDs provided"));
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
@@ -254,7 +255,7 @@ public class FeedHandlers {
 
             criteria.select(root)
                     .where(cb.and(
-                            root.get("channel").get("id").in(filtered)
+                            root.get("channel").get("id").in(filteredChannels)
                     ))
                     .orderBy(cb.desc(root.get("uploaded")));
 
@@ -276,22 +277,28 @@ public class FeedHandlers {
                 var channel = video.getChannel();
                 SyndEntry entry = ChannelHelpers.createEntry(video, channel);
                 entries.add(entry);
+            }
 
-                if (filtered.size() == 1) {
-                    feed.setTitle("Piped - " + channel.getUploader());
-                    SyndImage channelIcon = new SyndImageImpl();
-                    channelIcon.setLink(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
-                    channelIcon.setTitle(channel.getUploader());
-                    channelIcon.setUrl(rewriteURL(channel.getUploaderAvatar()));
-                    feed.setIcon(channelIcon);
-                    feed.setImage(channelIcon);
+            if (filteredChannels.size() == 1) {
+                if (!videos.isEmpty()) {
+                    ChannelHelpers.addChannelInformation(feed, videos.get(0).getChannel());
+                } else {
+                    String channelId = filteredChannels.stream().findFirst().get();
+                    final ChannelInfo info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+                    var channel = DatabaseHelper.getChannelFromId(channelId);
+
+                    if (channel == null) channel = new Channel();
+
+                    ChannelHelpers.updateChannel(s, channel, StringUtils.abbreviate(info.getName(), 100), info.getAvatars().isEmpty() ? null : info.getAvatars().getLast().getUrl(), info.isVerified());
+
+                    ChannelHelpers.addChannelInformation(feed, channel);
                 }
             }
 
             feed.setEntries(entries);
 
-            updateSubscribedTime(filtered);
-            addMissingChannels(filtered);
+            updateSubscribedTime(filteredChannels);
+            addMissingChannels(filteredChannels);
 
             return new SyndFeedOutput().outputString(feed).getBytes(UTF_8);
         }
