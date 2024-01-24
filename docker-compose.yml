@@ -5,7 +5,7 @@ services:
         ports:
             - "127.0.0.1:8080:8080"
         volumes:
-            - ./config.properties:/app/config.properties
+            - ./config.properties:/config.properties
         depends_on:
             - postgres
     postgres:
