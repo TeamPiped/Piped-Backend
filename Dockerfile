@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:21.0.2_13-jdk AS build
 
 WORKDIR /app/
 
@@ -7,7 +7,7 @@ COPY . /app/
 RUN --mount=type=cache,target=/root/.gradle/caches/ \
  ./gradlew shadowJar
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21.0.2_13-jre
 
 RUN --mount=type=cache,target=/var/cache/apt/ \
  apt-get update && \
