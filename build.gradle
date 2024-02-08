@@ -14,7 +14,7 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.11.0'
     implementation 'commons-io:commons-io:2.15.1'
     implementation 'it.unimi.dsi:fastutil-core:8.5.13'
-    implementation 'commons-codec:commons-codec:1.16.0'
+    implementation 'commons-codec:commons-codec:1.16.1'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.77'
     implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:77466ac61f4fda729e33f1cc796d9f00455c0b30'
     implementation 'com.github.FireMasterK:nanojson:9f4af3b739cc13f3d0d9d4b758bbe2b2ae7119d7'
