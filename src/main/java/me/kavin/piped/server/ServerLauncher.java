@@ -99,7 +99,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return getJsonResponse(
                                 SponsorBlockUtils.getSponsors(request.getPathParameter("videoId"),
-                                        request.getQueryParameter("category")).getBytes(UTF_8),
+                                        request.getQueryParameter("category"), request.getQueryParameter("actionType")).getBytes(UTF_8),
                                 "public, max-age=3600");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
