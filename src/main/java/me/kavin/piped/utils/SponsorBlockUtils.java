@@ -32,7 +32,8 @@ public class SponsorBlockUtils {
 
         for (String apiUrl : Constants.SPONSORBLOCK_SERVERS) {
             try {
-                String url =apiUrl + "/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
+                String url = apiUrl + "/api/skipSegments/" + URLUtils.silentEncode(hash.substring(0, 4))
+
                         + "?categories=" + URLUtils.silentEncode(categories);
                 if (actionType != null && !actionType.isBlank())
                     url += "&actionTypes=" + URLUtils.silentEncode(actionType);
