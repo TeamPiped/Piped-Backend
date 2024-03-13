@@ -308,7 +308,19 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/feed", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getJsonResponse(FeedHandlers.feedResponse(request.getQueryParameter("authToken")),
+
+                        int limit;
+                        try {
+                            var limitStr = request.getQueryParameter("limit");
+                            if (!StringUtils.isEmpty(limitStr))
+                                limit = Math.min(Integer.parseInt(limitStr), 100);
+                            else
+                                limit = 100;
+                        } catch (NumberFormatException e) {
+                            limit = 100;
+                        }
+
+                        return getJsonResponse(FeedHandlers.feedResponse(request.getQueryParameter("authToken"), request.getQueryParameter("start"), limit),
                                 "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -322,8 +334,20 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/feed/unauthenticated", AsyncServlet.ofBlocking(executor, request -> {
                     try {
+
+                        int limit;
+                        try {
+                            var limitStr = request.getQueryParameter("limit");
+                            if (!StringUtils.isEmpty(limitStr))
+                                limit = Math.min(Integer.parseInt(limitStr), 100);
+                            else
+                                limit = 100;
+                        } catch (NumberFormatException e) {
+                            limit = 100;
+                        }
+
                         return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(
-                                getArray(request.getQueryParameter("channels"))
+                                getArray(request.getQueryParameter("channels")), request.getQueryParameter("start"), limit
                         ), "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -332,7 +356,19 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         String[] subscriptions = mapper.readValue(request.loadBody().getResult().asArray(),
                                 String[].class);
-                        return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(subscriptions), "public, s-maxage=120");
+
+                        int limit;
+                        try {
+                            var limitStr = request.getQueryParameter("limit");
+                            if (!StringUtils.isEmpty(limitStr))
+                                limit = Math.min(Integer.parseInt(limitStr), 100);
+                            else
+                                limit = 100;
+                        } catch (NumberFormatException e) {
+                            limit = 100;
+                        }
+
+                        return getJsonResponse(FeedHandlers.unauthenticatedFeedResponse(subscriptions, request.getQueryParameter("start"), limit), "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
