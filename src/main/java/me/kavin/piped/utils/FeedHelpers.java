@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static me.kavin.piped.utils.URLUtils.rewriteURL;
@@ -77,6 +78,14 @@ public class FeedHelpers {
         feed.setPublishedDate(new Date());
 
         return feed;
+    }
+
+    public static Predicate<Video> createFeedFilter(@Nullable String filter) {
+        return video -> switch (filter) {
+            case "shorts" -> video.isShort();
+            case "videos" -> !video.isShort();
+            case null, default -> true;
+        };
     }
 
     public static Stream<SubscriptionChannel> generateSubscriptionsList(Stream<Channel> channels) {
