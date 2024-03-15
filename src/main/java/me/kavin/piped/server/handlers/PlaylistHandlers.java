@@ -30,7 +30,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.consts.Constants.mapper;
 import static me.kavin.piped.utils.CollectionUtils.collectRelatedItems;
-import static me.kavin.piped.utils.URLUtils.*;
+import static me.kavin.piped.utils.URLUtils.getLastThumbnail;
+import static me.kavin.piped.utils.URLUtils.substringYouTube;
 
 public class PlaylistHandlers {
     public static byte[] playlistResponse(String playlistId) throws Exception {

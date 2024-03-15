@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.minio.MinioClient;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.kavin.piped.utils.PageMixin;
-import me.kavin.piped.utils.RequestUtils;
 import me.kavin.piped.utils.resp.ListLinkHandlerMixin;
 import okhttp3.OkHttpClient;
 import okhttp3.brotli.BrotliInterceptor;
@@ -19,17 +18,13 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
-import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.io.File;
 import java.io.FileReader;
-import java.net.InetSocketAddress;
-import java.net.ProxySelector;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.regex.Pattern;
 
 public class Constants {
 

@@ -6,7 +6,6 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Video;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
-import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;

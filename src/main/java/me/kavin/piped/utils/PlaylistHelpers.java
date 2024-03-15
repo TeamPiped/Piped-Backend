@@ -1,9 +1,8 @@
 package me.kavin.piped.utils;
 
 import me.kavin.piped.utils.obj.db.Playlist;
-import org.hibernate.Session;
-
 import me.kavin.piped.utils.obj.db.User;
+import org.hibernate.Session;
 
 public class PlaylistHelpers {
     public static Playlist getUserPlaylist(Session s, User user, String playlistId) throws IllegalArgumentException {

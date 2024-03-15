@@ -1,6 +1,7 @@
 package me.kavin.piped.server.handlers.auth;
 
-import com.rometools.rome.feed.synd.*;
+import com.rometools.rome.feed.synd.SyndEntry;
+import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
 import jakarta.persistence.criteria.CriteriaBuilder;
