@@ -315,7 +315,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/feed/rss", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getRawResponse(FeedHandlers.feedResponseRSS(request.getQueryParameter("authToken")),
+                        return getRawResponse(FeedHandlers.feedResponseRSS(request.getQueryParameter("authToken"),
+                                        request.getQueryParameter("filter")),
                                 "application/atom+xml", "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -339,7 +340,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/feed/unauthenticated/rss", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getRawResponse(FeedHandlers.unauthenticatedFeedResponseRSS(
-                                getArray(request.getQueryParameter("channels"))
+                                getArray(request.getQueryParameter("channels")),
+                                request.getQueryParameter("filter")
                         ), "application/atom+xml", "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());

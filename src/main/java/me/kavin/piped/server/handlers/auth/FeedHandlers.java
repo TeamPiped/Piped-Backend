@@ -21,6 +21,7 @@ import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -119,7 +120,7 @@ public class FeedHandlers {
         return null;
     }
 
-    public static byte[] feedResponseRSS(String session) throws FeedException {
+    public static byte[] feedResponseRSS(String session, @Nullable String filter) throws FeedException {
 
         if (StringUtils.isBlank(session))
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("session is a required parameter"));
@@ -131,6 +132,7 @@ public class FeedHandlers {
                 SyndFeed feed = FeedHelpers.createRssFeed(user.getUsername());
 
                 final List<SyndEntry> entries = FeedHelpers.generateAuthenticatedFeed(s, user.getId(), 100)
+                        .filter(FeedHelpers.createFeedFilter(filter))
                         .map(video -> {
                             var channel = video.getChannel();
                             return ChannelHelpers.createEntry(video, channel);
@@ -173,7 +175,7 @@ public class FeedHandlers {
         }
     }
 
-    public static byte[] unauthenticatedFeedResponseRSS(String[] channelIds) throws Exception {
+    public static byte[] unauthenticatedFeedResponseRSS(String[] channelIds, @Nullable String filter) throws Exception {
 
         Set<String> filteredChannels = Arrays.stream(channelIds)
                 .filter(ChannelHelpers::isValidId)
@@ -183,7 +185,9 @@ public class FeedHandlers {
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("No valid channel IDs provided"));
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-            List<Video> videos = FeedHelpers.generateUnauthenticatedFeed(s, filteredChannels, 100).toList();
+            List<Video> videos = FeedHelpers.generateUnauthenticatedFeed(s, filteredChannels, 100)
+                    .filter(FeedHelpers.createFeedFilter(filter))
+                    .toList();
 
             List<SyndEntry> entries = videos.stream()
                     .map(video -> ChannelHelpers.createEntry(video, video.getChannel()))
