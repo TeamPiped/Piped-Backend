@@ -3,10 +3,7 @@ package me.kavin.piped.server.handlers.auth;
 import com.rometools.rome.feed.synd.*;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedOutput;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.JoinType;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.obj.StreamItem;
@@ -104,24 +101,7 @@ public class FeedHandlers {
         if (user != null) {
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
 
-                CriteriaBuilder cb = s.getCriteriaBuilder();
-
-                // Get all videos from subscribed channels, with channel info
-                CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-                var root = criteria.from(Video.class);
-                root.fetch("channel", JoinType.RIGHT);
-                var subquery = criteria.subquery(String.class);
-                var subroot = subquery.from(User.class);
-                subquery.select(subroot.get("subscribed_ids"))
-                        .where(cb.equal(subroot.get("id"), user.getId()));
-
-                criteria.select(root)
-                        .where(
-                                root.get("channel").get("uploader_id").in(subquery)
-                        )
-                        .orderBy(cb.desc(root.get("uploaded")));
-
-                List<StreamItem> feedItems = s.createQuery(criteria).setTimeout(20).stream()
+                List<StreamItem> feedItems = FeedHelpers.generateAuthenticatedFeed(s, user.getId(), Integer.MAX_VALUE)
                         .parallel().map(video -> {
                             var channel = video.getChannel();
 
@@ -147,41 +127,13 @@ public class FeedHandlers {
         User user = DatabaseHelper.getUserFromSession(session);
 
         if (user != null) {
-
             try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+                SyndFeed feed = FeedHelpers.createRssFeed(user.getUsername());
 
-                SyndFeed feed = new SyndFeedImpl();
-                feed.setFeedType("atom_1.0");
-                feed.setTitle("Piped - Feed");
-                feed.setDescription(String.format("Piped's RSS subscription feed for %s.", user.getUsername()));
-                feed.setUri(Constants.FRONTEND_URL + "/feed");
-                feed.setPublishedDate(new Date());
-
-                CriteriaBuilder cb = s.getCriteriaBuilder();
-
-                // Get all videos from subscribed channels, with channel info
-                CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-                var root = criteria.from(Video.class);
-                root.fetch("channel", JoinType.RIGHT);
-                var subquery = criteria.subquery(String.class);
-                var subroot = subquery.from(User.class);
-                subquery.select(subroot.get("subscribed_ids"))
-                        .where(cb.equal(subroot.get("id"), user.getId()));
-
-                criteria.select(root)
-                        .where(
-                                root.get("channel").get("uploader_id").in(subquery)
-                        )
-                        .orderBy(cb.desc(root.get("uploaded")));
-
-                final List<SyndEntry> entries = s.createQuery(criteria)
-                        .setTimeout(20)
-                        .setMaxResults(100)
-                        .stream()
+                final List<SyndEntry> entries = FeedHelpers.generateAuthenticatedFeed(s, user.getId(), 100)
                         .map(video -> {
                             var channel = video.getChannel();
-                            SyndEntry entry = ChannelHelpers.createEntry(video, channel);
-                            return entry;
+                            return ChannelHelpers.createEntry(video, channel);
                         }).toList();
 
                 feed.setEntries(entries);
@@ -196,29 +148,15 @@ public class FeedHandlers {
 
     public static byte[] unauthenticatedFeedResponse(String[] channelIds) throws Exception {
 
-        Set<String> filtered = Arrays.stream(channelIds)
+        Set<String> filteredChannels = Arrays.stream(channelIds)
                 .filter(ChannelHelpers::isValidId)
                 .collect(Collectors.toUnmodifiableSet());
 
-        if (filtered.isEmpty())
+        if (filteredChannels.isEmpty())
             return mapper.writeValueAsBytes(Collections.EMPTY_LIST);
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
-
-            CriteriaBuilder cb = s.getCriteriaBuilder();
-
-            // Get all videos from subscribed channels, with channel info
-            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-            var root = criteria.from(Video.class);
-            root.fetch("channel", JoinType.RIGHT);
-
-            criteria.select(root)
-                    .where(cb.and(
-                            root.get("channel").get("id").in(filtered)
-                    ))
-                    .orderBy(cb.desc(root.get("uploaded")));
-
-            List<StreamItem> feedItems = s.createQuery(criteria).setTimeout(20).stream()
+            List<StreamItem> feedItems = FeedHelpers.generateUnauthenticatedFeed(s, filteredChannels, Integer.MAX_VALUE)
                     .parallel().map(video -> {
                         var channel = video.getChannel();
 
@@ -228,8 +166,8 @@ public class FeedHandlers {
                                 video.getUploaded(), channel.isVerified(), video.isShort());
                     }).toList();
 
-            updateSubscribedTime(filtered);
-            addMissingChannels(filtered);
+            updateSubscribedTime(filteredChannels);
+            addMissingChannels(filteredChannels);
 
             return mapper.writeValueAsBytes(feedItems);
         }
@@ -245,39 +183,13 @@ public class FeedHandlers {
             ExceptionHandler.throwErrorResponse(new InvalidRequestResponse("No valid channel IDs provided"));
 
         try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+            List<Video> videos = FeedHelpers.generateUnauthenticatedFeed(s, filteredChannels, 100).toList();
 
-            CriteriaBuilder cb = s.getCriteriaBuilder();
+            List<SyndEntry> entries = videos.stream()
+                    .map(video -> ChannelHelpers.createEntry(video, video.getChannel()))
+                    .toList();
 
-            // Get all videos from subscribed channels, with channel info
-            CriteriaQuery<Video> criteria = cb.createQuery(Video.class);
-            var root = criteria.from(Video.class);
-            root.fetch("channel", JoinType.RIGHT);
-
-            criteria.select(root)
-                    .where(cb.and(
-                            root.get("channel").get("id").in(filteredChannels)
-                    ))
-                    .orderBy(cb.desc(root.get("uploaded")));
-
-            List<Video> videos = s.createQuery(criteria)
-                    .setTimeout(20)
-                    .setMaxResults(100)
-                    .list();
-
-            SyndFeed feed = new SyndFeedImpl();
-            feed.setFeedType("atom_1.0");
-            feed.setTitle("Piped - Feed");
-            feed.setDescription("Piped's RSS unauthenticated subscription feed.");
-            feed.setUri(Constants.FRONTEND_URL + "/feed");
-            feed.setPublishedDate(new Date());
-
-            final List<SyndEntry> entries = new ObjectArrayList<>();
-
-            for (Video video : videos) {
-                var channel = video.getChannel();
-                SyndEntry entry = ChannelHelpers.createEntry(video, channel);
-                entries.add(entry);
-            }
+            SyndFeed feed = FeedHelpers.createRssFeed(null);
 
             if (filteredChannels.size() == 1) {
                 if (!videos.isEmpty()) {
@@ -440,12 +352,8 @@ public class FeedHandlers {
                 query.select(root)
                         .where(root.get("uploader_id").in(subquery));
 
-                List<SubscriptionChannel> subscriptionItems = s.createQuery(query)
-                        .stream().parallel()
-                        .filter(channel -> channel.getUploader() != null)
-                        .sorted(Comparator.comparing(Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
-                        .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
-                                channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
+                List<SubscriptionChannel> subscriptionItems = FeedHelpers
+                        .generateSubscriptionsList(s.createQuery(query).stream())
                         .toList();
 
                 return mapper.writeValueAsBytes(subscriptionItems);
@@ -475,12 +383,8 @@ public class FeedHandlers {
             query.select(root);
             query.where(root.get("uploader_id").in(filtered));
 
-            List<SubscriptionChannel> subscriptionItems = s.createQuery(query)
-                    .stream().parallel()
-                    .filter(channel -> channel.getUploader() != null)
-                    .sorted(Comparator.comparing(Channel::getUploader, String.CASE_INSENSITIVE_ORDER))
-                    .map(channel -> new SubscriptionChannel("/channel/" + channel.getUploaderId(),
-                            channel.getUploader(), rewriteURL(channel.getUploaderAvatar()), channel.isVerified()))
+            List<SubscriptionChannel> subscriptionItems = FeedHelpers
+                    .generateSubscriptionsList(s.createQuery(query).stream())
                     .toList();
 
             return mapper.writeValueAsBytes(subscriptionItems);
