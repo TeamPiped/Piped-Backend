@@ -1,7 +1,10 @@
 package me.kavin.piped.utils;
 
 import com.rometools.modules.mediarss.MediaEntryModuleImpl;
-import com.rometools.modules.mediarss.types.*;
+import com.rometools.modules.mediarss.types.MediaContent;
+import com.rometools.modules.mediarss.types.Metadata;
+import com.rometools.modules.mediarss.types.PlayerReference;
+import com.rometools.modules.mediarss.types.Thumbnail;
 import com.rometools.rome.feed.synd.*;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
