@@ -16,7 +16,7 @@ dependencies {
     implementation 'it.unimi.dsi:fastutil-core:8.5.13'
     implementation 'commons-codec:commons-codec:1.16.1'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.77'
-    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:a6039002a5c844e4bb642cf8cdaca7109821adfe'
+    implementation 'com.github.FireMasterK.NewPipeExtractor:NewPipeExtractor:fcb1d28f5b7c5c2dd74f54b047c4978cc672a66c'
     implementation 'com.github.FireMasterK:nanojson:9f4af3b739cc13f3d0d9d4b758bbe2b2ae7119d7'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.17.0'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.0'
@@ -60,7 +60,10 @@ jar {
     }
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
 group = 'me.kavin.piped'
 version = '1.0'
-sourceCompatibility = JavaVersion.VERSION_21
-targetCompatibility = JavaVersion.VERSION_21
