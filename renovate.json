@@ -22,6 +22,12 @@
     },
     {
       "matchPackagePrefixes": [
+        "org.liquibase"
+      ],
+      "groupName": "liquibase"
+    },
+    {
+      "matchPackagePrefixes": [
         "com.github.firemasterk."
       ],
       "groupName": "Personal Forks",
