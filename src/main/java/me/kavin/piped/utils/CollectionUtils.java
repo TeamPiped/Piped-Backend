@@ -11,6 +11,7 @@ import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -74,6 +75,8 @@ public class CollectionUtils {
         info.getMetaInfo().forEach(metaInfoItem -> metaInfo.add(new MetaInfo(metaInfoItem.getTitle(), metaInfoItem.getContent().getContent(),
                 metaInfoItem.getUrls(), metaInfoItem.getUrlTexts()
         )));
+
+        audioStreams.sort(Comparator.comparingInt((PipedStream stream) -> stream.bitrate).reversed());
 
         return new Streams(info.getName(), info.getDescription().getContent(),
                 info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
