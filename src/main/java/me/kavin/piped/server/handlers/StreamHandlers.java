@@ -323,8 +323,10 @@ public class StreamHandlers {
                 body, getPreferredLocalization());
 
         final String videoId = JsonUtils.getString(jsonResponse, "endpoint.watchEndpoint.videoId");
+        final String start = JsonUtils.getString(jsonResponse, "endpoint.watchEndpoint.start");
+        final String end = JsonUtils.getString(jsonResponse, "endpoint.watchEndpoint.end");
 
-        return mapper.writeValueAsBytes(new VideoResolvedResponse(videoId));
+        return mapper.writeValueAsBytes(new VideoResolvedResponse(videoId, start, end));
     }
 
     public static byte[] commentsResponse(String videoId) throws Exception {
