@@ -31,8 +31,8 @@ dependencies {
     implementation 'io.activej:activej-launchers-http:5.5'
     implementation 'org.hsqldb:hsqldb:2.7.2'
     implementation 'org.postgresql:postgresql:42.7.3'
-    implementation 'org.hibernate:hibernate-core:6.4.1.Final'
-    implementation 'org.hibernate:hibernate-hikaricp:6.4.1.Final'
+    implementation 'org.hibernate:hibernate-core:6.5.2.Final'
+    implementation 'org.hibernate:hibernate-hikaricp:6.5.2.Final'
     implementation 'org.liquibase:liquibase-core:4.27.0'
     implementation('org.liquibase.ext:liquibase-yugabytedb:4.27.0') { exclude group: 'org.liquibase' }
     implementation 'com.zaxxer:HikariCP:5.1.0'
