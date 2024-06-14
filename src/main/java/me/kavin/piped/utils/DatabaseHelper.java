@@ -6,8 +6,10 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.*;
+import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hibernate.Session;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
@@ -235,5 +237,48 @@ public class DatabaseHelper {
         });
 
         return channel;
+    }
+
+    public static List<PlaylistBookmark> getPlaylistBookmarks(SharedSessionContract s, User user) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+        CriteriaQuery<PlaylistBookmark> cr = cb.createQuery(PlaylistBookmark.class);
+        Root<PlaylistBookmark> root = cr.from(PlaylistBookmark.class);
+        cr.select(root).where(cb.equal(root.get("owner"), user));
+
+        return s.createQuery(cr).getResultList();
+    }
+
+    public static boolean isBookmarked(SharedSessionContract s, User user, String playlistId) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+
+        CriteriaQuery<Long> cr = cb.createQuery(Long.class);
+        Root<PlaylistBookmark> root = cr.from(PlaylistBookmark.class);
+        cr.select(cb.count(root)).where(cb.and(
+                        cb.equal(root.get("owner"), user)),
+                cb.equal(root.get("playlist_id"), playlistId)
+        );
+
+        return s.createQuery(cr).getSingleResult() > 0;
+    }
+
+    public static PlaylistBookmark getPlaylistBookmarkFromPlaylistId(SharedSessionContract s, User user, String playlistId) {
+        CriteriaBuilder cb = s.getCriteriaBuilder();
+
+        CriteriaQuery<PlaylistBookmark> cr = cb.createQuery(PlaylistBookmark.class);
+        Root<PlaylistBookmark> root = cr.from(PlaylistBookmark.class);
+        cr.select(root).where(cb.and(
+                        cb.equal(root.get("owner"), user)),
+                cb.equal(root.get("playlist_id"), playlistId)
+        );
+
+        return s.createQuery(cr).uniqueResult();
+    }
+
+    public static void deletePlaylistBookmark(Session s, User user, String playlistId) {
+        var playlistBookmark = DatabaseHelper.getPlaylistBookmarkFromPlaylistId(s, user, playlistId);
+
+        var tr = s.beginTransaction();
+        s.remove(playlistBookmark);
+        tr.commit();
     }
 }

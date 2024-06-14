@@ -11,10 +11,7 @@ import io.activej.launchers.http.MultithreadedHttpServerLauncher;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.*;
-import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
-import me.kavin.piped.server.handlers.auth.FeedHandlers;
-import me.kavin.piped.server.handlers.auth.StorageHandlers;
-import me.kavin.piped.server.handlers.auth.UserHandlers;
+import me.kavin.piped.server.handlers.auth.*;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.lang3.StringUtils;
@@ -450,6 +447,34 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         var json = mapper.readTree(request.loadBody().getResult().asArray());
                         var playlistId = json.get("playlistId").textValue();
                         return getJsonResponse(AuthPlaylistHandlers.deletePlaylistResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/bookmarks/create", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var playlistId = mapper.readTree(request.loadBody().getResult().asArray()).get("playlistId").textValue();
+                        return getJsonResponse(PlaylistBookmarkHandlers.createPlaylistBookmarkResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/user/bookmarks", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(PlaylistBookmarkHandlers.playlistBookmarksResponse(request.getHeader(AUTHORIZATION)), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/user/bookmarks/bookmarked", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        return getJsonResponse(PlaylistBookmarkHandlers.isBookmarkedResponse(request.getHeader(AUTHORIZATION),
+                                request.getQueryParameter("playlistId")), "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(POST, "/user/bookmarks/delete", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var json = mapper.readTree(request.loadBody().getResult().asArray());
+                        var playlistId = json.get("playlistId").textValue();
+                        return getJsonResponse(PlaylistBookmarkHandlers.deletePlaylistBookmarkResponse(request.getHeader(AUTHORIZATION), playlistId), "private");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
