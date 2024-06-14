@@ -76,9 +76,10 @@ public class CollectionUtils {
         )));
 
         return new Streams(info.getName(), info.getDescription().getContent(),
-                info.getTextualUploadDate(), info.getUploaderName(), substringYouTube(info.getUploaderUrl()),
-                getLastThumbnail(info.getUploaderAvatars()), getLastThumbnail(info.getThumbnails()), info.getDuration(),
-                info.getViewCount(), info.getLikeCount(), info.getDislikeCount(), info.getUploaderSubscriberCount(), info.isUploaderVerified(),
+                info.getTextualUploadDate(), info.getUploadDate() != null ? info.getUploadDate().offsetDateTime().toInstant().toEpochMilli() : -1,
+                info.getUploaderName(), substringYouTube(info.getUploaderUrl()), getLastThumbnail(info.getUploaderAvatars()),
+                getLastThumbnail(info.getThumbnails()), info.getDuration(), info.getViewCount(), info.getLikeCount(), info.getDislikeCount(),
+                info.getUploaderSubscriberCount(), info.isUploaderVerified(),
                 audioStreams, videoStreams, relatedStreams, subtitles, livestream, rewriteVideoURL(info.getHlsUrl(), Map.of()),
                 rewriteVideoURL(info.getDashMpdUrl(), Map.of()), null, info.getCategory(), info.getLicence(),
                 info.getPrivacy().name().toLowerCase(), info.getTags(), metaInfo, chapters, previewFrames);
