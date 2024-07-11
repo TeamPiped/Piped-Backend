@@ -54,7 +54,7 @@ jobs:
         with:
           name: piped-old.jar
       - name: Build Old Image Locally
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           load: true
@@ -67,7 +67,7 @@ jobs:
         with:
           name: piped.jar
       - name: Build New Image Locally
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           load: true
