@@ -167,8 +167,7 @@ public class Constants {
             }
             System.getenv().forEach((key, value) -> {
                 if (key.startsWith("HIBERNATE"))
-                    String k = key.replace("_", ".").toLowerCase();
-                    hibernateProperties.put(k, value);
+                    hibernateProperties.put(key.replace("__", ".").toLowerCase(), value);
             });
             MATRIX_SERVER = getProperty(prop, "MATRIX_SERVER", "https://matrix-client.matrix.org");
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
