@@ -17,7 +17,7 @@ public class Streams {
 
     public boolean uploaderVerified;
 
-    public long duration, views, likes, dislikes, uploaderSubscriberCount;
+    public long duration, views, likes, dislikes, uploaderSubscriberCount, uploaded;
 
     public List<PipedStream> audioStreams, videoStreams;
 
@@ -33,7 +33,7 @@ public class Streams {
 
     public List<PreviewFrames> previewFrames;
 
-    public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
+    public Streams(String title, String description, String uploadDate, long uploaded, String uploader, String uploaderUrl,
                    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes, long uploaderSubscriberCount,
                    boolean uploaderVerified, List<PipedStream> audioStreams, List<PipedStream> videoStreams,
                    List<ContentItem> relatedStreams, List<Subtitle> subtitles, boolean livestream, String hls, String dash,
@@ -42,6 +42,7 @@ public class Streams {
         this.title = title;
         this.description = description;
         this.uploadDate = uploadDate;
+        this.uploaded = uploaded;
         this.uploader = uploader;
         this.uploaderUrl = uploaderUrl;
         this.uploaderAvatar = uploaderAvatar;
