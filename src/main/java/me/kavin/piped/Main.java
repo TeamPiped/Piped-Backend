@@ -44,9 +44,7 @@ public class Main {
 
         ReqwestUtils.init(REQWEST_PROXY, REQWEST_PROXY_USER, REQWEST_PROXY_PASS);
 
-        NewPipe.init(new DownloaderImpl(), new Localization("en", "US"), ContentCountry.DEFAULT, Multithreading.getCachedExecutor());
-        YoutubeStreamExtractor.forceFetchAndroidClient(true);
-        YoutubeStreamExtractor.forceFetchIosClient(true);
+        NewPipe.init(new DownloaderImpl(), new Localization("en", "US"), ContentCountry.DEFAULT);
         YoutubeParsingHelper.setConsentAccepted(CONSENT_COOKIE);
 
         // Warm up the extractor
