@@ -20,7 +20,8 @@ public class DatabaseSessionFactory {
 
             sessionFactory = configuration.addAnnotatedClass(User.class).addAnnotatedClass(Channel.class)
                     .addAnnotatedClass(Video.class).addAnnotatedClass(PubSub.class).addAnnotatedClass(Playlist.class)
-                    .addAnnotatedClass(PlaylistVideo.class).addAnnotatedClass(UnauthenticatedSubscription.class).buildSessionFactory();
+                    .addAnnotatedClass(PlaylistVideo.class).addAnnotatedClass(UnauthenticatedSubscription.class)
+                    .addAnnotatedClass(PlaylistBookmark.class).buildSessionFactory();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

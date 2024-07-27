@@ -147,6 +147,22 @@ curl "${CURLOPTS[@]}" $HOST/user/playlists/delete -X POST -H "Content-Type: appl
 # Import Playlist Test
 curl "${CURLOPTS[@]}" $HOST/import/playlist -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg playlistId "PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT" '{"playlistId": $playlistId}')" || exit 1
 
+PLAYLIST_ID="PLQSoWXSpjA3-egtFq45DcUydZ885W7MTT"
+# Create bookmark test
+curl "${CURLOPTS[@]}" $HOST/user/bookmarks/create -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg playlistId "$PLAYLIST_ID" '{"playlistId": $playlistId}')" || exit 1
+
+# See created bookmarks
+curl "${CURLOPTS[@]}" $HOST/user/bookmarks -H "Authorization: $AUTH_TOKEN" || exit 1
+
+# Check bookmarked status of playlist
+curl "${CURLOPTS[@]}" $HOST/user/bookmarks/bookmarked -G --data-urlencode "playlistId=$PLAYLIST_ID" -H "Authorization: $AUTH_TOKEN" || exit 1
+
+# Delete bookmark
+curl "${CURLOPTS[@]}" $HOST/user/bookmarks/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg playlistId "$PLAYLIST_ID" '{"playlistId": $playlistId}')" || exit 1
+
+# See created bookmarks
+curl "${CURLOPTS[@]}" $HOST/user/bookmarks -H "Authorization: $AUTH_TOKEN" || exit 1
+
 # Delete User Test
 curl "${CURLOPTS[@]}" $HOST/user/delete -X POST -H "Content-Type: application/json" -H "Authorization: $AUTH_TOKEN" -d "$(jq -n --compact-output --arg password "$PASS" '{"password": $password}')" || exit 1
 
