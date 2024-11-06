@@ -16,7 +16,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
       - name: set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: zulu
@@ -24,7 +24,7 @@ jobs:
       - name: Run Build
         run: ./gradlew shadowJar
       - run: mv build/libs/piped-*-all.jar piped.jar
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: piped-old.jar
           path: piped.jar
@@ -50,33 +50,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: echo "unknown" > VERSION
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: piped-old.jar
       - name: Build Old Image Locally
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           file: ${{ matrix.dockerfile }}
           tags: 1337kavin/piped:latest
       - name: Start Docker-Compose services
-        run: docker-compose -f ${{ matrix.docker-compose-file }} up -d && sleep ${{ matrix.sleep }}
+        run: docker compose -f ${{ matrix.docker-compose-file }} up -d && sleep ${{ matrix.sleep }}
       - run: rm piped.jar
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: piped.jar
       - name: Build New Image Locally
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           file: ${{ matrix.dockerfile }}
           tags: 1337kavin/piped:latest
       - name: Start Docker-Compose services
-        run: docker-compose -f ${{ matrix.docker-compose-file }} up -d && sleep ${{ matrix.sleep }}
+        run: docker compose -f ${{ matrix.docker-compose-file }} up -d && sleep ${{ matrix.sleep }}
       - name: Run tests
         run: ./testing/api-test.sh
       - name: Collect services logs
         if: failure()
-        run: docker-compose -f ${{ matrix.docker-compose-file }} logs
+        run: docker compose -f ${{ matrix.docker-compose-file }} logs

@@ -1,13 +1,17 @@
 package me.kavin.piped.utils;
 
 import com.rometools.modules.mediarss.MediaEntryModuleImpl;
-import com.rometools.modules.mediarss.types.*;
+import com.rometools.modules.mediarss.types.MediaContent;
+import com.rometools.modules.mediarss.types.Metadata;
+import com.rometools.modules.mediarss.types.PlayerReference;
+import com.rometools.modules.mediarss.types.Thumbnail;
 import com.rometools.rome.feed.synd.*;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Channel;
 import me.kavin.piped.utils.obj.db.Video;
 import okhttp3.Request;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.hibernate.StatelessSession;
 
@@ -86,7 +90,7 @@ public class ChannelHelpers {
         entry.setTitle(video.getTitle());
         entry.setPublishedDate(new Date(video.getUploaded()));
 
-        String contentText = String.format("Title: %s\nViews: %d\nId: %s\nDuration: %d\nIs YT Shorts: %b", video.getTitle(), video.getViews(), video.getId(), video.getDuration(), video.isShort());
+        String contentText = String.format("Title: %s\nViews: %d\nId: %s\nDuration: %s\nIs YT Shorts: %b", video.getTitle(), video.getViews(), video.getId(), DurationFormatUtils.formatDuration(video.getDuration() * 1000, "[HH]':'mm':'ss"), video.isShort());
         content.setValue(contentText);
 
         String thumbnailContent =
@@ -117,5 +121,15 @@ public class ChannelHelpers {
         entry.getModules().add(mediaModule);
 
         return entry;
+    }
+
+    public static void addChannelInformation(SyndFeed feed, Channel channel) {
+        feed.setTitle("Piped - " + channel.getUploader());
+        SyndImage channelIcon = new SyndImageImpl();
+        channelIcon.setLink(Constants.FRONTEND_URL + "/channel/" + channel.getUploaderId());
+        channelIcon.setTitle(channel.getUploader());
+        channelIcon.setUrl(rewriteURL(channel.getUploaderAvatar()));
+        feed.setIcon(channelIcon);
+        feed.setImage(channelIcon);
     }
 }

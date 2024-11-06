@@ -22,14 +22,14 @@ import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
-import rocks.kavin.reqwest4j.ReqwestUtils;
 
 import java.io.File;
 import java.io.FileReader;
-import java.util.List;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
-import java.util.regex.Pattern;
 
 public class Constants {
 
@@ -41,6 +41,8 @@ public class Constants {
     public static final String PROXY_PART;
 
     public static final String IMAGE_PROXY_PART;
+
+    public static final byte[] PROXY_HASH_SECRET;
 
     public static final String CAPTCHA_BASE_URL, CAPTCHA_API_KEY;
 
@@ -81,6 +83,8 @@ public class Constants {
 
     public static final int SUBSCRIPTIONS_EXPIRY;
 
+    public static final boolean CONSENT_COOKIE;
+
     public static final String SENTRY_DSN;
 
     public static final String S3_ENDPOINT;
@@ -101,7 +105,7 @@ public class Constants {
 
     public static final String GEO_RESTRICTION_CHECKER_URL;
 
-    public static final String YOUTUBE_COUNTRY;
+    public static String YOUTUBE_COUNTRY;
 
     public static final String VERSION;
     public static final List<OidcProvider> OIDC_PROVIDERS;
@@ -130,6 +134,7 @@ public class Constants {
                     String.valueOf(Runtime.getRuntime().availableProcessors()));
             PROXY_PART = getProperty(prop, "PROXY_PART");
             IMAGE_PROXY_PART = getProperty(prop, "IMAGE_PROXY_PART", PROXY_PART);
+            PROXY_HASH_SECRET = Optional.ofNullable(getProperty(prop, "PROXY_HASH_SECRET")).map(s -> s.getBytes(StandardCharsets.UTF_8)).orElse(null);
             CAPTCHA_BASE_URL = getProperty(prop, "CAPTCHA_BASE_URL");
             CAPTCHA_API_KEY = getProperty(prop, "CAPTCHA_API_KEY");
             PUBLIC_URL = getProperty(prop, "API_URL");
@@ -138,7 +143,6 @@ public class Constants {
             REQWEST_PROXY = getProperty(prop, "REQWEST_PROXY");
             REQWEST_PROXY_USER = getProperty(prop, "REQWEST_PROXY_USER");
             REQWEST_PROXY_PASS = getProperty(prop, "REQWEST_PROXY_PASS");
-            ReqwestUtils.init(REQWEST_PROXY, REQWEST_PROXY_USER, REQWEST_PROXY_PASS);
             FRONTEND_URL = getProperty(prop, "FRONTEND_URL", "https://piped.video");
             COMPROMISED_PASSWORD_CHECK = Boolean.parseBoolean(getProperty(prop, "COMPROMISED_PASSWORD_CHECK", "true"));
             DISABLE_REGISTRATION = Boolean.parseBoolean(getProperty(prop, "DISABLE_REGISTRATION", "false"));
@@ -151,6 +155,7 @@ public class Constants {
             DISABLE_SERVER = Boolean.parseBoolean(getProperty(prop, "DISABLE_SERVER", "false"));
             DISABLE_LBRY = Boolean.parseBoolean(getProperty(prop, "DISABLE_LBRY", "false"));
             SUBSCRIPTIONS_EXPIRY = Integer.parseInt(getProperty(prop, "SUBSCRIPTIONS_EXPIRY", "30"));
+            CONSENT_COOKIE = Boolean.parseBoolean(getProperty(prop, "CONSENT_COOKIE", "true"));
             SENTRY_DSN = getProperty(prop, "SENTRY_DSN", "");
             S3_ENDPOINT = getProperty(prop, "S3_ENDPOINT");
             S3_ACCESS_KEY = getProperty(prop, "S3_ACCESS_KEY");
@@ -225,18 +230,6 @@ public class Constants {
                     .addInterceptor(BrotliInterceptor.INSTANCE);
             h2client = builder.build();
             h2_no_redir_client = builder_noredir.build();
-            String temp = null;
-            try {
-                var html = RequestUtils.sendGet("https://www.youtube.com/").get();
-                var regex = Pattern.compile("GL\":\"([A-Z]{2})\"", Pattern.MULTILINE);
-                var matcher = regex.matcher(html);
-                if (matcher.find()) {
-                    temp = matcher.group(1);
-                }
-            } catch (Exception ignored) {
-                System.err.println("Failed to get country from YouTube!");
-            }
-            YOUTUBE_COUNTRY = temp;
             VERSION = new File("VERSION").exists() ?
                     IOUtils.toString(new FileReader("VERSION")) :
                     "unknown";

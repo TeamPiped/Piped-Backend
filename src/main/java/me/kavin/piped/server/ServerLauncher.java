@@ -2,15 +2,12 @@ package me.kavin.piped.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.rometools.rome.feed.synd.SyndFeed;
-import com.rometools.rome.io.SyndFeedInput;
 import io.activej.config.Config;
 import io.activej.http.*;
 import io.activej.inject.annotation.Provides;
 import io.activej.inject.module.AbstractModule;
 import io.activej.inject.module.Module;
 import io.activej.launchers.http.MultithreadedHttpServerLauncher;
-import io.sentry.Sentry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.consts.Constants;
 import me.kavin.piped.server.handlers.*;
@@ -28,13 +25,8 @@ import me.kavin.piped.utils.resp.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
-import org.hibernate.StatelessSession;
 import org.jetbrains.annotations.NotNull;
-import org.schabi.newpipe.extractor.exceptions.ParsingException;
-import org.schabi.newpipe.extractor.localization.DateWrapper;
-import org.xml.sax.InputSource;
 
-import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Objects;
@@ -44,7 +36,6 @@ import static io.activej.config.converter.ConfigConverters.ofInetSocketAddress;
 import static io.activej.http.HttpHeaders.*;
 import static io.activej.http.HttpMethod.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static me.kavin.piped.consts.Constants.YOUTUBE_SERVICE;
 import static me.kavin.piped.consts.Constants.mapper;
 
 public class ServerLauncher extends MultithreadedHttpServerLauncher {
@@ -101,7 +92,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     try {
                         return getJsonResponse(
                                 SponsorBlockUtils.getSponsors(request.getPathParameter("videoId"),
-                                        request.getQueryParameter("category")).getBytes(UTF_8),
+                                        request.getQueryParameter("category"), request.getQueryParameter("actionType")).getBytes(UTF_8),
                                 "public, max-age=3600");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -333,7 +324,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/feed/rss", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        return getRawResponse(FeedHandlers.feedResponseRSS(request.getQueryParameter("authToken")),
+                        return getRawResponse(FeedHandlers.feedResponseRSS(request.getQueryParameter("authToken"),
+                                        request.getQueryParameter("filter")),
                                 "application/atom+xml", "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
@@ -357,7 +349,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 })).map(GET, "/feed/unauthenticated/rss", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getRawResponse(FeedHandlers.unauthenticatedFeedResponseRSS(
-                                getArray(request.getQueryParameter("channels"))
+                                getArray(request.getQueryParameter("channels")),
+                                request.getQueryParameter("filter")
                         ), "application/atom+xml", "public, s-maxage=120");
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());

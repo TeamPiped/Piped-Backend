@@ -4,11 +4,24 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="1-0" author="kavin" runInTransaction="false">
+    <changeSet id="1-0" author="kavin" dbms="!hsqldb" runInTransaction="false">
         <!-- drop constraint since it prevents breaks unauthenticated subscriptions from working -->
         <sql>ALTER TABLE unauthenticated_subscriptions DROP CONSTRAINT IF EXISTS fk_unauthenticated_subscriptions_id_channels;</sql>
         <rollback>
             <sql>ALTER TABLE unauthenticated_subscriptions ADD CONSTRAINT fk_unauthenticated_subscriptions_id_channels FOREIGN KEY (id) REFERENCES channels(uploader_id);</sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="1-0-hsqldb" author="kavin" dbms="hsqldb" runInTransaction="false">
+        <!-- drop constraint since it prevents breaks unauthenticated subscriptions from working -->
+        <dropForeignKeyConstraint baseTableName="unauthenticated_subscriptions" constraintName="fk_unauthenticated_subscriptions_id_channels"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="unauthenticated_subscriptions" constraintName="fk_unauthenticated_subscriptions_id_channels"/>
+            <addForeignKeyConstraint  baseColumnNames="id"
+                                      baseTableName="unauthenticated_subscriptions"
+                                      constraintName="fk_unauthenticated_subscriptions_id_channels"
+                                      referencedColumnNames="id"
+                                      referencedTableName="channels"
+                                      validate="true"/>
         </rollback>
     </changeSet>
 

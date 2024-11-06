@@ -13,29 +13,58 @@ import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.Video;
 import okhttp3.OkHttpClient;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeJavaScriptPlayerManager;
-import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor;
+import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+import rocks.kavin.reqwest4j.ReqwestUtils;
 
+import java.security.Security;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static me.kavin.piped.consts.Constants.MATRIX_SERVER;
+import static me.kavin.piped.consts.Constants.*;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        NewPipe.init(new DownloaderImpl(), new Localization("en", "US"), ContentCountry.DEFAULT, Multithreading.getCachedExecutor());
-        YoutubeStreamExtractor.forceFetchAndroidClient(true);
-        YoutubeStreamExtractor.forceFetchIosClient(true);
+        Security.setProperty("crypto.policy", "unlimited");
+        Security.addProvider(new BouncyCastleProvider());
+
+        ReqwestUtils.init(REQWEST_PROXY, REQWEST_PROXY_USER, REQWEST_PROXY_PASS);
+
+        NewPipe.init(new DownloaderImpl(), new Localization("en", "US"), ContentCountry.DEFAULT);
+        YoutubeParsingHelper.setConsentAccepted(CONSENT_COOKIE);
+
+        // Warm up the extractor
+        try {
+            StreamInfo.getInfo("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        } catch (Exception ignored) {
+        }
+
+        // Find country code, used for georestricted videos
+        Thread.ofVirtual().start(() -> {
+            try {
+                var html = RequestUtils.sendGet("https://www.youtube.com/").get();
+                var regex = Pattern.compile("GL\":\"([A-Z]{2})\"", Pattern.MULTILINE);
+                var matcher = regex.matcher(html);
+                if (matcher.find()) {
+                    YOUTUBE_COUNTRY = matcher.group(1);
+                }
+            } catch (Exception ignored) {
+                System.err.println("Failed to get country from YouTube!");
+            }
+        });
 
         Sentry.init(options -> {
             options.setDsn(Constants.SENTRY_DSN);
