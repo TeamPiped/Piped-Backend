@@ -2,28 +2,35 @@ package me.kavin.piped.utils.obj;
 
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.Issuer;
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import com.nimbusds.openid.connect.sdk.validators.IDTokenValidator;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 public class OidcProvider {
-    public String name;
-    public ClientID clientID;
-    public Secret clientSecret;
+    public final String name;
+    public final ClientID clientID;
+    public final Secret clientSecret;
     public URI authUri;
     public URI tokenUri;
     public URI userinfoUri;
+    public IDTokenValidator validator;
 
-    public OidcProvider(String name, String clientID, String clientSecret, String authUri, String tokenUri, String userinfoUri) {
+    public OidcProvider(String name, String clientId, String clientSecret, String issuer){
         this.name = name;
-        this.clientID = new ClientID(clientID);
+        this.clientID = new ClientID(clientId);
         this.clientSecret = new Secret(clientSecret);
+
         try {
-            this.authUri = new URI(authUri);
-            this.tokenUri = new URI(tokenUri);
-            this.userinfoUri = new URI(userinfoUri);
-        } catch (URISyntaxException e) {
-            System.err.println("Malformed URI for oidc provider '" + name + "' found.");
+            Issuer iss = new Issuer(issuer);
+            OIDCProviderMetadata providerData = OIDCProviderMetadata.resolve(iss);
+            this.authUri = providerData.getAuthorizationEndpointURI();
+            this.tokenUri = providerData.getTokenEndpointURI();
+            this.userinfoUri = providerData.getUserInfoEndpointURI();
+            this.validator = new IDTokenValidator(iss, this.clientID, providerData.getIDTokenJWSAlgs().getFirst(), providerData.getJWKSetURI().toURL());
+        } catch (Exception e ) {
+            System.err.println("Failed to get configuration for '" + name + "': " + e);
             System.exit(1);
         }
     }

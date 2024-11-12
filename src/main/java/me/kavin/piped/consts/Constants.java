@@ -196,17 +196,13 @@ public class Constants {
                 }
             });
             oidcProviderConfig.forEach((provider, config) -> {
-                ObjectNode providerNode = frontendProperties.putObject(provider);
                 OIDC_PROVIDERS.add(new OidcProvider(
-                        getRequiredMapValue(config, "name"),
+                        provider,
                         getRequiredMapValue(config, "clientId"),
                         getRequiredMapValue(config, "clientSecret"),
-                        getRequiredMapValue(config, "authUri"),
-                        getRequiredMapValue(config, "tokenUri"),
-                        getRequiredMapValue(config, "userinfoUri")
+                        getRequiredMapValue(config, "issuer")
                 ));
                 providerNames.add(provider);
-                config.forEach(providerNode::put);
             });
             frontendProperties.put("imageProxyUrl", IMAGE_PROXY_PART);
             frontendProperties.putArray("countries").addAll(

@@ -274,7 +274,7 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                         return switch (function) {
                             case "login" -> UserHandlers.oidcLoginResponse(provider, request.getQueryParameter("redirect"));
                             case "callback" -> UserHandlers.oidcCallbackResponse(provider, URI.create(request.getFullUrl()));
-                            case "delete" -> UserHandlers.oidcDeleteResponse(provider, URI.create(request.getFullUrl()));
+                            case "delete" -> UserHandlers.oidcDeleteCallback(provider, URI.create(request.getFullUrl()));
                             default -> HttpResponse.ofCode(500).withHtml("Invalid function `" + function + "`");
                         };
                     } catch (Exception e) {
@@ -488,6 +488,13 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                                 DeleteUserRequest.class);
                         return getJsonResponse(UserHandlers.deleteUserResponse(request.getHeader(AUTHORIZATION), body.password),
                                 "private");
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
+                })).map(GET, "/user/delete", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        var session = request.getQueryParameter("session");
+                        return UserHandlers.oidcDeleteRequest(session);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

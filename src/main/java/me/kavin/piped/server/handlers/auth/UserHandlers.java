@@ -1,12 +1,18 @@
 package me.kavin.piped.server.handlers.auth;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.proc.BadJOSEException;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.*;
+import com.nimbusds.openid.connect.sdk.claims.IDTokenClaimsSet;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import io.activej.http.HttpResponse;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -131,7 +137,8 @@ public class UserHandlers {
         }
 
         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/callback");
-        OidcData data = new OidcData(redirectUri);
+        CodeVerifier codeVerifier = new CodeVerifier();
+        OidcData data = new OidcData(redirectUri, codeVerifier);
         String state = data.getState();
 
         PENDING_OIDC.put(state, data);
@@ -139,8 +146,11 @@ public class UserHandlers {
         AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
                 new ResponseType("code"),
                 new Scope("openid"),
-                provider.clientID, callback).endpointURI(provider.authUri)
-                .state(new State(state)).nonce(data.nonce).build();
+                provider.clientID, callback)
+            .endpointURI(provider.authUri)
+               .codeChallenge(codeVerifier, CodeChallengeMethod.S256)
+                .state(new State(state))
+                .nonce(data.nonce).build();
 
         if (redirectUri.equals(Constants.FRONTEND_URL + "/login")) {
             return HttpResponse.redirect302(oidcRequest.toURI().toString());
@@ -155,11 +165,9 @@ public class UserHandlers {
                         "\">here</a></body></html>");
     }
     public static HttpResponse oidcCallbackResponse(OidcProvider provider, URI requestUri) throws Exception {
-        ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
+        AuthenticationSuccessResponse authResponse = parseOidcUri(requestUri);
 
-        AuthenticationSuccessResponse sr = parseOidcUri(requestUri);
-
-        OidcData data = PENDING_OIDC.get(sr.getState().toString());
+        OidcData data = PENDING_OIDC.get(authResponse.getState().toString());
         if (data == null) {
             return HttpResponse.ofCode(400).withHtml(
                     "Your oidc provider sent invalid state data. Try again or contact your oidc admin"
@@ -167,12 +175,15 @@ public class UserHandlers {
         }
 
         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/callback");
-        AuthorizationCode code = sr.getAuthorizationCode();
-        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
+        AuthorizationCode code = authResponse.getAuthorizationCode();
 
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.pkceVerifier);
 
-        TokenRequest tokenReq = new TokenRequest(provider.tokenUri, clientAuth, codeGrant);
-        OIDCTokenResponse tokenResponse = (OIDCTokenResponse) OIDCTokenResponseParser.parse(tokenReq.toHTTPRequest().send());
+        ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
+        TokenRequest tokenReq = new TokenRequest.Builder(provider.tokenUri, clientAuth, codeGrant).build();
+
+        com.nimbusds.oauth2.sdk.http.HTTPResponse tokenResponseText = tokenReq.toHTTPRequest().send();
+        OIDCTokenResponse tokenResponse = (OIDCTokenResponse) OIDCTokenResponseParser.parse(tokenResponseText);
 
         if (!tokenResponse.indicatesSuccess()) {
             TokenErrorResponse errorResponse = tokenResponse.toErrorResponse();
@@ -181,11 +192,17 @@ public class UserHandlers {
 
         OIDCTokenResponse successResponse = tokenResponse.toSuccessResponse();
 
-        if (data.isInvalidNonce((String) successResponse.getOIDCTokens().getIDToken().getJWTClaimsSet().getClaim("nonce"))) {
-            return HttpResponse.ofCode(400).withHtml(
-                    "Your oidc provider sent an invalid nonce. Try again or contact your oidc admin"
-            );
-        }
+        JWT idToken = JWTParser.parse(successResponse.getOIDCTokens().getIDTokenString());
+
+        try {
+            provider.validator.validate(idToken, data.nonce);
+            } catch (BadJOSEException e) {
+                System.out.println("Invalid token received: " + e.toString());
+                return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
+            } catch (JOSEException e) {
+                System.out.println("Token processing error" + e.toString());
+                return HttpResponse.ofCode(500).withHtml("Internal processing error. Please try again");
+            }
 
         UserInfoRequest ur = new UserInfoRequest(provider.userinfoUri, successResponse.getOIDCTokens().getBearerAccessToken());
         UserInfoResponse userInfoResponse = UserInfoResponse.parse(ur.toHTTPRequest().send());
@@ -200,38 +217,86 @@ public class UserHandlers {
 
         UserInfo userInfo = userInfoResponse.toSuccessResponse().getUserInfo();
 
-
-        String uid = userInfo.getSubject().toString();
+        String sub = userInfo.getSubject().toString();
         String sessionId;
         try (Session s = DatabaseSessionFactory.createSession()) {
-            // TODO: Add oidc provider to database
-            String dbName = provider + "-" + uid;
             CriteriaBuilder cb = s.getCriteriaBuilder();
-            CriteriaQuery<User> cr = cb.createQuery(User.class);
-            Root<User> root = cr.from(User.class);
-            cr.select(root).where(root.get("username").in(
-                    dbName
-            ));
+            CriteriaQuery<OidcUserData> cr = cb.createQuery(OidcUserData.class);
+            Root<OidcUserData> root = cr.from(OidcUserData.class);
 
-            User dbuser = s.createQuery(cr).uniqueResult();
+            cr.select(root).where(root.get("sub").in(sub));
 
-            if (dbuser == null) {
-                User newuser = new User(dbName, "", Set.of());
+            OidcUserData dbuser = s.createQuery(cr).uniqueResult();
+
+            if (dbuser != null) {
+                sessionId = dbuser.getUser().getSessionId();
+            } else {
+                String username = userInfo.getPreferredUsername();
+                OidcUserData newUser = new OidcUserData(sub, username, provider.name);
 
                 var tr = s.beginTransaction();
-                s.persist(newuser);
+                s.persist(newUser);
                 tr.commit();
 
-
-                sessionId = newuser.getSessionId();
-            } else sessionId = dbuser.getSessionId();
+                sessionId = newUser.getUser().getSessionId();
+            }
         }
         return HttpResponse.redirect302(data.data + "?session=" + sessionId);
-
     }
 
-    public static HttpResponse oidcDeleteResponse(OidcProvider provider, URI requestUri) throws Exception {
-        ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
+    public static HttpResponse oidcDeleteRequest(String session) throws Exception {
+        
+        if (StringUtils.isBlank(session)) {
+            return HttpResponse.ofCode(400).withHtml("session is a required parameter");
+        }
+
+        OidcProvider provider = null;
+        try (Session s = DatabaseSessionFactory.createSession()) {
+
+          User user = DatabaseHelper.getUserFromSession(session);
+
+          if (user == null) {
+            return HttpResponse.ofCode(400).withHtml("User not found");
+          }
+
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<OidcUserData> cr = cb.createQuery(OidcUserData.class);
+            Root<OidcUserData> root = cr.from(OidcUserData.class);
+            cr.select(root).where(cb.equal(root.get("user"), user));
+
+            OidcUserData oidcUserData = s.createQuery(cr).uniqueResult();
+
+            for (OidcProvider test: Constants.OIDC_PROVIDERS) {
+              if (test.name.equals(oidcUserData.getProvider())) {
+                  provider = test;
+              }
+            }
+          }
+
+          if (provider == null) {
+            return HttpResponse.ofCode(400).withHtml("Invalid user");
+          }
+            CodeVerifier pkceVerifier = new CodeVerifier();
+            
+            URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
+            OidcData data = new OidcData(session + "|" + Instant.now().getEpochSecond(), pkceVerifier);
+            String state = data.getState();
+            PENDING_OIDC.put(state, data);
+
+            AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
+                    new ResponseType("code"),
+                    new Scope("openid"), provider.clientID, callback)
+                    .endpointURI(provider.authUri)
+                   .codeChallenge(pkceVerifier, CodeChallengeMethod.S256)
+                    .state(new State(state))
+                    .nonce(data.nonce)
+                    // This parameter is optional and the idp does't have to honor it.
+                    .maxAge(0)
+                    .build();
+
+        return HttpResponse.redirect302(oidcRequest.toURI().toString());
+    }
+    public static HttpResponse oidcDeleteCallback(OidcProvider provider, URI requestUri) throws Exception {
 
         AuthenticationSuccessResponse sr = parseOidcUri(requestUri);
 
@@ -247,10 +312,11 @@ public class UserHandlers {
 
         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/delete");
         AuthorizationCode code = sr.getAuthorizationCode();
-        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback);
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.pkceVerifier);
 
+        ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
 
-        TokenRequest tokenRequest = new TokenRequest(provider.tokenUri, clientAuth, codeGrant);
+        TokenRequest tokenRequest = new TokenRequest.Builder(provider.tokenUri, clientAuth, codeGrant).build();
         TokenResponse tokenResponse = OIDCTokenResponseParser.parse(tokenRequest.toHTTPRequest().send());
 
         if (!tokenResponse.indicatesSuccess()) {
@@ -260,15 +326,24 @@ public class UserHandlers {
 
         OIDCTokenResponse successResponse = (OIDCTokenResponse) tokenResponse.toSuccessResponse();
 
-        JWTClaimsSet claims = successResponse.getOIDCTokens().getIDToken().getJWTClaimsSet();
+        JWT idToken = JWTParser.parse(successResponse.getOIDCTokens().getIDTokenString());
 
-        if (data.isInvalidNonce((String) claims.getClaim("nonce"))) {
-            return HttpResponse.ofCode(400).withHtml(
-                    "Your oidc provider sent an invalid nonce. Please try again or contact your oidc admin."
-            );
+        IDTokenClaimsSet claims;
+        try {
+            claims = provider.validator.validate(idToken, data.nonce);
+            } catch (BadJOSEException e) {
+                System.out.println("Invalid token received: " + e.toString());
+                return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
+            } catch (JOSEException e) {
+                System.out.println("Token processing error" + e.toString());
+                return HttpResponse.ofCode(500).withHtml("Internal processing error. Please try again");
+            }
+
+        Long authTime = (Long) claims.getNumberClaim("auth_time");
+
+        if (authTime == null) {
+            return HttpResponse.ofCode(400).withHtml("Couldn't get the `auth_time` claim from the provided id token");
         }
-
-        long authTime = (long) claims.getClaim("auth_time");
 
         if (authTime < start) {
             return HttpResponse.ofCode(500).withHtml(
@@ -277,7 +352,6 @@ public class UserHandlers {
         }
 
         try (Session s = DatabaseSessionFactory.createSession()) {
-
             var tr = s.beginTransaction();
             s.remove(DatabaseHelper.getUserFromSession(session));
             tr.commit();
@@ -297,31 +371,6 @@ public class UserHandlers {
 
             String hash = user.getPassword();
 
-            if (hash.isEmpty()) {
-
-                CriteriaBuilder cb = s.getCriteriaBuilder();
-                CriteriaQuery<OidcUserData> cr = cb.createQuery(OidcUserData.class);
-                Root<OidcUserData> root = cr.from(OidcUserData.class);
-                cr.select(root).where(cb.equal(root.get("user"), user.getId()));
-
-                OidcUserData oidcUserData = s.createQuery(cr).uniqueResult();
-
-                //TODO: Get user from oidc table and lookup provider
-                OidcProvider provider = Constants.OIDC_PROVIDERS.get(0);
-                URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
-                OidcData data = new OidcData(session + "|" + Instant.now().getEpochSecond());
-                String state = data.getState();
-                PENDING_OIDC.put(state, data);
-
-                AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
-                        new ResponseType("code"),
-                        new Scope("openid"), provider.clientID, callback).endpointURI(provider.authUri)
-                            .state(new State(state)).nonce(data.nonce).maxAge(0).build();
-
-
-                return mapper.writeValueAsBytes(mapper.createObjectNode()
-                        .put("redirect", oidcRequest.toURI().toString()));
-            }
             if (!hashMatch(hash, pass))
                 ExceptionHandler.throwErrorResponse(new IncorrectCredentialsResponse());
 
@@ -332,7 +381,6 @@ public class UserHandlers {
             return mapper.writeValueAsBytes(new DeleteUserResponse(user.getUsername()));
         }
     }
-
 
     public static byte[] logoutResponse(String session) throws JsonProcessingException {
 
