@@ -131,7 +131,7 @@ public class UserHandlers {
         }
     }
 
-    public static HttpResponse oidcLoginResponse(OidcProvider provider, String redirectUri) throws Exception{
+    public static HttpResponse oidcLoginResponse(OidcProvider provider, String redirectUri) throws Exception {
         if (StringUtils.isBlank(redirectUri)) {
             return HttpResponse.ofCode(400).withHtml("redirect is a required parameter");
         }
@@ -146,9 +146,10 @@ public class UserHandlers {
         AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
                 new ResponseType("code"),
                 new Scope("openid"),
-                provider.clientID, callback)
-            .endpointURI(provider.authUri)
-               .codeChallenge(codeVerifier, CodeChallengeMethod.S256)
+                provider.clientID, callback
+        )
+                .endpointURI(provider.authUri)
+                .codeChallenge(codeVerifier, CodeChallengeMethod.S256)
                 .state(new State(state))
                 .nonce(data.nonce).build();
 
@@ -164,6 +165,7 @@ public class UserHandlers {
                         oidcRequest.toURI().toString() +
                         "\">here</a></body></html>");
     }
+
     public static HttpResponse oidcCallbackResponse(OidcProvider provider, URI requestUri) throws Exception {
         AuthenticationSuccessResponse authResponse = parseOidcUri(requestUri);
 
@@ -196,20 +198,18 @@ public class UserHandlers {
 
         try {
             provider.validator.validate(idToken, data.nonce);
-            } catch (BadJOSEException e) {
-                System.out.println("Invalid token received: " + e.toString());
-                return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
-            } catch (JOSEException e) {
-                System.out.println("Token processing error" + e.toString());
-                return HttpResponse.ofCode(500).withHtml("Internal processing error. Please try again");
-            }
+        } catch (BadJOSEException e) {
+            System.err.println("Invalid token received: " + e);
+            return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
+        } catch (JOSEException e) {
+            System.err.println("Token processing error: " + e);
+            return HttpResponse.ofCode(500).withHtml("Internal processing error. Please try again");
+        }
 
         UserInfoRequest ur = new UserInfoRequest(provider.userinfoUri, successResponse.getOIDCTokens().getBearerAccessToken());
         UserInfoResponse userInfoResponse = UserInfoResponse.parse(ur.toHTTPRequest().send());
 
         if (!userInfoResponse.indicatesSuccess()) {
-            System.out.println(userInfoResponse.toErrorResponse().getErrorObject().getCode());
-            System.out.println(userInfoResponse.toErrorResponse().getErrorObject().getDescription());
             return HttpResponse.ofCode(500).withHtml(
                     "The userinfo endpoint returned an error. Please try again or contact your oidc admin\n\n" +
                             userInfoResponse.toErrorResponse().getErrorObject().getDescription());
@@ -245,19 +245,19 @@ public class UserHandlers {
     }
 
     public static HttpResponse oidcDeleteRequest(String session) throws Exception {
-        
+
         if (StringUtils.isBlank(session)) {
             return HttpResponse.ofCode(400).withHtml("session is a required parameter");
         }
 
         OidcProvider provider = null;
+
         try (Session s = DatabaseSessionFactory.createSession()) {
+            User user = DatabaseHelper.getUserFromSession(session);
 
-          User user = DatabaseHelper.getUserFromSession(session);
-
-          if (user == null) {
-            return HttpResponse.ofCode(400).withHtml("User not found");
-          }
+            if (user == null) {
+                return HttpResponse.ofCode(400).withHtml("User not found");
+            }
 
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<OidcUserData> cr = cb.createQuery(OidcUserData.class);
@@ -266,41 +266,50 @@ public class UserHandlers {
 
             OidcUserData oidcUserData = s.createQuery(cr).uniqueResult();
 
-            for (OidcProvider test: Constants.OIDC_PROVIDERS) {
-              if (test.name.equals(oidcUserData.getProvider())) {
-                  provider = test;
-              }
+            if (oidcUserData == null) {
+                return HttpResponse.ofCode(400).withHtml("User doesn't have an oidc account");
             }
-          }
 
-          if (provider == null) {
+            for (OidcProvider oidcProvider : Constants.OIDC_PROVIDERS) {
+                if (oidcProvider.name.equals(oidcUserData.getProvider())) {
+                    provider = oidcProvider;
+                    break;
+                }
+            }
+        }
+
+        if (provider == null) {
             return HttpResponse.ofCode(400).withHtml("Invalid user");
-          }
-            CodeVerifier pkceVerifier = new CodeVerifier();
-            
-            URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
-            OidcData data = new OidcData(session + "|" + Instant.now().getEpochSecond(), pkceVerifier);
-            String state = data.getState();
-            PENDING_OIDC.put(state, data);
+        }
 
-            AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
-                    new ResponseType("code"),
-                    new Scope("openid"), provider.clientID, callback)
-                    .endpointURI(provider.authUri)
-                   .codeChallenge(pkceVerifier, CodeChallengeMethod.S256)
-                    .state(new State(state))
-                    .nonce(data.nonce)
-                    // This parameter is optional and the idp does't have to honor it.
-                    .maxAge(0)
-                    .build();
+        CodeVerifier pkceVerifier = new CodeVerifier();
+
+        URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
+        OidcData data = new OidcData(session + "|" + Instant.now().getEpochSecond(), pkceVerifier);
+        String state = data.getState();
+        PENDING_OIDC.put(state, data);
+
+        AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
+                new ResponseType("code"),
+                new Scope("openid"), provider.clientID, callback
+        )
+                .endpointURI(provider.authUri)
+                .codeChallenge(pkceVerifier, CodeChallengeMethod.S256)
+                .state(new State(state))
+                .nonce(data.nonce)
+                // This parameter is optional and the idp doesn't have to honor it.
+                .maxAge(0)
+                .build();
 
         return HttpResponse.redirect302(oidcRequest.toURI().toString());
     }
+
     public static HttpResponse oidcDeleteCallback(OidcProvider provider, URI requestUri) throws Exception {
 
         AuthenticationSuccessResponse sr = parseOidcUri(requestUri);
 
-        OidcData data = UserHandlers.PENDING_OIDC.get(sr.getState().toString());
+        OidcData data = PENDING_OIDC.get(sr.getState().toString());
+
         if (data == null) {
             return HttpResponse.ofCode(400).withHtml(
                     "Your oidc provider sent invalid state data. Try again or contact your oidc admin"
@@ -331,13 +340,13 @@ public class UserHandlers {
         IDTokenClaimsSet claims;
         try {
             claims = provider.validator.validate(idToken, data.nonce);
-            } catch (BadJOSEException e) {
-                System.out.println("Invalid token received: " + e.toString());
-                return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
-            } catch (JOSEException e) {
-                System.out.println("Token processing error" + e.toString());
-                return HttpResponse.ofCode(500).withHtml("Internal processing error. Please try again");
-            }
+        } catch (BadJOSEException e) {
+            System.err.println("Invalid token received: " + e);
+            return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
+        } catch (JOSEException e) {
+            System.err.println("Token processing error: " + e);
+            return HttpResponse.ofCode(500).withHtml("Internal processing error. Please try again");
+        }
 
         Long authTime = (Long) claims.getNumberClaim("auth_time");
 
@@ -356,6 +365,7 @@ public class UserHandlers {
             s.remove(DatabaseHelper.getUserFromSession(session));
             tr.commit();
         }
+
         return HttpResponse.redirect302(Constants.FRONTEND_URL + "/preferences?deleted=" + session);
     }
 
