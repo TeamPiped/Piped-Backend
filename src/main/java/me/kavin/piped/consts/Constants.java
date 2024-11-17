@@ -6,11 +6,11 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nimbusds.oauth2.sdk.GeneralException;
 import io.minio.MinioClient;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.utils.PageMixin;
-import me.kavin.piped.utils.RequestUtils;
 import me.kavin.piped.utils.obj.OidcProvider;
 import me.kavin.piped.utils.resp.ListLinkHandlerMixin;
 import okhttp3.OkHttpClient;
@@ -25,9 +25,10 @@ import org.schabi.newpipe.extractor.localization.ContentCountry;
 
 import java.io.File;
 import java.io.FileReader;
-import java.util.Map;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -196,12 +197,17 @@ public class Constants {
                 }
             });
             oidcProviderConfig.forEach((provider, config) -> {
-                OIDC_PROVIDERS.add(new OidcProvider(
-                        provider,
-                        getRequiredMapValue(config, "clientId"),
-                        getRequiredMapValue(config, "clientSecret"),
-                        getRequiredMapValue(config, "issuer")
-                ));
+                try {
+                    OIDC_PROVIDERS.add(new OidcProvider(
+                            provider,
+                            getRequiredMapValue(config, "clientId"),
+                            getRequiredMapValue(config, "clientSecret"),
+                            getRequiredMapValue(config, "issuer")
+                    ));
+                } catch (GeneralException | IOException e) {
+                    System.err.println("Failed to get configuration for '" + provider + "': " + e);
+                    System.exit(1);
+                }
                 providerNames.add(provider);
             });
             frontendProperties.put("imageProxyUrl", IMAGE_PROXY_PART);
