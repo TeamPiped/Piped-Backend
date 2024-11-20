@@ -29,6 +29,7 @@ import me.kavin.piped.utils.obj.db.OidcUserData;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
@@ -128,7 +129,7 @@ public class UserHandlers {
         }
     }
 
-    public static HttpResponse oidcLoginResponse(OidcProvider provider, String redirectUri) throws Exception {
+    public static HttpResponse oidcLoginRequest(OidcProvider provider, String redirectUri) throws Exception {
         if (StringUtils.isBlank(redirectUri)) {
             return HttpResponse.ofCode(400).withHtml("redirect is a required parameter");
         }
@@ -163,7 +164,7 @@ public class UserHandlers {
                         "\">here</a></body></html>");
     }
 
-    public static HttpResponse oidcCallbackResponse(OidcProvider provider, URI requestUri) throws Exception {
+    public static HttpResponse oidcLoginCallback(OidcProvider provider, URI requestUri) throws Exception {
         AuthenticationSuccessResponse authResponse = parseOidcUri(requestUri);
 
         OidcData data = DatabaseHelper.getOidcData(authResponse.getState().toString());
@@ -228,8 +229,7 @@ public class UserHandlers {
             if (dbuser != null) {
                 sessionId = dbuser.getUser().getSessionId();
             } else {
-                String username = userInfo.getPreferredUsername();
-                OidcUserData newUser = new OidcUserData(sub, username, provider.name);
+                OidcUserData newUser = new OidcUserData(sub, RandomStringUtils.randomAlphabetic(24), provider.name);
 
                 var tr = s.beginTransaction();
                 s.persist(newUser);

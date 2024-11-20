@@ -269,8 +269,8 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                             return HttpResponse.ofCode(500).withHtml("Can't find the provider on the server");
 
                         return switch (function) {
-                            case "login" -> UserHandlers.oidcLoginResponse(provider, request.getQueryParameter("redirect"));
-                            case "callback" -> UserHandlers.oidcCallbackResponse(provider, URI.create(request.getFullUrl()));
+                            case "login" -> UserHandlers.oidcLoginRequest(provider, request.getQueryParameter("redirect"));
+                            case "callback" -> UserHandlers.oidcLoginCallback(provider, URI.create(request.getFullUrl()));
                             case "delete" -> UserHandlers.oidcDeleteCallback(provider, URI.create(request.getFullUrl()));
                             default -> HttpResponse.ofCode(500).withHtml("Invalid function `" + function + "`");
                         };
