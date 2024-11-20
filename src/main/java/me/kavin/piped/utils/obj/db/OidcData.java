@@ -27,13 +27,13 @@ public class OidcData implements Serializable {
   public String state;
 
   @Column(name = "start")
-  public long auth_start;
+  public long start;
 
   public OidcData(String data, CodeVerifier pkceVerifier) {
     this.nonce = new Nonce().toString();
     this.verifierSecret = pkceVerifier.getValue();
     this.data = data;
-    this.auth_start = System.currentTimeMillis() / 1000L;
+    this.start = System.currentTimeMillis() / 1000L;
     this.state = getState();
   }
 

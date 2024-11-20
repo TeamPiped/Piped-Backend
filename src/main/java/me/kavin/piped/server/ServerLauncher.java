@@ -490,8 +490,9 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     }
                 })).map(GET, "/user/delete", AsyncServlet.ofBlocking(executor, request -> {
                     try {
-                        var session = request.getQueryParameter("session");
-                        return UserHandlers.oidcDeleteRequest(session);
+                        String session = request.getQueryParameter("session");
+                        String redirect = request.getQueryParameter("redirect");
+                        return UserHandlers.oidcDeleteRequest(session, redirect);
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }

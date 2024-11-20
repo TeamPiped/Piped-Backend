@@ -177,6 +177,12 @@ public class UserHandlers {
         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/callback");
         AuthorizationCode code = authResponse.getAuthorizationCode();
 
+        if (code == null) {
+            return HttpResponse.ofCode(400).withHtml(
+                    "Your oidc provider sent an invalid code. Try again or contact your oidc admin"
+            );
+        }
+
         AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.getOidVerifier());
 
         ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
@@ -241,10 +247,14 @@ public class UserHandlers {
         return HttpResponse.redirect302(data.data + "?session=" + sessionId);
     }
 
-    public static HttpResponse oidcDeleteRequest(String session) throws Exception {
+    public static HttpResponse oidcDeleteRequest(String session, String redirect) throws Exception {
 
         if (StringUtils.isBlank(session)) {
             return HttpResponse.ofCode(400).withHtml("session is a required parameter");
+        }
+
+        if (StringUtils.isBlank(redirect)) {
+            return HttpResponse.ofCode(400).withHtml("redirect is a required parameter");
         }
 
         OidcProvider provider = null;
@@ -282,7 +292,7 @@ public class UserHandlers {
         CodeVerifier pkceVerifier = new CodeVerifier();
 
         URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
-        OidcData data = new OidcData(session + "|" + Instant.now().getEpochSecond(), pkceVerifier);
+        OidcData data = new OidcData(session + "|" + redirect, pkceVerifier);
         String state = data.getState();
 
         DatabaseHelper.setOidcData(data);
@@ -297,7 +307,7 @@ public class UserHandlers {
                 .nonce(data.getOidNonce());
 
                 if (provider.sendMaxAge) {
-                // This parameter is optional and the idp doesn't have to honor it.
+                    // This parameter is optional and the idp doesn't have to honor it.
                     oidcRequestBuilder.maxAge(0);
                 }
 
@@ -316,11 +326,18 @@ public class UserHandlers {
             );
         }
 
-        long start = Long.parseLong(data.data.split("\\|")[1]);
+        String redirect = data.data.split("\\|")[1];
         String session = data.data.split("\\|")[0];
 
         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/delete");
         AuthorizationCode code = sr.getAuthorizationCode();
+
+        if (code == null) {
+            return HttpResponse.ofCode(400).withHtml(
+                    "Your oidc provider sent an invalid code. Try again or contact your oidc admin"
+            );
+        }
+
         AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.getOidVerifier());
 
         ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
@@ -355,7 +372,7 @@ public class UserHandlers {
               return HttpResponse.ofCode(400).withHtml("Couldn't get the `auth_time` claim from the provided id token");
           }
 
-          if (authTime < start) {
+          if (authTime <= data.start) {
               return HttpResponse.ofCode(500).withHtml(
                       "Your oidc provider didn't verify your identity. Please try again or contact your oidc admin."
               );
@@ -377,7 +394,7 @@ public class UserHandlers {
             tr.commit();
         }
 
-        return HttpResponse.redirect302(Constants.FRONTEND_URL + "/preferences?deleted=" + session);
+        return HttpResponse.redirect302(redirect + "?deleted=true");
     }
 
     public static byte[] deleteUserResponse(String session, String pass) throws IOException {

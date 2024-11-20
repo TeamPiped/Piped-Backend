@@ -247,13 +247,24 @@ public class DatabaseHelper {
     }
 
     public static OidcData getOidcData(String state) {
-        try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+
             CriteriaBuilder cb = s.getCriteriaBuilder();
             CriteriaQuery<OidcData> cr = cb.createQuery(OidcData.class);
             Root<OidcData> root = cr.from(OidcData.class);
             cr.select(root).where(cb.equal(root.get("state"), state));
 
-            return s.createQuery(cr).uniqueResult();
+            OidcData data = s.createQuery(cr).uniqueResult();
+
+            if (data == null){
+              return null;
+            }
+
+            var tr  = s.beginTransaction();
+            s.remove(data);
+            tr.commit();
+
+            return data;
         }
     }
 }
