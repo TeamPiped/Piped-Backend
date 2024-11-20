@@ -17,13 +17,15 @@ public class OidcProvider {
     public final Secret clientSecret;
     public final URI authUri;
     public final URI tokenUri;
+    public final Boolean sendMaxAge;
     public URI userinfoUri;
     public IDTokenValidator validator;
 
-    public OidcProvider(String name, String clientId, String clientSecret, String issuer) throws GeneralException, IOException {
+    public OidcProvider(String name, String clientId, String clientSecret, String issuer, String sendMaxAge) throws GeneralException, IOException {
         this.name = name;
         this.clientID = new ClientID(clientId);
         this.clientSecret = new Secret(clientSecret);
+        this.sendMaxAge = Boolean.valueOf(sendMaxAge);
 
         Issuer iss = new Issuer(issuer);
         OIDCProviderMetadata providerData = OIDCProviderMetadata.resolve(iss);

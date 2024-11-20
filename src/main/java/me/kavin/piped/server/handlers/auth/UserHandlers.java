@@ -23,8 +23,8 @@ import me.kavin.piped.utils.DatabaseHelper;
 import me.kavin.piped.utils.DatabaseSessionFactory;
 import me.kavin.piped.utils.ExceptionHandler;
 import me.kavin.piped.utils.RequestUtils;
-import me.kavin.piped.utils.obj.OidcData;
 import me.kavin.piped.utils.obj.OidcProvider;
+import me.kavin.piped.utils.obj.db.OidcData;
 import me.kavin.piped.utils.obj.db.OidcUserData;
 import me.kavin.piped.utils.obj.db.User;
 import me.kavin.piped.utils.resp.*;
@@ -38,8 +38,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,7 +46,6 @@ import static me.kavin.piped.consts.Constants.mapper;
 public class UserHandlers {
     private static final Argon2PasswordEncoder argon2PasswordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     private static final BCryptPasswordEncoder bcryptPasswordEncoder = new BCryptPasswordEncoder();
-    public static final Map<String, OidcData> PENDING_OIDC = new HashMap<>();
 
     public static byte[] registerResponse(String user, String pass) throws Exception {
 
@@ -141,7 +138,7 @@ public class UserHandlers {
         OidcData data = new OidcData(redirectUri, codeVerifier);
         String state = data.getState();
 
-        PENDING_OIDC.put(state, data);
+        DatabaseHelper.setOidcData(data);
 
         AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
                 new ResponseType("code"),
@@ -151,7 +148,7 @@ public class UserHandlers {
                 .endpointURI(provider.authUri)
                 .codeChallenge(codeVerifier, CodeChallengeMethod.S256)
                 .state(new State(state))
-                .nonce(data.nonce).build();
+                .nonce(data.getOidNonce()).build();
 
         if (redirectUri.equals(Constants.FRONTEND_URL + "/login")) {
             return HttpResponse.redirect302(oidcRequest.toURI().toString());
@@ -169,7 +166,7 @@ public class UserHandlers {
     public static HttpResponse oidcCallbackResponse(OidcProvider provider, URI requestUri) throws Exception {
         AuthenticationSuccessResponse authResponse = parseOidcUri(requestUri);
 
-        OidcData data = PENDING_OIDC.get(authResponse.getState().toString());
+        OidcData data = DatabaseHelper.getOidcData(authResponse.getState().toString());
         if (data == null) {
             return HttpResponse.ofCode(400).withHtml(
                     "Your oidc provider sent invalid state data. Try again or contact your oidc admin"
@@ -179,7 +176,7 @@ public class UserHandlers {
         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/callback");
         AuthorizationCode code = authResponse.getAuthorizationCode();
 
-        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.pkceVerifier);
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.getOidVerifier());
 
         ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
         TokenRequest tokenReq = new TokenRequest.Builder(provider.tokenUri, clientAuth, codeGrant).build();
@@ -197,7 +194,7 @@ public class UserHandlers {
         JWT idToken = JWTParser.parse(successResponse.getOIDCTokens().getIDTokenString());
 
         try {
-            provider.validator.validate(idToken, data.nonce);
+            provider.validator.validate(idToken, data.getOidNonce());
         } catch (BadJOSEException e) {
             System.err.println("Invalid token received: " + e);
             return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
@@ -287,28 +284,31 @@ public class UserHandlers {
         URI callback = URI.create(String.format("%s/oidc/%s/delete", Constants.PUBLIC_URL, provider.name));
         OidcData data = new OidcData(session + "|" + Instant.now().getEpochSecond(), pkceVerifier);
         String state = data.getState();
-        PENDING_OIDC.put(state, data);
 
-        AuthenticationRequest oidcRequest = new AuthenticationRequest.Builder(
+        DatabaseHelper.setOidcData(data);
+
+        com.nimbusds.openid.connect.sdk.AuthenticationRequest.Builder oidcRequestBuilder = new AuthenticationRequest.Builder(
                 new ResponseType("code"),
                 new Scope("openid"), provider.clientID, callback
         )
                 .endpointURI(provider.authUri)
                 .codeChallenge(pkceVerifier, CodeChallengeMethod.S256)
                 .state(new State(state))
-                .nonce(data.nonce)
-                // This parameter is optional and the idp doesn't have to honor it.
-                .maxAge(0)
-                .build();
+                .nonce(data.getOidNonce());
 
-        return HttpResponse.redirect302(oidcRequest.toURI().toString());
+                if (provider.sendMaxAge) {
+                // This parameter is optional and the idp doesn't have to honor it.
+                    oidcRequestBuilder.maxAge(0);
+                }
+
+        return HttpResponse.redirect302(oidcRequestBuilder.build().toURI().toString());
     }
 
     public static HttpResponse oidcDeleteCallback(OidcProvider provider, URI requestUri) throws Exception {
 
         AuthenticationSuccessResponse sr = parseOidcUri(requestUri);
 
-        OidcData data = PENDING_OIDC.get(sr.getState().toString());
+        OidcData data = DatabaseHelper.getOidcData(sr.getState().toString());
 
         if (data == null) {
             return HttpResponse.ofCode(400).withHtml(
@@ -321,7 +321,7 @@ public class UserHandlers {
 
         URI callback = new URI(Constants.PUBLIC_URL + "/oidc/" + provider.name + "/delete");
         AuthorizationCode code = sr.getAuthorizationCode();
-        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.pkceVerifier);
+        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callback, data.getOidVerifier());
 
         ClientAuthentication clientAuth = new ClientSecretBasic(provider.clientID, provider.clientSecret);
 
@@ -339,7 +339,7 @@ public class UserHandlers {
 
         IDTokenClaimsSet claims;
         try {
-            claims = provider.validator.validate(idToken, data.nonce);
+            claims = provider.validator.validate(idToken, data.getOidNonce());
         } catch (BadJOSEException e) {
             System.err.println("Invalid token received: " + e);
             return HttpResponse.ofCode(400).withHtml("Received a bad token. Please try again");
@@ -348,21 +348,32 @@ public class UserHandlers {
             return HttpResponse.ofCode(500).withHtml("Internal processing error. Please try again");
         }
 
-        Long authTime = (Long) claims.getNumberClaim("auth_time");
+        if (provider.sendMaxAge) {
+          Long authTime = (Long) claims.getNumberClaim("auth_time");
 
-        if (authTime == null) {
-            return HttpResponse.ofCode(400).withHtml("Couldn't get the `auth_time` claim from the provided id token");
-        }
+          if (authTime == null) {
+              return HttpResponse.ofCode(400).withHtml("Couldn't get the `auth_time` claim from the provided id token");
+          }
 
-        if (authTime < start) {
-            return HttpResponse.ofCode(500).withHtml(
-                    "Your oidc provider didn't verify your identity. Please try again or contact your oidc admin."
-            );
+          if (authTime < start) {
+              return HttpResponse.ofCode(500).withHtml(
+                      "Your oidc provider didn't verify your identity. Please try again or contact your oidc admin."
+              );
+          }
         }
 
         try (Session s = DatabaseSessionFactory.createSession()) {
             var tr = s.beginTransaction();
-            s.remove(DatabaseHelper.getUserFromSession(session));
+
+            User toDelete = DatabaseHelper.getUserFromSession(session);
+
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<OidcUserData> cr = cb.createQuery(OidcUserData.class);
+            Root<OidcUserData> root = cr.from(OidcUserData.class);
+
+            cr.select(root).where(cb.equal(root.get("user"), toDelete));
+
+            s.remove(s.createQuery(cr).uniqueResult());
             tr.commit();
         }
 

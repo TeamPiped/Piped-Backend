@@ -202,7 +202,8 @@ public class Constants {
                             provider,
                             getRequiredMapValue(config, "clientId"),
                             getRequiredMapValue(config, "clientSecret"),
-                            getRequiredMapValue(config, "issuer")
+                            getRequiredMapValue(config, "issuer"),
+                            getOptionalMapValue(config, "sendMaxAge", "true")
                     ));
                 } catch (GeneralException | IOException e) {
                     System.err.println("Failed to get configuration for '" + provider + "': " + e);
@@ -259,6 +260,14 @@ public class Constants {
         if (StringUtils.isBlank(value)) {
             System.err.println("Missing '" + key + "' in sub-configuration");
             System.exit(1);
+        }
+        return value;
+    }
+
+    private static String getOptionalMapValue(final Map<?, String> map, Object key, String def) {
+        String value = map.get(key);
+        if (StringUtils.isBlank(value)) {
+            return def;
         }
         return value;
     }
