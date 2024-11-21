@@ -96,6 +96,9 @@ public class UserHandlers {
     }
 
     private static boolean hashMatch(String hash, String pass) {
+        if (hash.isBlank()) {
+            return false;
+        }
         return hash.startsWith("$argon2") ?
                 argon2PasswordEncoder.matches(pass, hash) :
                 bcryptPasswordEncoder.matches(pass, hash);
