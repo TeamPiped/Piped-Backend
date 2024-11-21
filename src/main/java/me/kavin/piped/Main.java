@@ -9,6 +9,7 @@ import me.kavin.piped.server.ServerLauncher;
 import me.kavin.piped.utils.*;
 import me.kavin.piped.utils.matrix.SyncRunner;
 import me.kavin.piped.utils.obj.MatrixHelper;
+import me.kavin.piped.utils.obj.db.OidcData;
 import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.Video;
@@ -252,6 +253,33 @@ public class Main {
                 }
             }
         }, 0, TimeUnit.MINUTES.toMillis(60));
+
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try (StatelessSession s = DatabaseSessionFactory.createStatelessSession()) {
+
+                    var cb = s.getCriteriaBuilder();
+                    var cd = cb.createCriteriaDelete(OidcData.class);
+                    var root = cd.from(OidcData.class);
+                    cd.where(cb.lessThan(root.get("start"), System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(3)));
+
+                    var tr = s.beginTransaction();
+
+                    var query = s.createMutationQuery(cd);
+
+                    int affected = query.executeUpdate();
+
+                    tr.commit();
+
+                    if (affected > 0) {
+                        System.out.printf("Cleanup: Removed %o orphaned oidc logins%n", affected);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, TimeUnit.MINUTES.toMillis(5));
 
     }
 }

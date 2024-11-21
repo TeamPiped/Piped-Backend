@@ -15,7 +15,9 @@ import me.kavin.piped.server.handlers.auth.AuthPlaylistHandlers;
 import me.kavin.piped.server.handlers.auth.FeedHandlers;
 import me.kavin.piped.server.handlers.auth.StorageHandlers;
 import me.kavin.piped.server.handlers.auth.UserHandlers;
+import me.kavin.piped.utils.ErrorResponse;
 import me.kavin.piped.utils.*;
+import me.kavin.piped.utils.obj.OidcProvider;
 import me.kavin.piped.utils.resp.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -23,6 +25,7 @@ import org.hibernate.Session;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
@@ -258,6 +261,22 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/oidc/:provider/:function", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String function = request.getPathParameter("function");
+                        OidcProvider provider = getOidcProvider(request.getPathParameter("provider"));
+                        if (provider == null)
+                            return HttpResponse.ofCode(500).withHtml("Can't find the provider on the server");
+
+                        return switch (function) {
+                            case "login" -> UserHandlers.oidcLoginRequest(provider, request.getQueryParameter("redirect"));
+                            case "callback" -> UserHandlers.oidcLoginCallback(provider, URI.create(request.getFullUrl()));
+                            case "delete" -> UserHandlers.oidcDeleteCallback(provider, URI.create(request.getFullUrl()));
+                            default -> HttpResponse.ofCode(500).withHtml("Invalid function `" + function + "`");
+                        };
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(POST, "/login", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         LoginRequest body = mapper.readValue(request.loadBody().getResult().asArray(),
@@ -469,6 +488,14 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                     } catch (Exception e) {
                         return getErrorResponse(e, request.getPath());
                     }
+                })).map(GET, "/user/delete", AsyncServlet.ofBlocking(executor, request -> {
+                    try {
+                        String session = request.getQueryParameter("session");
+                        String redirect = request.getQueryParameter("redirect");
+                        return UserHandlers.oidcDeleteRequest(session, redirect);
+                    } catch (Exception e) {
+                        return getErrorResponse(e, request.getPath());
+                    }
                 })).map(POST, "/logout", AsyncServlet.ofBlocking(executor, request -> {
                     try {
                         return getJsonResponse(UserHandlers.logoutResponse(request.getHeader(AUTHORIZATION)), "private");
@@ -504,6 +531,15 @@ public class ServerLauncher extends MultithreadedHttpServerLauncher {
                 .map(GET, "/", AsyncServlet.ofBlocking(executor, request -> HttpResponse.redirect302(Constants.FRONTEND_URL)));
 
         return new CustomServletDecorator(router);
+    }
+
+    private static OidcProvider getOidcProvider(String provider) {
+        for (int i = 0; i < Constants.OIDC_PROVIDERS.size(); i++) {
+            OidcProvider curr = Constants.OIDC_PROVIDERS.get(i);
+            if (curr == null || !curr.name.equals(provider)) continue;
+            return curr;
+        }
+        return null;
     }
 
     private static String[] getArray(String s) {

@@ -8,6 +8,7 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hibernate.Session;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.StatelessSession;
 import org.schabi.newpipe.extractor.channel.ChannelInfo;
@@ -235,5 +236,35 @@ public class DatabaseHelper {
         });
 
         return channel;
+    }
+
+    public static void setOidcData(OidcData data) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+            var tr = s.beginTransaction();
+            s.persist(data);
+            tr.commit();
+        }
+    }
+
+    public static OidcData getOidcData(String state) {
+        try (Session s = DatabaseSessionFactory.createSession()) {
+
+            CriteriaBuilder cb = s.getCriteriaBuilder();
+            CriteriaQuery<OidcData> cr = cb.createQuery(OidcData.class);
+            Root<OidcData> root = cr.from(OidcData.class);
+            cr.select(root).where(cb.equal(root.get("state"), state));
+
+            OidcData data = s.createQuery(cr).uniqueResult();
+
+            if (data == null){
+              return null;
+            }
+
+            var tr  = s.beginTransaction();
+            s.remove(data);
+            tr.commit();
+
+            return data;
+        }
     }
 }

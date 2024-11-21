@@ -3,11 +3,15 @@ package me.kavin.piped.consts;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nimbusds.oauth2.sdk.GeneralException;
 import io.minio.MinioClient;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.kavin.piped.utils.PageMixin;
+import me.kavin.piped.utils.obj.OidcProvider;
 import me.kavin.piped.utils.resp.ListLinkHandlerMixin;
 import okhttp3.OkHttpClient;
 import okhttp3.brotli.BrotliInterceptor;
@@ -21,8 +25,10 @@ import org.schabi.newpipe.extractor.localization.ContentCountry;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -103,6 +109,7 @@ public class Constants {
     public static String YOUTUBE_COUNTRY;
 
     public static final String VERSION;
+    public static final List<OidcProvider> OIDC_PROVIDERS;
 
     public static final ObjectMapper mapper = JsonMapper.builder()
             .addMixIn(Page.class, PageMixin.class)
@@ -170,12 +177,39 @@ public class Constants {
             MATRIX_SERVER = getProperty(prop, "MATRIX_SERVER", "https://matrix-client.matrix.org");
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
             GEO_RESTRICTION_CHECKER_URL = getProperty(prop, "GEO_RESTRICTION_CHECKER_URL");
+
+            OIDC_PROVIDERS = new ObjectArrayList<>();
+
+            Map<String, Map<String, String>> oidcProviderConfig = new Object2ObjectOpenHashMap<>();
+            ArrayNode providerNames = frontendProperties.putArray("oidcProviders");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
                     hibernateProperties.put(key, value);
                 else if (key.startsWith("frontend."))
                     frontendProperties.put(StringUtils.substringAfter(key, "frontend."), value);
+                else if (key.startsWith("oidc.provider")) {
+                    String[] split = key.split("\\.");
+                    if (split.length != 4) return;
+                    oidcProviderConfig
+                            .computeIfAbsent(split[2], k -> new Object2ObjectOpenHashMap<>())
+                            .put(split[3], value);
+                }
+            });
+            oidcProviderConfig.forEach((provider, config) -> {
+                try {
+                    OIDC_PROVIDERS.add(new OidcProvider(
+                            provider,
+                            getRequiredMapValue(config, "clientId"),
+                            getRequiredMapValue(config, "clientSecret"),
+                            getRequiredMapValue(config, "issuer"),
+                            getOptionalMapValue(config, "sendMaxAge", "true")
+                    ));
+                } catch (GeneralException | IOException e) {
+                    System.err.println("Failed to get configuration for '" + provider + "': " + e);
+                    System.exit(1);
+                }
+                providerNames.add(provider);
             });
             frontendProperties.put("imageProxyUrl", IMAGE_PROXY_PART);
             frontendProperties.putArray("countries").addAll(
@@ -219,5 +253,22 @@ public class Constants {
             return envVal;
 
         return prop.getProperty(key, def);
+    }
+
+    private static String getRequiredMapValue(final Map<?, String> map, Object key) {
+        String value = map.get(key);
+        if (StringUtils.isBlank(value)) {
+            System.err.println("Missing '" + key + "' in sub-configuration");
+            System.exit(1);
+        }
+        return value;
+    }
+
+    private static String getOptionalMapValue(final Map<?, String> map, Object key, String def) {
+        String value = map.get(key);
+        if (StringUtils.isBlank(value)) {
+            return def;
+        }
+        return value;
     }
 }
