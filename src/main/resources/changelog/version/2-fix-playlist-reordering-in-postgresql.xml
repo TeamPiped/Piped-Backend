@@ -5,7 +5,7 @@
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="2-0-postgresql" author="valentins.paramonovs" dbms="postgresql">
-        <!-- drop constraint since it prevents breaks unauthenticated subscriptions from working -->
+        <!-- delay constraint checks until the end of the transaction to allow videos in a playlist to be reordered without worrying about the update execution order -->
         <sql>ALTER TABLE playlists_videos_ids DROP CONSTRAINT playlists_videos_ids_pkey;</sql>
         <sql>ALTER TABLE playlists_videos_ids ADD CONSTRAINT playlists_videos_ids_pkey PRIMARY KEY (playlist_id, videos_order) DEFERRABLE INITIALLY DEFERRED;</sql>
         <rollback>
