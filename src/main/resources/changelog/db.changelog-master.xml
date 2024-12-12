@@ -6,4 +6,5 @@
 
     <include file="version/0-init.xml" relativeToChangelogFile="true"/>
     <include file="version/1-fix-subs.xml" relativeToChangelogFile="true"/>
+    <include file="version/2-fix-playlist-reordering-in-postgresql.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
