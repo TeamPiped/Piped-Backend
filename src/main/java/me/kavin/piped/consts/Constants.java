@@ -28,7 +28,7 @@ import java.util.Properties;
 
 public class Constants {
 
-    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0";
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; rv:128.0) Gecko/20100101 Firefox/128.0";
 
     public static final int PORT;
     public static final String HTTP_WORKERS;
@@ -100,6 +100,8 @@ public class Constants {
 
     public static final String GEO_RESTRICTION_CHECKER_URL;
 
+    public static final String BG_HELPER_URL;
+
     public static String YOUTUBE_COUNTRY;
 
     public static final String VERSION;
@@ -170,6 +172,7 @@ public class Constants {
             MATRIX_SERVER = getProperty(prop, "MATRIX_SERVER", "https://matrix-client.matrix.org");
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
             GEO_RESTRICTION_CHECKER_URL = getProperty(prop, "GEO_RESTRICTION_CHECKER_URL");
+            BG_HELPER_URL = getProperty(prop, "BG_HELPER_URL");
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
