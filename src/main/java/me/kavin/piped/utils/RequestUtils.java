@@ -1,6 +1,7 @@
 package me.kavin.piped.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import me.kavin.piped.consts.Constants;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import rocks.kavin.reqwest4j.ReqwestUtils;
@@ -15,11 +16,15 @@ import static me.kavin.piped.consts.Constants.mapper;
 public class RequestUtils {
 
     public static CompletableFuture<Response> sendGetRaw(String url) throws Exception {
-        return ReqwestUtils.fetch(url, "GET", null, Map.of());
+        return ReqwestUtils.fetch(url, "GET", null, Map.of(
+                "User-Agent", Constants.USER_AGENT
+        ));
     }
 
     public static CompletableFuture<String> sendGet(String url) throws Exception {
-        return ReqwestUtils.fetch(url, "GET", null, Map.of())
+        return ReqwestUtils.fetch(url, "GET", null, Map.of(
+                        "User-Agent", Constants.USER_AGENT
+                ))
                 .thenApply(Response::body)
                 .thenApplyAsync(String::new);
     }
