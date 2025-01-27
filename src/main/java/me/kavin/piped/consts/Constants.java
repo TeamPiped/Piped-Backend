@@ -166,8 +166,8 @@ public class Constants {
                 S3_CLIENT = null;
             }
             System.getenv().forEach((key, value) -> {
-                if (key.startsWith("hibernate"))
-                    hibernateProperties.put(key, value);
+                if (key.startsWith("HIBERNATE"))
+                    hibernateProperties.put(key.replace("__", ".").toLowerCase(), value);
             });
             MATRIX_SERVER = getProperty(prop, "MATRIX_SERVER", "https://matrix-client.matrix.org");
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
