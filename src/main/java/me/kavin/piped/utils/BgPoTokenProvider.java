@@ -69,14 +69,14 @@ public class BgPoTokenProvider implements PoTokenProvider {
         }).join();
 
         if (poToken != null) {
-            return new PoTokenResult(visitorDate, poToken);
+            return new PoTokenResult(visitorDate, poToken, null);
         }
 
         return null;
     }
 
     @Override
-    public @Nullable PoTokenResult getWebClientPoToken() {
+    public @Nullable PoTokenResult getWebClientPoToken(String videoId) {
         try {
             return getPoTokenPooled();
         } catch (Exception e) {
@@ -86,8 +86,17 @@ public class BgPoTokenProvider implements PoTokenProvider {
     }
 
     @Override
-    public @Nullable PoTokenResult getAndroidClientPoToken() {
-        // TODO: allow setting from config maybe?
+    public @Nullable PoTokenResult getWebEmbedClientPoToken(String videoId) {
+        return null;
+    }
+
+    @Override
+    public @Nullable PoTokenResult getAndroidClientPoToken(String videoId) {
+        return null;
+    }
+
+    @Override
+    public @Nullable PoTokenResult getIosClientPoToken(String videoId) {
         return null;
     }
 }
