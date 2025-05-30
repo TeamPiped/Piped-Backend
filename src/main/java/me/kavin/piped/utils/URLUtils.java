@@ -68,7 +68,7 @@ public class URLUtils {
 
         String query = url.getQuery();
 
-        boolean hasQuery = query != null;
+        boolean hasQuery = query != null && query.length() > 0;
 
         Comparator<List<String>> listComparator = (o1, o2) -> {
             for (int i = 0; i < Math.min(o1.size(), o2.size()); i++) {
