@@ -33,8 +33,8 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.7.3'
     implementation 'org.hibernate:hibernate-core:6.4.1.Final'
     implementation 'org.hibernate:hibernate-hikaricp:6.4.1.Final'
-    implementation 'org.liquibase:liquibase-core:4.28.0'
-    implementation('org.liquibase.ext:liquibase-yugabytedb:4.28.0') { exclude group: 'org.liquibase' }
+    implementation 'org.liquibase:liquibase-core:4.32.0'
+    implementation('org.liquibase.ext:liquibase-yugabytedb:4.32.0') { exclude group: 'org.liquibase' }
     implementation 'com.zaxxer:HikariCP:5.1.0'
     implementation 'org.springframework.security:spring-security-crypto:6.3.1'
     implementation 'commons-logging:commons-logging:1.3.3'
