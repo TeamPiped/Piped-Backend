@@ -19,11 +19,14 @@ RUN --mount=type=cache,target=/var/cache/apt/ \
 
 WORKDIR /app/
 
+# Create the VERSION file directly in the final stage
+RUN echo "dockerfile-build-$(date +%Y%m%d)" > VERSION
+
 COPY hotspot-entrypoint.sh docker-healthcheck.sh /
 
 COPY --from=build /app/build/libs/piped-1.0-all.jar /app/piped.jar
 
-COPY VERSION .
+# COPY VERSION . # Remove or comment out this line
 
 EXPOSE 8080
 

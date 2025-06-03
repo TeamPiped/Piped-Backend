@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit; // Added import
 
 public class Constants {
 
@@ -106,6 +107,12 @@ public class Constants {
 
     public static final String VERSION;
 
+    // --- Polling Configuration ---
+    public static final boolean ENABLE_FEED_POLLING;
+    public static final int POLLING_INTERVAL_MINUTES;
+    public static final int POLLING_FETCH_LIMIT_PER_CHANNEL;
+    // --- End Polling Configuration ---
+
     public static final ObjectMapper mapper = JsonMapper.builder()
             .addMixIn(Page.class, PageMixin.class)
             .addMixIn(ListLinkHandler.class, ListLinkHandlerMixin.class)
@@ -173,6 +180,13 @@ public class Constants {
             MATRIX_TOKEN = getProperty(prop, "MATRIX_TOKEN");
             GEO_RESTRICTION_CHECKER_URL = getProperty(prop, "GEO_RESTRICTION_CHECKER_URL");
             BG_HELPER_URL = getProperty(prop, "BG_HELPER_URL");
+
+            // --- Polling Configuration ---
+            ENABLE_FEED_POLLING = Boolean.parseBoolean(getProperty(prop, "ENABLE_FEED_POLLING", "false"));
+            POLLING_INTERVAL_MINUTES = Integer.parseInt(getProperty(prop, "POLLING_INTERVAL_MINUTES", "15"));
+            POLLING_FETCH_LIMIT_PER_CHANNEL = Integer.parseInt(getProperty(prop, "POLLING_FETCH_LIMIT_PER_CHANNEL", "10"));
+            // --- End Polling Configuration ---
+
             prop.forEach((_key, _value) -> {
                 String key = String.valueOf(_key), value = String.valueOf(_value);
                 if (key.startsWith("hibernate"))
