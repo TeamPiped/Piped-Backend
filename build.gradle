@@ -23,7 +23,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
     implementation 'com.rometools:rome:2.1.0'
     implementation 'com.rometools:rome-modules:2.1.0'
-    implementation 'org.jsoup:jsoup:1.20.1'
+    implementation 'org.jsoup:jsoup:1.21.1'
     implementation 'io.activej:activej-common:5.5'
     implementation 'io.activej:activej-http:5.5'
     implementation 'io.activej:activej-boot:5.5'
