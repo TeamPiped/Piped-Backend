@@ -27,7 +27,7 @@ jobs:
             dockerfile: ./Dockerfile.graalvm-jvm.ci
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: piped.jar
       - name: Create Version File
