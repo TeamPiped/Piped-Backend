@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21.0.10_7-jre
 
 RUN --mount=type=cache,target=/var/cache/apt/ \
  apt-get update && \
