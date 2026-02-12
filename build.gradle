@@ -44,8 +44,8 @@ dependencies {
     implementation 'io.sentry:sentry:8.19.1'
     implementation 'rocks.kavin:reqwest4j:1.0.14'
     implementation 'io.minio:minio:8.5.17'
-    compileOnly 'org.projectlombok:lombok:1.18.38'
-    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+    compileOnly 'org.projectlombok:lombok:1.18.42'
+    annotationProcessor 'org.projectlombok:lombok:1.18.42'
 }
 
 shadowJar {
