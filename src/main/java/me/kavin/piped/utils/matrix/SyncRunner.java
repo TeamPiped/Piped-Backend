@@ -178,7 +178,7 @@ public class SyncRunner implements Runnable {
                                             var channel = DatabaseHelper.getChannelFromId(info.getUploaderId());
                                             if (channel != null)
                                                 VideoHelpers.handleNewVideo("https://www.youtube.com/watch?v=" + info.getVideoId(),
-                                                        System.currentTimeMillis(), channel);
+                                                        -1L, channel);
                                         }
 
                                     });

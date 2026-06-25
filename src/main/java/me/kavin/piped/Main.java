@@ -279,12 +279,29 @@ public class Main {
                         for (String channelId : channelIds) {
                             try {
                                 var info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
-                                var tabInfo = ChannelHelpers.videosTabInfo(info);
-                                if (tabInfo != null)
-                                    Multithreading.runAsync(() -> ChannelHelpers.federateChannelVideos(tabInfo));
                                 Multithreading.runAsync(() -> ChannelHelpers.federateChannelInfo(info));
-                                if (tabInfo != null)
-                                    ChannelHelpers.updateChannelVideos(info, tabInfo);
+
+                                if (Constants.FEED_REFRESH_VIDEOS) {
+                                    try {
+                                        ChannelHelpers.refreshChannelTab(info, ChannelHelpers.videosTabInfo(info));
+                                    } catch (Exception e) {
+                                        ExceptionHandler.handle(e);
+                                    }
+                                }
+                                if (Constants.FEED_REFRESH_SHORTS) {
+                                    try {
+                                        ChannelHelpers.refreshChannelTab(info, ChannelHelpers.shortsTabInfo(info));
+                                    } catch (Exception e) {
+                                        ExceptionHandler.handle(e);
+                                    }
+                                }
+                                if (Constants.FEED_REFRESH_LIVESTREAMS) {
+                                    try {
+                                        ChannelHelpers.refreshChannelTab(info, ChannelHelpers.livestreamsTabInfo(info));
+                                    } catch (Exception e) {
+                                        ExceptionHandler.handle(e);
+                                    }
+                                }
                             } catch (Exception e) {
                                 ExceptionHandler.handle(e);
                             }

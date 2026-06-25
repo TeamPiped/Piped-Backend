@@ -6,6 +6,7 @@ import me.kavin.piped.consts.Constants;
 import me.kavin.piped.utils.obj.db.Video;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.StatelessSession;
+import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
@@ -49,7 +50,7 @@ public class VideoHelpers {
                 if (!DatabaseHelper.doesVideoExist(s, info.getId())) {
 
                     Video video = new Video(info.getId(), info.getName(), info.getViewCount(), info.getDuration(),
-                            Math.max(infoTime, time), info.getThumbnails().getLast().getUrl(), info.isShortFormContent(), channel);
+                            pickUploaded(info.getUploadDate(), time), info.getThumbnails().getLast().getUrl(), info.isShortFormContent(), channel);
 
                     insertVideo(video);
                     return;
@@ -80,7 +81,7 @@ public class VideoHelpers {
                     boolean isShort = extractor.isShortFormContent() || isShort(extractor.getId());
 
                     Video video = new Video(extractor.getId(), extractor.getName(), extractor.getViewCount(), extractor.getLength(),
-                            Math.max(infoTime, time), extractor.getThumbnails().getLast().getUrl(), isShort, channel);
+                            pickUploaded(extractor.getUploadDate(), time), extractor.getThumbnails().getLast().getUrl(), isShort, channel);
 
                     insertVideo(video);
 
@@ -88,6 +89,18 @@ public class VideoHelpers {
             }
         }
 
+    }
+
+    private static long pickUploaded(DateWrapper extractorDate, long providedTime) {
+        Long fromExtractor = extractorDate != null
+                ? extractorDate.offsetDateTime().toInstant().toEpochMilli()
+                : null;
+        Long fromCaller = providedTime > 0 ? providedTime : null;
+
+        if (fromExtractor != null && fromCaller != null) return Math.max(fromExtractor, fromCaller);
+        if (fromExtractor != null) return fromExtractor;
+        if (fromCaller != null) return fromCaller;
+        return System.currentTimeMillis();
     }
 
     public static boolean isShort(String videoId) throws Exception {

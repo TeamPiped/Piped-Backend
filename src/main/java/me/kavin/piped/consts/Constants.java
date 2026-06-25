@@ -72,6 +72,12 @@ public class Constants {
 
     public static final int FEED_REFRESH_MINUTES;
 
+    public static final boolean FEED_REFRESH_VIDEOS;
+
+    public static final boolean FEED_REFRESH_SHORTS;
+
+    public static final boolean FEED_REFRESH_LIVESTREAMS;
+
     public static final String RYD_PROXY_URL;
 
     public static final List<String> SPONSORBLOCK_SERVERS;
@@ -153,6 +159,9 @@ public class Constants {
             DISABLE_PUBSUB = Boolean.parseBoolean(getProperty(prop, "DISABLE_PUBSUB", "false"));
             FEED_REFRESH = Boolean.parseBoolean(getProperty(prop, "FEED_REFRESH", "false"));
             FEED_REFRESH_MINUTES = Integer.parseInt(getProperty(prop, "FEED_REFRESH_MINUTES", "15"));
+            FEED_REFRESH_VIDEOS = Boolean.parseBoolean(getProperty(prop, "FEED_REFRESH_VIDEOS", "true"));
+            FEED_REFRESH_SHORTS = Boolean.parseBoolean(getProperty(prop, "FEED_REFRESH_SHORTS", "true"));
+            FEED_REFRESH_LIVESTREAMS = Boolean.parseBoolean(getProperty(prop, "FEED_REFRESH_LIVESTREAMS", "true"));
             RYD_PROXY_URL = getProperty(prop, "RYD_PROXY_URL", "https://ryd-proxy.kavin.rocks");
             SPONSORBLOCK_SERVERS = List.of(getProperty(prop, "SPONSORBLOCK_SERVERS", "https://sponsor.ajay.app,https://sponsorblock.kavin.rocks")
                     .split(","));

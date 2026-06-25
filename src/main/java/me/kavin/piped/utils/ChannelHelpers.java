@@ -124,10 +124,11 @@ public class ChannelHelpers {
                         .stream()
                         .filter(StreamInfoItem.class::isInstance)
                         .map(StreamInfoItem.class::cast).forEach(item -> {
-                            long time = item.getUploadDate() != null
-                                    ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                            var uploadDate = item.getUploadDate();
+                            long timeForRetention = uploadDate != null
+                                    ? uploadDate.offsetDateTime().toInstant().toEpochMilli()
                                     : System.currentTimeMillis();
-                            if (System.currentTimeMillis() - time < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                            if (System.currentTimeMillis() - timeForRetention < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
                                 try {
                                     String id = YOUTUBE_SERVICE.getStreamLHFactory().getId(item.getUrl());
                                     var video = videos.stream()
@@ -136,7 +137,8 @@ public class ChannelHelpers {
                                     if (video.isPresent()) {
                                         VideoHelpers.updateVideo(id, item);
                                     } else {
-                                        VideoHelpers.handleNewVideo("https://youtube.com/watch?v=" + id, time, channel);
+                                        VideoHelpers.handleNewVideo("https://youtube.com/watch?v=" + id,
+                                                uploadDate != null ? timeForRetention : -1L, channel);
                                     }
                                 } catch (Exception e) {
                                     ExceptionHandler.handle(e);
@@ -147,11 +149,29 @@ public class ChannelHelpers {
     }
 
     public static ChannelTabInfo videosTabInfo(ChannelInfo info) throws ExtractionException, IOException {
-        var preloadedVideosTab = collectPreloadedTabs(info.getTabs())
+        return tabInfo(info, ChannelTabs.VIDEOS);
+    }
+
+    public static ChannelTabInfo shortsTabInfo(ChannelInfo info) throws ExtractionException, IOException {
+        return tabInfo(info, ChannelTabs.SHORTS);
+    }
+
+    public static ChannelTabInfo livestreamsTabInfo(ChannelInfo info) throws ExtractionException, IOException {
+        return tabInfo(info, ChannelTabs.LIVESTREAMS);
+    }
+
+    private static ChannelTabInfo tabInfo(ChannelInfo info, String tabId) throws ExtractionException, IOException {
+        var tab = info.getTabs()
                 .stream()
-                .filter(tab -> tab.getContentFilters().contains(ChannelTabs.VIDEOS))
+                .filter(t -> t.getContentFilters().contains(tabId))
                 .findFirst();
-        return preloadedVideosTab.isPresent() ? ChannelTabInfo.getInfo(YOUTUBE_SERVICE, preloadedVideosTab.get()) : null;
+        return tab.isPresent() ? ChannelTabInfo.getInfo(YOUTUBE_SERVICE, tab.get()) : null;
+    }
+
+    public static void refreshChannelTab(ChannelInfo info, ChannelTabInfo tabInfo) {
+        if (tabInfo == null) return;
+        Multithreading.runAsync(() -> federateChannelVideos(tabInfo));
+        updateChannelVideos(info, tabInfo);
     }
 
     public static void federateChannelVideos(ChannelTabInfo tabInfo) {

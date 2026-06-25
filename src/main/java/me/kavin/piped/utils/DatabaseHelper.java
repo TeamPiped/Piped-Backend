@@ -226,11 +226,13 @@ public class DatabaseHelper {
                     .filter(StreamInfoItem.class::isInstance)
                     .map(StreamInfoItem.class::cast)
                     .forEach(item -> {
-                        long time = item.getUploadDate() != null
-                                ? item.getUploadDate().offsetDateTime().toInstant().toEpochMilli()
+                        var uploadDate = item.getUploadDate();
+                        long timeForRetention = uploadDate != null
+                                ? uploadDate.offsetDateTime().toInstant().toEpochMilli()
                                 : System.currentTimeMillis();
-                        if ((System.currentTimeMillis() - time) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
-                            VideoHelpers.handleNewVideo(item.getUrl(), time, channel);
+                        if ((System.currentTimeMillis() - timeForRetention) < TimeUnit.DAYS.toMillis(Constants.FEED_RETENTION))
+                            VideoHelpers.handleNewVideo(item.getUrl(),
+                                    uploadDate != null ? timeForRetention : -1L, channel);
                     });
         });
 
