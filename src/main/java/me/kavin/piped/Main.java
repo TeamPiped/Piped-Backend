@@ -31,7 +31,9 @@ import java.security.Security;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -278,15 +280,27 @@ public class Main {
 
                         for (String channelId : channelIds) {
                             try {
-                                var info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
-                                var tabInfo = ChannelHelpers.videosTabInfo(info);
-                                if (tabInfo != null)
-                                    Multithreading.runAsync(() -> ChannelHelpers.federateChannelVideos(tabInfo));
-                                Multithreading.runAsync(() -> ChannelHelpers.federateChannelInfo(info));
-                                if (tabInfo != null)
-                                    ChannelHelpers.updateChannelVideos(info, tabInfo);
-                            } catch (Exception e) {
-                                ExceptionHandler.handle(e);
+                                CompletableFuture.runAsync(() -> {
+                                    try {
+                                        var info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
+                                        var tabInfo = ChannelHelpers.videosTabInfo(info);
+                                        if (tabInfo != null)
+                                            Multithreading.runAsync(() -> ChannelHelpers.federateChannelVideos(tabInfo));
+                                        Multithreading.runAsync(() -> ChannelHelpers.federateChannelInfo(info));
+                                        if (tabInfo != null)
+                                            ChannelHelpers.updateChannelVideos(info, tabInfo);
+                                    } catch (Exception e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }).get(60, TimeUnit.SECONDS);
+                            } catch (TimeoutException e) {
+                                System.out.println("FeedRefresh: timeout refreshing channel " + channelId + ", skipping");
+                            } catch (ExecutionException e) {
+                                var cause = e.getCause();
+                                ExceptionHandler.handle(cause instanceof Exception ex ? ex : e);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                break;
                             }
                             Thread.sleep(delay);
                         }
