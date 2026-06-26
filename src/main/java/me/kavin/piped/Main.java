@@ -276,6 +276,8 @@ public class Main {
 
                         System.out.println("FeedRefresh: " + channelIds.size() + " channels, one every " + delay + "ms");
 
+                        int consecutiveFailures = 0;
+
                         for (String channelId : channelIds) {
                             try {
                                 var info = ChannelInfo.getInfo("https://youtube.com/channel/" + channelId);
@@ -285,8 +287,16 @@ public class Main {
                                 Multithreading.runAsync(() -> ChannelHelpers.federateChannelInfo(info));
                                 if (tabInfo != null)
                                     ChannelHelpers.updateChannelVideos(info, tabInfo);
+                                consecutiveFailures = 0;
                             } catch (Exception e) {
+                                consecutiveFailures++;
                                 ExceptionHandler.handle(e);
+                                if (consecutiveFailures >= 5) {
+                                    System.out.println("FeedRefresh: " + consecutiveFailures
+                                            + " consecutive failures, likely rate-limited — pausing 5 minutes");
+                                    Thread.sleep(TimeUnit.MINUTES.toMillis(5));
+                                    consecutiveFailures = 0;
+                                }
                             }
                             Thread.sleep(delay);
                         }
