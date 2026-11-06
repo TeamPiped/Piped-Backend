@@ -342,7 +342,7 @@ public class StreamHandlers {
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), getLastThumbnail(comment.getUploaderAvatars()),
-                        comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::getContent).orElse(null), comment.getTextualUploadDate(),
+                        comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::content).orElse(null), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified(), comment.hasCreatorReply(), comment.isChannelOwner()));
             } catch (JsonProcessingException e) {
@@ -380,7 +380,7 @@ public class StreamHandlers {
                     repliespage = mapper.writeValueAsString(comment.getReplies());
 
                 comments.add(new Comment(comment.getUploaderName(), getLastThumbnail(comment.getUploaderAvatars()),
-                        comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::getContent).orElse(null), comment.getTextualUploadDate(),
+                        comment.getCommentId(), Optional.ofNullable(comment.getCommentText()).map(Description::content).orElse(null), comment.getTextualUploadDate(),
                         substringYouTube(comment.getUploaderUrl()), repliespage, comment.getLikeCount(), comment.getReplyCount(),
                         comment.isHeartedByUploader(), comment.isPinned(), comment.isUploaderVerified(), comment.hasCreatorReply(), comment.isChannelOwner()));
             } catch (JsonProcessingException e) {
